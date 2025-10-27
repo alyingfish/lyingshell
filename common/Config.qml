@@ -6,7 +6,7 @@ import Quickshell.Io
 
 Singleton {
     id: root
-    property string configPath: "/home/lyingfish/.config/lyingshell/config.json"
+    property string configPath: Directory.shellConfigPath
     property alias options: optionsJsonAdapter
 
     FileView {
