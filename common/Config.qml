@@ -6,15 +6,8 @@ import Quickshell.Io
 
 Singleton {
     id: root
-    property string configPath: "~/.config/lyingshell/config.json"
+    property string configPath: "/home/lyingfish/.config/lyingshell/config.json"
     property alias options: optionsJsonAdapter
-
-    enum BarStyle {
-        Hidden,
-        Float,
-        Hug,
-        Rectangle
-    }
 
     FileView {
         path: root.configPath
@@ -31,8 +24,9 @@ Singleton {
         JsonAdapter {
             id: optionsJsonAdapter
             property JsonObject bar: JsonObject {
-                property int regularStyle: Config.BarStyle.Float
-                property int maximizeStyle: Config.BarStyle.Hug
+                property string regularStyle: "float" // options: float, hug, rectangle
+                property string maximizeStyle: "hug" // options: float, hug, rectangle
+                property string backgroundColor: "white" // options: float, hug, rectangle
                 property int height: 30
                 property int margin: 10
                 property int radius: 15
