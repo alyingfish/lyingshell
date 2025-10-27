@@ -10,8 +10,7 @@ Item {
         BottomRight
     }
     property var corner: RoundCorner.CornerEnum.TopLeft // Default to TopLeft
-
-    property int size: 25
+    property int size: 15
     property color color: "#000000"
 
     onColorChanged: {
@@ -21,33 +20,16 @@ Item {
         canvas.requestPaint();
     }
 
-    implicitWidth: size
-    implicitHeight: size * 2
-    Rectangle {
-        id: rect
-        anchors {
-            top: parent.top
-            left: parent.left
-            right: parent.right
-        }
-        height: root.size
-        color: root.color
-    }
+    width: size
+    height: size
 
     Canvas {
         id: canvas
 
-        // anchors.fill: parent
-        anchors {
-            top: rect.bottom
-            left: parent.left
-            right: parent.right
-        }
-        height: root.size
+        anchors.fill: parent
         antialiasing: true
 
         onPaint: {
-            // ... (your existing onPaint code) ...
             var ctx = getContext("2d");
             var r = root.size;
             ctx.clearRect(0, 0, canvas.width, canvas.height);

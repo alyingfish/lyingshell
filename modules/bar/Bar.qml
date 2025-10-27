@@ -27,11 +27,12 @@ Scope {
 
             BarBackground {
                 id: barBackground
-                BarContent {
-                    anchors.fill: parent
-                    anchors.leftMargin: Config.options.bar.radius
-                    anchors.rightMargin: Config.options.bar.radius
-                }
+            }
+
+            BarContent {
+                anchors.fill: barBackground
+                anchors.leftMargin: Config.options.bar.radius
+                anchors.rightMargin: Config.options.bar.radius
             }
         }
     }
