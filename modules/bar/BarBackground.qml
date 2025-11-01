@@ -6,16 +6,16 @@ import qs.common
 Rectangle {
     id: barBackground
 
-    property bool isColumnMaximized: false
-    property string barStyle: isColumnMaximized ? Config.options.bar.maximizeStyle : Config.options.bar.regularStyle
+    property bool hasWindows: false
+    property string barStyle: hasWindows ? Config.options.bar.style.hasWindowStyle : Config.options.bar.style.noWindowStyle
 
     // default to Rectangle
-    property int panelTopMargin: 0
+    property int panelWindowMargin: 0
     anchors {
         fill: parent
         leftMargin: 0
         rightMargin: 0
-        bottomMargin: Config.options.bar.radius // leave space to barCorner
+        bottomMargin: Config.options.bar.style.roundRadius // leave space to barCorner
     }
     radius: 0
     color: Config.options.bar.backgroundColor
@@ -30,10 +30,10 @@ Rectangle {
             when: barBackground.barStyle === "float"
             PropertyChanges {
                 target: barBackground
-                panelTopMargin: Config.options.bar.margin
-                anchors.leftMargin: Config.options.bar.margin
-                anchors.rightMargin: Config.options.bar.margin
-                radius: Config.options.bar.radius
+                panelWindowMargin: Config.options.bar.style.floatMargin
+                anchors.leftMargin: Config.options.bar.style.floatMargin
+                anchors.rightMargin: Config.options.bar.style.floatMargin
+                radius: Config.options.bar.style.roundRadius
             }
         },
         State {
@@ -41,14 +41,14 @@ Rectangle {
             when: barBackground.barStyle === "hug"
             PropertyChanges {
                 target: barBackground
-                radius: Config.options.bar.radius
+                radius: Config.options.bar.style.roundRadius
             }
             PropertyChanges {
-                target: barTopLeftCorner
+                target: barLeftCorner
                 opacity: 1
             }
             PropertyChanges {
-                target: barTopRightCorner
+                target: barRightCorner
                 opacity: 1
             }
         },
@@ -57,7 +57,7 @@ Rectangle {
             when: barBackground.barStyle === "hidden"
             PropertyChanges {
                 target: barBackground
-                panelTopMargin: -Config.options.bar.height
+                panelWindowMargin: -Config.options.bar.height
             }
         }
     ]
@@ -65,18 +65,18 @@ Rectangle {
     transitions: [
         Transition {
             NumberAnimation {
-                properties: "panelTopMargin, anchors.bottomMargin, anchors.leftMargin, anchors.rightMargin, radius"
+                properties: "panelWindowMargin, anchors.leftMargin, anchors.rightMargin, radius"
                 duration: 100
                 easing.type: Easing.InOutQuad
             }
             NumberAnimation {
-                target: barTopLeftCorner
+                target: barLeftCorner
                 property: "opacity"
                 duration: 100
                 easing.type: Easing.InOutQuad
             }
             NumberAnimation {
-                target: barTopRightCorner
+                target: barRightCorner
                 property: "opacity"
                 duration: 100
                 easing.type: Easing.InOutQuad
@@ -85,11 +85,11 @@ Rectangle {
     ]
 
     Item {
-        id: barTopLeftCorner
+        id: barLeftCorner
 
         opacity: 0 // Hidden by default
-        width: Config.options.bar.radius
-        height: Config.options.bar.radius * 2
+        width: Config.options.bar.style.roundRadius
+        height: Config.options.bar.style.roundRadius * 2
         anchors {
             top: barBackground.verticalCenter
             left: barBackground.left
@@ -102,11 +102,11 @@ Rectangle {
                 left: parent.left
                 right: parent.right
             }
-            height: Config.options.bar.radius
+            height: Config.options.bar.style.roundRadius
             color: barBackground.color
         }
         RoundCorner {
-            size: Config.options.bar.radius
+            size: Config.options.bar.style.roundRadius
             color: barBackground.color
             corner: RoundCorner.CornerEnum.TopLeft
             anchors {
@@ -118,11 +118,11 @@ Rectangle {
     }
 
     Item {
-        id: barTopRightCorner
+        id: barRightCorner
 
         opacity: 0 // Hidden by default
-        width: Config.options.bar.radius
-        height: Config.options.bar.radius * 2
+        width: Config.options.bar.style.roundRadius
+        height: Config.options.bar.style.roundRadius * 2
         anchors {
             top: barBackground.verticalCenter
             right: barBackground.right
@@ -135,11 +135,11 @@ Rectangle {
                 left: parent.left
                 right: parent.right
             }
-            height: Config.options.bar.radius
+            height: Config.options.bar.style.roundRadius
             color: barBackground.color
         }
         RoundCorner {
-            size: Config.options.bar.radius
+            size: Config.options.bar.style.roundRadius
             color: barBackground.color
             corner: RoundCorner.CornerEnum.TopRight
             anchors {
@@ -153,7 +153,7 @@ Rectangle {
     MouseArea {
         anchors.fill: parent
         onClicked: {
-            barBackground.isColumnMaximized = !barBackground.isColumnMaximized;
+            barBackground.hasWindows = !barBackground.hasWindows;
         }
     }
 }

@@ -24,12 +24,15 @@ Singleton {
         JsonAdapter {
             id: optionsJsonAdapter
             property JsonObject bar: JsonObject {
-                property string regularStyle: "float" // options: float, hug, rectangle
-                property string maximizeStyle: "hug" // options: float, hug, rectangle
-                property string backgroundColor: "white" // options: float, hug, rectangle
+                property string position: "top" // options: top, bottom, left, right
+                property string backgroundColor: "white" // TODO: should move to a theme config
                 property int height: 30
-                property int margin: 10
-                property int radius: 15
+                property JsonObject style: JsonObject {
+                    property string noWindowStyle: "float" // options: hidden, float, hug, rectangle
+                    property string hasWindowStyle: "hug" // options: hidden, float, hug, rectangle
+                    property int floatMargin: 10
+                    property int roundRadius: 15
+                }
             }
         }
     }
