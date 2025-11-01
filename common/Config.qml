@@ -24,7 +24,6 @@ Singleton {
         JsonAdapter {
             id: optionsJsonAdapter
             property JsonObject bar: JsonObject {
-                property string position: "top" // options: top, bottom, left, right
                 property string backgroundColor: "white" // TODO: should move to a theme config
                 property int height: 30
                 property JsonObject style: JsonObject {

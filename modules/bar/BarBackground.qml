@@ -8,15 +8,19 @@ Rectangle {
 
     property bool hasWindows: false
     property string barStyle: hasWindows ? Config.options.bar.style.hasWindowStyle : Config.options.bar.style.noWindowStyle
-
     // default to Rectangle
     property int panelWindowMargin: 0
+    property int cornerOpacity: 0
+    property int cornerRadius: Config.options.bar.style.roundRadius
+
     anchors {
-        fill: parent
+        top: parent.top
+        left: parent.left
+        right: parent.right
         leftMargin: 0
         rightMargin: 0
-        bottomMargin: Config.options.bar.style.roundRadius // leave space to barCorner
     }
+    implicitHeight: Config.options.bar.height
     radius: 0
     color: Config.options.bar.backgroundColor
 
@@ -33,7 +37,7 @@ Rectangle {
                 panelWindowMargin: Config.options.bar.style.floatMargin
                 anchors.leftMargin: Config.options.bar.style.floatMargin
                 anchors.rightMargin: Config.options.bar.style.floatMargin
-                radius: Config.options.bar.style.roundRadius
+                radius: cornerRadius
             }
         },
         State {
@@ -41,15 +45,8 @@ Rectangle {
             when: barBackground.barStyle === "hug"
             PropertyChanges {
                 target: barBackground
-                radius: Config.options.bar.style.roundRadius
-            }
-            PropertyChanges {
-                target: barLeftCorner
-                opacity: 1
-            }
-            PropertyChanges {
-                target: barRightCorner
-                opacity: 1
+                radius: cornerRadius
+                cornerOpacity: 1
             }
         },
         State {
@@ -57,7 +54,7 @@ Rectangle {
             when: barBackground.barStyle === "hidden"
             PropertyChanges {
                 target: barBackground
-                panelWindowMargin: -Config.options.bar.height
+                panelWindowMargin: -barBackground.implicitHeight
             }
         }
     ]
@@ -65,89 +62,57 @@ Rectangle {
     transitions: [
         Transition {
             NumberAnimation {
-                properties: "panelWindowMargin, anchors.leftMargin, anchors.rightMargin, radius"
-                duration: 100
-                easing.type: Easing.InOutQuad
-            }
-            NumberAnimation {
-                target: barLeftCorner
-                property: "opacity"
-                duration: 100
-                easing.type: Easing.InOutQuad
-            }
-            NumberAnimation {
-                target: barRightCorner
-                property: "opacity"
+                properties: "panelWindowMargin, cornerOpacity, anchors.leftMargin, anchors.rightMargin, radius"
                 duration: 100
                 easing.type: Easing.InOutQuad
             }
         }
     ]
 
-    Item {
-        id: barLeftCorner
-
-        opacity: 0 // Hidden by default
-        width: Config.options.bar.style.roundRadius
-        height: Config.options.bar.style.roundRadius * 2
+    // to cover the bottom round of barBackground
+    Rectangle {
         anchors {
-            top: barBackground.verticalCenter
-            left: barBackground.left
+            bottom: parent.bottom
+            left: parent.left
         }
-        // to cover the bottom round of barBackground
-        Rectangle {
-            id: topLeftRect
-            anchors {
-                top: parent.top
-                left: parent.left
-                right: parent.right
-            }
-            height: Config.options.bar.style.roundRadius
-            color: barBackground.color
-        }
-        RoundCorner {
-            size: Config.options.bar.style.roundRadius
-            color: barBackground.color
-            corner: RoundCorner.CornerEnum.TopLeft
-            anchors {
-                top: topLeftRect.bottom
-                left: parent.left
-                right: parent.right
-            }
-        }
+        implicitHeight: parent.cornerRadius
+        implicitWidth: parent.cornerRadius
+        color: parent.color
+        opacity: parent.cornerOpacity
     }
 
-    Item {
-        id: barRightCorner
-
-        opacity: 0 // Hidden by default
-        width: Config.options.bar.style.roundRadius
-        height: Config.options.bar.style.roundRadius * 2
+    RoundCorner {
         anchors {
-            top: barBackground.verticalCenter
-            right: barBackground.right
+            top: parent.bottom
+            left: parent.left
         }
-        // to cover the bottom round of barBackground
-        Rectangle {
-            id: topRightRect
-            anchors {
-                top: parent.top
-                left: parent.left
-                right: parent.right
-            }
-            height: Config.options.bar.style.roundRadius
-            color: barBackground.color
+        implicitSize: parent.cornerRadius
+        color: parent.color
+        corner: RoundCorner.CornerEnum.TopLeft
+        opacity: parent.cornerOpacity
+    }
+
+    // to cover the bottom round of parent
+    Rectangle {
+        anchors {
+            bottom: parent.bottom
+            right: parent.right
         }
-        RoundCorner {
-            size: Config.options.bar.style.roundRadius
-            color: barBackground.color
-            corner: RoundCorner.CornerEnum.TopRight
-            anchors {
-                top: topRightRect.bottom
-                left: parent.left
-                right: parent.right
-            }
+        implicitHeight: parent.cornerRadius
+        implicitWidth: parent.cornerRadius
+        color: parent.color
+        opacity: parent.cornerOpacity
+    }
+
+    RoundCorner {
+        anchors {
+            top: parent.bottom
+            right: parent.right
         }
+        implicitSize: parent.cornerRadius
+        color: parent.color
+        corner: RoundCorner.CornerEnum.TopRight
+        opacity: parent.cornerOpacity
     }
 
     MouseArea {

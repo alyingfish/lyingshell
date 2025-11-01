@@ -9,8 +9,8 @@ Item {
         BottomLeft,
         BottomRight
     }
-    property var corner: RoundCorner.CornerEnum.TopLeft // Default to TopLeft
-    property int size: 15
+    property int corner: RoundCorner.CornerEnum.TopLeft // Default to TopLeft
+    property int implicitSize: 15
     property color color: "#000000"
 
     onColorChanged: {
@@ -20,8 +20,8 @@ Item {
         canvas.requestPaint();
     }
 
-    width: size
-    height: size
+    implicitHeight: implicitSize
+    implicitWidth: implicitSize
 
     Canvas {
         id: canvas
@@ -31,7 +31,7 @@ Item {
 
         onPaint: {
             var ctx = getContext("2d");
-            var r = root.size;
+            var r = root.implicitSize;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.beginPath();
             switch (root.corner) {

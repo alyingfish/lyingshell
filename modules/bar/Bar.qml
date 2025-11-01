@@ -16,8 +16,8 @@ Scope {
             required property var modelData
             screen: modelData
             color: "transparent"
-            implicitHeight: Config.options.bar.height + Config.options.bar.style.roundRadius // height for the barBackground, radius for the barCorner
-            exclusiveZone: Config.options.bar.height
+            implicitHeight: barBackground.implicitHeight + barBackground.cornerRadius
+            exclusiveZone: barBackground.implicitHeight
             anchors {
                 top: true
                 left: true
@@ -29,8 +29,8 @@ Scope {
                 id: barBackground
                 BarContent {
                     anchors.fill: parent
-                    anchors.leftMargin: Config.options.bar.style.roundRadius
-                    anchors.rightMargin: Config.options.bar.style.roundRadius
+                    anchors.leftMargin: parent.cornerRadius
+                    anchors.rightMargin: parent.cornerRadius
                 }
             }
         }
