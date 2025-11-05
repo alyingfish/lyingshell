@@ -149,11 +149,14 @@ Singleton {
         focusedWorkspace.is_focused = false;
         focusedWorkspace = workspaces[eventData.id];
         focusedWorkspace.is_focused = true;
+        workspacesChanged();
     }
 
     function handleWorkspaceActiveWindowChanged(eventData) {
         const workspace = workspaces[eventData.workspace_id];
         workspace.active_window_id = eventData.active_window_id;
+        focusedWorkspaceChanged();
+        workspacesChanged();
     }
 
     function handleWindowFocusChanged(eventData) {
@@ -166,6 +169,7 @@ Singleton {
             focusedWindow = windows[eventData.id];
             focusedWindow.is_focused = true;
         }
+        windowsChanged();
     }
 
     function handleWindowsChanged(eventData) {
@@ -186,6 +190,7 @@ Singleton {
 
     function handleWindowOpenedOrChanged(eventData) {
         windows[eventData.window.id] = eventData.window;
+        windowsChanged();
         if (eventData.window.is_focused) {
             if (focusedWindow) {
                 focusedWindow.is_focused = false;
@@ -198,6 +203,7 @@ Singleton {
         for (const [id, newLayout] of eventData.changes) {
             windows[id].layout = newLayout;
         }
+        windowsChanged();
     }
 
     function handleOverviewChanged(eventData) {
@@ -214,10 +220,12 @@ Singleton {
 
     function handleKeyboardLayoutSwitched(eventData) {
         keyboardLayouts.current_idx = eventData.idx;
+        keyboardLayoutsChanged();
     }
 
     function handleWorkspaceUrgencyChanged(eventData) {
         const workspace = workspaces[eventData.id];
         workspace.is_urgent = eventData.urgent;
+        workspacesChanged();
     }
 }

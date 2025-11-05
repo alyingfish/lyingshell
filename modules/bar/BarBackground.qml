@@ -2,12 +2,14 @@ import Quickshell
 import Quickshell.Io
 import QtQuick
 import qs.common
+import qs.services
 
 Rectangle {
     id: barBackground
 
-    property bool hasWindows: false
-    property string barStyle: hasWindows ? Config.options.bar.style.hasWindowStyle : Config.options.bar.style.noWindowStyle
+    property bool hasWindows: NiriService.focusedWorkspace.active_window_id
+    property bool isOverviewOpened: NiriService.isOverviewOpened
+    property string barStyle: isOverviewOpened ? "hidden" : hasWindows ? Config.options.bar.style.hasWindowStyle : Config.options.bar.style.noWindowStyle
     // default to Rectangle
     property int panelWindowMargin: 0
     property int cornerOpacity: 0
@@ -115,10 +117,10 @@ Rectangle {
         opacity: parent.cornerOpacity
     }
 
-    MouseArea {
-        anchors.fill: parent
-        onClicked: {
-            barBackground.hasWindows = !barBackground.hasWindows;
-        }
-    }
+    // MouseArea {
+    //     anchors.fill: parent
+    //     onClicked: {
+    //         barBackground.hasWindows = !barBackground.hasWindows;
+    //     }
+    // }
 }
