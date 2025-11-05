@@ -1,6 +1,7 @@
 import Quickshell
 import Quickshell.Io
 import QtQuick
+import qs.services
 
 Item {
     Text {
@@ -11,7 +12,7 @@ Item {
     Text {
         anchors.verticalCenter: parent.verticalCenter
         anchors.left: parent.left
-        text: "Hello Left"
+        text: `${NiriService.focusedWorkspace.id}/${NiriService.focusedWindow?.id}`
     }
 
     Text {
