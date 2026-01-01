@@ -1,18 +1,16 @@
-import Quickshell
-import Quickshell.Io
 import QtQuick
 import qs.services
+import qs.widgets
 
 Item {
-    Text {
+
+    ClockWidget {
         anchors.centerIn: parent
-        text: "Hello World"
     }
 
-    Text {
+    WorkspaceWidget {
         anchors.verticalCenter: parent.verticalCenter
         anchors.left: parent.left
-        text: `${NiriService.focusedWorkspace.id}/${NiriService.focusedWindow?.id}`
     }
 
     Text {

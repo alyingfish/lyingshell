@@ -47,7 +47,6 @@ Rectangle {
             when: barBackground.barStyle === "hug"
             PropertyChanges {
                 target: barBackground
-                radius: cornerRadius
                 cornerOpacity: 1
             }
         },
@@ -71,18 +70,6 @@ Rectangle {
         }
     ]
 
-    // to cover the bottom round of barBackground
-    Rectangle {
-        anchors {
-            bottom: parent.bottom
-            left: parent.left
-        }
-        implicitHeight: parent.cornerRadius
-        implicitWidth: parent.cornerRadius
-        color: parent.color
-        opacity: parent.cornerOpacity
-    }
-
     RoundCorner {
         anchors {
             top: parent.bottom
@@ -91,18 +78,6 @@ Rectangle {
         implicitSize: parent.cornerRadius
         color: parent.color
         corner: RoundCorner.CornerEnum.TopLeft
-        opacity: parent.cornerOpacity
-    }
-
-    // to cover the bottom round of parent
-    Rectangle {
-        anchors {
-            bottom: parent.bottom
-            right: parent.right
-        }
-        implicitHeight: parent.cornerRadius
-        implicitWidth: parent.cornerRadius
-        color: parent.color
         opacity: parent.cornerOpacity
     }
 
