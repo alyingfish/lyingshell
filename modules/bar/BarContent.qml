@@ -1,6 +1,6 @@
 import QtQuick
 import qs.services
-import qs.widgets
+import qs.modules.bar.widgets
 
 Item {
 

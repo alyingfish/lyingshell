@@ -1,19 +1,17 @@
 pragma Singleton
-pragma ComponentBehavior: Bound
+
 import QtQuick
 import Quickshell
 import Quickshell.Io
 
 Singleton {
-    id: root
-    property string configPath: Directory.shellConfigPath
-    property alias options: optionsJsonAdapter
+    property alias options: adapter
 
     FileView {
-        path: root.configPath
-
+        path: Directory.shellConfigDir + "config.json"
         watchChanges: true
         onFileChanged: reload()
+        blockLoading: true
         onAdapterUpdated: writeAdapter()
         onLoadFailed: error => {
             if (error == FileViewError.FileNotFound) {
@@ -21,10 +19,11 @@ Singleton {
             }
         }
 
-        JsonAdapter {
-            id: optionsJsonAdapter
+        adapter: JsonAdapter {
+            id: adapter
+
+            property string theme: "light" // options: light, dark
             property JsonObject bar: JsonObject {
-                property string backgroundColor: "gray" // TODO: should move to a theme config
                 property int height: 30
                 property JsonObject style: JsonObject {
                     property string noWindowStyle: "float" // options: hidden, float, hug, rectangle

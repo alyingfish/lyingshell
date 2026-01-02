@@ -1,5 +1,3 @@
-import Quickshell
-import Quickshell.Io
 import QtQuick
 import qs.common
 import qs.services
@@ -24,7 +22,7 @@ Rectangle {
     }
     implicitHeight: Config.options.bar.height
     radius: 0
-    color: Config.options.bar.backgroundColor
+    color: Theme.colors.bar.background
 
     states: [
         State {

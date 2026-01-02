@@ -1,5 +1,4 @@
 pragma Singleton
-pragma ComponentBehavior: Bound
 
 import Qt.labs.platform
 import QtQuick
@@ -23,12 +22,12 @@ Singleton {
     readonly property string downloads: StandardPaths.standardLocations(StandardPaths.DownloadLocation)[0]
 
     // Other dirs used by the shell, without "file://"
-    property string shellConfig: Directory.trimFileProtocol(`${Directory.config}/lyingshell`)
-    property string shellConfigName: "config.json"
-    property string shellConfigPath: `${Directory.shellConfig}/${Directory.shellConfigName}`
+    property string shellConfigDir: Directory.trimFileProtocol(`${config}/lyingshell/`)
+    property string shellThemeDir: Directory.trimFileProtocol(`${shellConfigDir}/themes/`)
 
     // Cleanup on init
     Component.onCompleted: {
-        Quickshell.execDetached(["mkdir", "-p", `${shellConfig}`]);
+        Quickshell.execDetached(["mkdir", "-p", `${shellConfigDir}`]);
+        Quickshell.execDetached(["mkdir", "-p", `${shellThemeDir}`]);
     }
 }
