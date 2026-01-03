@@ -35,6 +35,13 @@ Singleton {
                     property string timeFormat: "ddd MMM d hh:mm:ss AP t yyyy" // Qt date/time format string
                     property string precision: "Seconds" // options: Seconds, Minutes, Hours
                 }
+                property JsonObject systemTray: JsonObject {
+                    property int spacing: 2
+                    property int iconSize: 16
+                    property int buttonSize: 24
+                    property int buttonRadius: 4
+                    property bool hidePassive: true
+                }
             }
         }
     }

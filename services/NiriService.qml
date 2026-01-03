@@ -68,7 +68,7 @@ Singleton {
         parser: SplitParser {
             onRead: line => {
                 try {
-                    console.log(`eventSocket: SplitParser got line: ${line}`);
+                    // console.log(`eventSocket: SplitParser got line: ${line}`);
                     const event = JSON.parse(line);
                     root.handleNiriEvent(event);
                 } catch (e) {

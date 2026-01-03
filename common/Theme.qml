@@ -17,7 +17,13 @@ Singleton {
             id: adapter
 
             property JsonObject bar: JsonObject {
-                property color background: "#000000"
+                property color background: "#cccccc"
+                property JsonObject systemTray: JsonObject {
+                    property color hoverColor: "#1FFFFFFF"
+                    property color pressedColor: "#0FFFFFFF"
+                    property color tooltipBackground: "#eeeeee"
+                    property color tooltipTextColor: "#000000"
+                }
             }
         }
     }

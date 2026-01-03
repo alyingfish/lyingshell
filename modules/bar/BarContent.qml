@@ -1,21 +1,20 @@
 import QtQuick
 import qs.services
 import qs.modules.bar.widgets
+import qs.modules.bar.widgets.systemTray
 
 Item {
-
-    ClockWidget {
-        anchors.centerIn: parent
-    }
-
     WorkspaceWidget {
         anchors.verticalCenter: parent.verticalCenter
         anchors.left: parent.left
     }
 
-    Text {
+    ClockWidget {
+        anchors.centerIn: parent
+    }
+
+    SystemTrayWidget {
         anchors.verticalCenter: parent.verticalCenter
         anchors.right: parent.right
-        text: "Hello Right"
     }
 }

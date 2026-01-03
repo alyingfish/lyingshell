@@ -1,4 +1,4 @@
-import QtQuick 2.9
+import QtQuick
 
 Item {
     id: root
@@ -11,7 +11,7 @@ Item {
     }
     property int corner: RoundCorner.CornerEnum.TopLeft // Default to TopLeft
     property int implicitSize: 15
-    property color color: "#000000"
+    required property color color
 
     onColorChanged: {
         canvas.requestPaint();
@@ -32,7 +32,7 @@ Item {
         onPaint: {
             var ctx = getContext("2d");
             var r = root.implicitSize;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.clearRect(0, 0, r, r);
             ctx.beginPath();
             switch (root.corner) {
             case RoundCorner.CornerEnum.TopLeft:

@@ -5,7 +5,7 @@ import qs.services
 Rectangle {
     id: barBackground
 
-    property bool hasWindows: NiriService.focusedWorkspace.active_window_id
+    property bool hasWindows: NiriService.focusedWorkspace.active_window_id ?? false
     property bool isOverviewOpened: NiriService.isOverviewOpened
     property string barStyle: isOverviewOpened ? "hidden" : hasWindows ? Config.options.bar.style.hasWindowStyle : Config.options.bar.style.noWindowStyle
     // default to Rectangle
@@ -23,6 +23,7 @@ Rectangle {
     implicitHeight: Config.options.bar.height
     radius: 0
     color: Theme.colors.bar.background
+    border.width: 0
 
     states: [
         State {
@@ -90,10 +91,4 @@ Rectangle {
         opacity: parent.cornerOpacity
     }
 
-    // MouseArea {
-    //     anchors.fill: parent
-    //     onClicked: {
-    //         barBackground.hasWindows = !barBackground.hasWindows;
-    //     }
-    // }
 }
