@@ -90,3 +90,13 @@ notifications, settings, and compositor-aware shell UI.
 
 Niri is the primary target. Compatibility with other compositors is not a goal
 unless a specific compatibility layer is designed first.
+
+## License
+
+Lying Shell is licensed under the GNU General Public License version 3.0.
+See `LICENSE`.
+
+Third-party runtime and build dependencies are not vendored in this repository.
+Notable dependencies include Quickshell (LGPL-3.0), QmlMaterial (MIT), Qt 6
+(LGPL-3.0/GPL-3.0/commercial options), Niri (GPL-3.0), and Material Symbols
+(Apache-2.0 through QmlMaterial).
