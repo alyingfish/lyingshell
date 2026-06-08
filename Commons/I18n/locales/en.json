@@ -1,0 +1,20 @@
+{
+  "app": {
+    "name": "Lying Shell"
+  },
+  "bar": {
+    "windowTitle": "Lying Shell Bar",
+    "dateFormat": "M/d",
+    "timeFormat": "hh:mm",
+    "temperatureCelsius": "{temperature}°",
+    "weekdays": {
+      "0": "Sun",
+      "1": "Mon",
+      "2": "Tue",
+      "3": "Wed",
+      "4": "Thu",
+      "5": "Fri",
+      "6": "Sat"
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "language": "en",
+  "bar": {
+    "height": 34
+  },
+  "theme": {
+    "mode": "system",
+    "accentColor": "#80cbc4"
+  }
+}
