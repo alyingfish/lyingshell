@@ -1,0 +1,21 @@
+{
+  // UI language used by static shell text.
+  // Allowed values: "en", "zh-CN".
+  "language": "en",
+
+  "bar": {
+    // Top bar height in logical pixels.
+    // Must be a positive number.
+    "height": 34
+  },
+
+  "theme": {
+    // Theme preference used by QmlMaterial.
+    // Allowed values: "system", "light", "dark".
+    "mode": "system",
+
+    // Accent color used to seed the Material color palette.
+    // Must be a six-digit hex color in #RRGGBB format.
+    "accentColor": "#80cbc4"
+  }
+}

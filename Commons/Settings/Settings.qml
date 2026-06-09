@@ -9,25 +9,38 @@ Singleton {
 
     property bool isLoaded: false
     property bool directoriesReady: false
+    property bool creatingRuntimeFile: false
     property string errorMessage: ""
     property string language: "en"
-    property real barHeight: 34
-    property string themeMode: "system"
-    property string accentColor: "#80cbc4"
     property var settings: ({})
     property var defaultSettings: ({})
 
+    readonly property QtObject bar: barSettings
+    readonly property QtObject theme: themeSettings
     readonly property bool hasError: errorMessage.length > 0
     readonly property string homeDir: String(Quickshell.env("HOME") || "")
     readonly property string configDir: homeDir + "/.config/lyingshell"
-    readonly property string settingsPath: configDir + "/settings.json"
-    readonly property string defaultSettingsPath: Quickshell.shellDir + "/Commons/Settings/default-settings.json"
+    readonly property string settingsPath: configDir + "/settings.jsonc"
+    readonly property string defaultSettingsPath: Quickshell.shellDir + "/Commons/Settings/default-settings.jsonc"
 
     signal settingsLoaded()
     signal settingsReloaded()
     signal settingsSaved()
 
     Component.onCompleted: initialize()
+
+    QtObject {
+        id: barSettings
+
+        property real height: 34
+    }
+
+    QtObject {
+        id: themeSettings
+
+        property string mode: "system"
+        property string accentColor: "#80cbc4"
+    }
 
     Timer {
         id: externalReloadTimer
@@ -47,11 +60,18 @@ Singleton {
 
         onExited: function(exitCode, exitStatus) {
             if (exitCode !== 0) {
-                root.errorMessage = "Failed to create settings directory";
+                root.ensureLoadedWithDefaults();
+                root.handleRuntimeSettingsError("Failed to create settings directory");
+                return;
             }
 
             root.directoriesReady = true;
         }
+    }
+
+    Process {
+        id: settingsErrorNotifier
+        command: ["notify-send", "Lying Shell settings error", root.errorMessage]
     }
 
     FileView {
@@ -70,23 +90,31 @@ Singleton {
         onFileChanged: externalReloadTimer.restart()
 
         onLoaded: {
-            root.loadRuntimeSettings(false);
+            root.loadRuntimeSettings();
         }
 
         onSaved: {
             root.settingsSaved();
-            if (!root.isLoaded) {
+            if (root.creatingRuntimeFile) {
+                root.creatingRuntimeFile = false;
                 reload();
             }
         }
 
         onLoadFailed: function(error) {
             if (error === FileViewError.FileNotFound) {
-                root.writeSettings(root.defaultSettings);
+                root.createRuntimeSettingsFile();
                 return;
             }
 
-            root.errorMessage = "Failed to load settings";
+            root.ensureLoadedWithDefaults();
+            root.handleRuntimeSettingsError("Failed to load settings: " + FileViewError.toString(error));
+        }
+
+        onSaveFailed: function(error) {
+            root.creatingRuntimeFile = false;
+            root.ensureLoadedWithDefaults();
+            root.handleRuntimeSettingsError("Failed to create settings file: " + FileViewError.toString(error));
         }
     }
 
@@ -97,31 +125,23 @@ Singleton {
         }
 
         try {
-            defaultSettings = normalizeSettings(JSON.parse(defaultSettingsFile.text()));
+            defaultSettings = validateSettings(parseJsonc(defaultSettingsFile.text()), true);
         } catch (error) {
-            errorMessage = "Failed to parse default settings";
+            errorMessage = "Failed to load default settings: " + errorMessageText(error);
             return;
         }
 
         createConfigDir.running = true;
     }
 
-    function loadRuntimeSettings(writeMerged) {
-        var parsed = ({});
-
+    function loadRuntimeSettings() {
         try {
-            parsed = JSON.parse(runtimeSettingsFile.text());
+            var parsed = validateSettings(parseJsonc(runtimeSettingsFile.text()), false);
+            applySettings(deepMerge(defaultSettings, parsed));
         } catch (error) {
-            errorMessage = "Failed to parse settings";
-            parsed = ({});
-            writeMerged = true;
-        }
-
-        var merged = normalizeSettings(deepMerge(defaultSettings, parsed));
-        applySettings(merged);
-
-        if (writeMerged || needsRepair(parsed, merged)) {
-            writeSettings(merged);
+            ensureLoadedWithDefaults();
+            handleRuntimeSettingsError("Failed to load settings: " + errorMessageText(error));
+            return;
         }
 
         if (!isLoaded) {
@@ -135,78 +155,209 @@ Singleton {
     function applySettings(nextSettings) {
         settings = nextSettings;
         language = nextSettings.language;
-        barHeight = nextSettings.bar.height;
-        themeMode = nextSettings.theme.mode;
-        accentColor = nextSettings.theme.accentColor;
+        barSettings.height = nextSettings.bar.height;
+        themeSettings.mode = nextSettings.theme.mode;
+        themeSettings.accentColor = nextSettings.theme.accentColor;
         errorMessage = "";
     }
 
-    function writeSettings(nextSettings) {
-        runtimeSettingsFile.setText(JSON.stringify(nextSettings, null, 2) + "\n");
+    function createRuntimeSettingsFile() {
+        creatingRuntimeFile = true;
+        runtimeSettingsFile.setText(defaultSettingsFile.text());
     }
 
-    function normalizeSettings(raw) {
-        var source = isObject(raw) ? raw : ({});
-        var bar = isObject(source.bar) ? source.bar : ({});
-        var theme = isObject(source.theme) ? source.theme : ({});
+    function ensureLoadedWithDefaults() {
+        if (isLoaded) {
+            return;
+        }
 
+        applySettings(defaultSettings);
+        isLoaded = true;
+        settingsLoaded();
+    }
+
+    function handleRuntimeSettingsError(message) {
+        errorMessage = message;
+        console.warn("[Settings] " + message);
+
+        if (settingsErrorNotifier.running) {
+            settingsErrorNotifier.running = false;
+        }
+
+        settingsErrorNotifier.command = ["notify-send", "Lying Shell settings error", message];
+        settingsErrorNotifier.running = true;
+    }
+
+    function parseJsonc(text) {
+        return JSON.parse(stripJsonComments(text));
+    }
+
+    function stripJsonComments(text) {
+        var result = "";
+        var inString = false;
+        var escaping = false;
+        var inLineComment = false;
+        var inBlockComment = false;
+
+        for (var index = 0; index < text.length; index++) {
+            var character = text[index];
+            var nextCharacter = index + 1 < text.length ? text[index + 1] : "";
+
+            if (inLineComment) {
+                if (character === "\n" || character === "\r") {
+                    inLineComment = false;
+                    result += character;
+                } else {
+                    result += " ";
+                }
+                continue;
+            }
+
+            if (inBlockComment) {
+                if (character === "*" && nextCharacter === "/") {
+                    result += "  ";
+                    index += 1;
+                    inBlockComment = false;
+                } else if (character === "\n" || character === "\r") {
+                    result += character;
+                } else {
+                    result += " ";
+                }
+                continue;
+            }
+
+            if (inString) {
+                result += character;
+                if (escaping) {
+                    escaping = false;
+                } else if (character === "\\") {
+                    escaping = true;
+                } else if (character === "\"") {
+                    inString = false;
+                }
+                continue;
+            }
+
+            if (character === "\"") {
+                inString = true;
+                result += character;
+                continue;
+            }
+
+            if (character === "/" && nextCharacter === "/") {
+                result += "  ";
+                index += 1;
+                inLineComment = true;
+                continue;
+            }
+
+            if (character === "/" && nextCharacter === "*") {
+                result += "  ";
+                index += 1;
+                inBlockComment = true;
+                continue;
+            }
+
+            result += character;
+        }
+
+        if (inBlockComment) {
+            throw new Error("unterminated block comment");
+        }
+
+        return result;
+    }
+
+    function validateSettings(raw, requireAllFields) {
+        var schema = settingsSchema();
+        return validateObject("settings", raw, schema, requireAllFields);
+    }
+
+    function settingsSchema() {
         return {
-            "language": normalizeLanguage(source.language),
+            "language": {
+                "type": "string",
+                "allowed": ["en", "zh-CN"]
+            },
             "bar": {
-                "height": normalizeBarHeight(bar.height)
+                "type": "object",
+                "properties": {
+                    "height": {
+                        "type": "number",
+                        "minExclusive": 0
+                    }
+                }
             },
             "theme": {
-                "mode": normalizeThemeMode(theme.mode),
-                "accentColor": normalizeAccentColor(theme.accentColor)
+                "type": "object",
+                "properties": {
+                    "mode": {
+                        "type": "string",
+                        "allowed": ["system", "light", "dark"]
+                    },
+                    "accentColor": {
+                        "type": "string",
+                        "pattern": /^#[0-9a-fA-F]{6}$/
+                    }
+                }
             }
         };
     }
 
-    function normalizeLanguage(value) {
-        if (typeof value !== "string") {
-            return "en";
+    function validateObject(path, raw, schema, requireAllFields) {
+        if (!isObject(raw)) {
+            throw new Error(path + " must be an object");
         }
 
-        if (value === "en" || value === "zh-CN") {
-            return value;
+        for (var rawKey in raw) {
+            if (schema[rawKey] === undefined) {
+                throw new Error("unknown setting: " + path + "." + rawKey);
+            }
         }
 
-        return "en";
+        var result = ({});
+        for (var key in schema) {
+            var definition = schema[key];
+            if (raw[key] === undefined) {
+                if (requireAllFields) {
+                    throw new Error("missing required setting: " + path + "." + key);
+                }
+
+                continue;
+            }
+
+            if (definition.type === "object") {
+                result[key] = validateObject(path + "." + key, raw[key], definition.properties, requireAllFields);
+            } else {
+                result[key] = validateScalar(path + "." + key, raw[key], definition);
+            }
+        }
+
+        return result;
     }
 
-    function normalizeBarHeight(value) {
-        if (typeof value === "number" && isFinite(value) && value > 0) {
-            return value;
+    function validateScalar(path, value, definition) {
+        if (definition.type === "string" && typeof value !== "string") {
+            throw new Error(path + " must be a string");
         }
 
-        return 34;
-    }
-
-    function normalizeThemeMode(value) {
-        if (value === "light" || value === "dark" || value === "system") {
-            return value;
+        if (definition.type === "number" && (typeof value !== "number" || !isFinite(value))) {
+            throw new Error(path + " must be a finite number");
         }
 
-        return "system";
-    }
-
-    function normalizeAccentColor(value) {
-        if (typeof value === "string" && /^#[0-9a-fA-F]{6}$/.test(value)) {
-            return value;
+        if (definition.allowed !== undefined && definition.allowed.indexOf(value) === -1) {
+            throw new Error(path + " must be one of: " + definition.allowed.join(", "));
         }
 
-        return "#80cbc4";
-    }
-
-    function needsRepair(raw, normalized) {
-        if (!isObject(raw) || !isObject(raw.bar) || !isObject(raw.theme)) {
-            return true;
+        if (definition.minExclusive !== undefined && value <= definition.minExclusive) {
+            throw new Error(path + " must be greater than " + definition.minExclusive);
         }
 
-        return raw.language !== normalized.language
-            || raw.bar.height !== normalized.bar.height
-            || raw.theme.mode !== normalized.theme.mode
-            || raw.theme.accentColor !== normalized.theme.accentColor;
+        if (definition.pattern !== undefined && !definition.pattern.test(value)) {
+            throw new Error(path + " has invalid format");
+        }
+
+        return value;
     }
 
     function deepMerge(base, override) {
@@ -241,5 +392,13 @@ Singleton {
 
     function isObject(value) {
         return value !== null && typeof value === "object" && !Array.isArray(value);
+    }
+
+    function errorMessageText(error) {
+        if (error && error.message !== undefined) {
+            return String(error.message);
+        }
+
+        return String(error);
     }
 }

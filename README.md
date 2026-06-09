@@ -15,7 +15,7 @@ Implemented:
 - Per-monitor top bar.
 - Date/time display.
 - English and Simplified Chinese locale bundles.
-- Runtime settings loaded from `~/.config/lyingshell/settings.json`.
+- Runtime JSONC settings loaded from `~/.config/lyingshell/settings.jsonc`.
 - Material Design 3 theme setup through QmlMaterial.
 - Time, weather placeholder, and Niri service boundaries.
 
@@ -54,6 +54,18 @@ scripts/run.sh
 
 The launcher starts Quickshell with this repository as the shell path and adds
 `~/.local/lib` to `QML_IMPORT_PATH`.
+
+## Settings
+
+On first launch, Lying Shell creates
+`~/.config/lyingshell/settings.jsonc` from
+`Commons/Settings/default-settings.jsonc`. The file supports `//` and
+`/* ... */` comments.
+
+User settings may define only the fields they want to override. Missing fields
+use defaults. Unknown fields, malformed JSONC, or invalid values are rejected;
+the bad file is left untouched and the shell keeps the previous valid settings,
+or defaults during startup. Legacy `settings.json` files are ignored.
 
 ## Development
 
