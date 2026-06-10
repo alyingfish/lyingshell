@@ -73,6 +73,7 @@ Useful checks:
 
 ```bash
 qmllint -I "$HOME/.local/lib" shell.qml
+python3 tests/test_settings_config.py
 ```
 
 Repository layout:
@@ -85,6 +86,7 @@ Repository layout:
 +-- Modules/               User-facing shell surfaces
 +-- Services/              Runtime system and compositor services
 +-- scripts/               Public install and run scripts
++-- tests/                 Product regression tests
 ```
 
 Development rules:
