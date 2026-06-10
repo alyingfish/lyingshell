@@ -14,7 +14,7 @@ PanelWindow {
         right: true
     }
 
-    implicitHeight: Settings.bar.height
+    implicitHeight: Settings.options.bar.height
     exclusiveZone: implicitHeight
     color: MD.Token.color.surface_container
 

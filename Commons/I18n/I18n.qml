@@ -14,7 +14,7 @@ Singleton {
     property var fallbackTranslations: ({})
 
     readonly property string fallbackLocale: "en"
-    readonly property string locale: normalizeLocale(Settings.language)
+    readonly property string locale: normalizeLocale(Settings.options.language)
     readonly property bool needsFallbackFile: Settings.isLoaded && locale !== fallbackLocale
 
     FileView {

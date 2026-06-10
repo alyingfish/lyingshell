@@ -8,8 +8,8 @@ import qs.Commons.Settings
 Singleton {
     id: root
 
-    readonly property string requestedMode: Settings.theme.mode
-    readonly property string requestedAccentColor: Settings.theme.accentColor
+    readonly property string requestedMode: Settings.options.theme.mode
+    readonly property string requestedAccentColor: Settings.options.theme.accentColor
     readonly property string effectiveMode: requestedMode === "dark" ? "dark" : "light"
 
     Component.onCompleted: apply()

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the Settings.qml JSONC schema contract."""
+"""Validate the settings JSONC schema and public API contract."""
 
 from __future__ import annotations
 
@@ -10,6 +10,13 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SETTINGS = ROOT / "Commons" / "Settings" / "default-settings.jsonc"
+SETTINGS_QML = ROOT / "Commons" / "Settings" / "Settings.qml"
+SETTINGS_HELPERS = [
+    ROOT / "Commons" / "Settings" / "Jsonc.js",
+    ROOT / "Commons" / "Settings" / "SettingsSchema.js",
+    ROOT / "Commons" / "Settings" / "SettingsStore.js",
+    ROOT / "Commons" / "Settings" / "SettingsErrorNotifier.qml",
+]
 
 SCHEMA: dict[str, Any] = {
     "language": {
@@ -197,6 +204,13 @@ def expect_error(name: str, text: str) -> None:
 
 
 def main() -> None:
+    settings_qml = SETTINGS_QML.read_text(encoding="utf-8")
+    assert all(path.exists() for path in SETTINGS_HELPERS)
+    assert "readonly property QtObject options" in settings_qml
+    assert 'import "SettingsStore.js" as SettingsStore' in settings_qml
+    assert "function parseJsonc" not in settings_qml
+    assert "function settingsSchema" not in settings_qml
+
     default_settings = validate_settings(
         parse_jsonc(DEFAULT_SETTINGS.read_text(encoding="utf-8")),
         require_all_fields=True,
