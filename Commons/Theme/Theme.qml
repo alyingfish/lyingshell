@@ -14,7 +14,7 @@ Singleton {
 
     Component.onCompleted: apply()
 
-    onRequestedModeChanged: apply()
+    onEffectiveModeChanged: apply()
     onRequestedAccentColorChanged: apply()
 
     function apply() {
