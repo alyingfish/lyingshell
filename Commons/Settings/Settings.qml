@@ -32,21 +32,13 @@ Singleton {
         id: optionsSettings
 
         property string language: "en"
-        readonly property QtObject bar: barSettings
-        readonly property QtObject theme: themeSettings
-    }
-
-    QtObject {
-        id: barSettings
-
-        property real height: 34
-    }
-
-    QtObject {
-        id: themeSettings
-
-        property string mode: "system"
-        property string accentColor: "#80cbc4"
+        readonly property QtObject bar: QtObject {
+            property real height: 34
+        }
+        readonly property QtObject theme: QtObject {
+            property string mode: "system"
+            property string accentColor: "#80cbc4"
+        }
     }
 
     Timer {
