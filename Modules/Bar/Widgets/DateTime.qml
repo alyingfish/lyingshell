@@ -13,7 +13,7 @@ Row {
         "temperature": Weather.temperatureCelsius
     })
 
-    spacing: 8
+    spacing: 12
 
     MD.Text {
         id: dateLabel
@@ -36,18 +36,15 @@ Row {
         verticalAlignment: Text.AlignVCenter
     }
 
-    MD.Icon {
+    MD.IconLabel {
         anchors.verticalCenter: parent.verticalCenter
-        name: Weather.conditionIconName
-        size: 18
-        color: MD.Token.color.primary
-    }
-
-    MD.Text {
-        anchors.baseline: timeLabel.baseline
+        spacing: 4
         text: root.temperatureText
         color: MD.Token.color.on_surface_variant
-        typescale: MD.Token.typescale.title_small
-        verticalAlignment: Text.AlignVCenter
+        icon.name: Weather.conditionIconName
+        icon.size: 18
+        icon.color: MD.Token.color.primary
+        label.typescale: MD.Token.typescale.title_small
+        label.useTypescale: true
     }
 }
