@@ -30,7 +30,7 @@ Singleton {
         }
         readonly property QtObject theme: QtObject {
             property string mode: "system"
-            property string accentColor: "#80cbc4"
+            property string accentColor: "#4F6357"
         }
     }
 

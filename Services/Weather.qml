@@ -6,6 +6,6 @@ Singleton {
     id: root
 
     readonly property bool ready: true
-    readonly property string conditionIconName: "light_mode"
+    readonly property string conditionIconName: "sunny"
     readonly property int temperatureCelsius: 24
 }

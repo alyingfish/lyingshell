@@ -27,7 +27,7 @@ function registry() {
                 },
                 "accentColor": {
                     "type": "string",
-                    "defaultValue": "#80cbc4",
+                    "defaultValue": "#4F6357",
                     "pattern": /^#[0-9a-fA-F]{6}$/
                 }
             }

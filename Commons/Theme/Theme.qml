@@ -1,6 +1,7 @@
 pragma Singleton
 
 import QtQml
+import QtQuick
 import Quickshell
 import Qcm.Material as MD
 import qs.Commons.Settings
@@ -8,6 +9,10 @@ import qs.Commons.Settings
 Singleton {
     id: root
 
+    readonly property string textTypeface: "Inter"
+    readonly property font textFont: Qt.font({
+        "family": textTypeface
+    })
     readonly property string requestedMode: Settings.options.theme.mode
     readonly property string requestedAccentColor: Settings.options.theme.accentColor
     readonly property string effectiveMode: requestedMode === "dark" ? "dark" : "light"
@@ -18,6 +23,7 @@ Singleton {
     onRequestedAccentColorChanged: apply()
 
     function apply() {
+        MD.Token.font.default_font = textFont;
         MD.Token.color.useSysColorSM = false;
         MD.Token.color.useSysAccentColor = false;
         MD.Token.color.accentColor = requestedAccentColor;

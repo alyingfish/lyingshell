@@ -3,6 +3,7 @@ import Quickshell
 import Qcm.Material as MD
 import qs.Commons.I18n
 import qs.Commons.Settings
+import qs.Commons.Theme
 import qs.Modules.Bar.Widgets
 
 PanelWindow {
@@ -41,6 +42,7 @@ PanelWindow {
                 text: I18n.t("app.name")
                 color: MD.Token.color.on_surface
                 typescale: MD.Token.typescale.title_small
+                font.family: Theme.textTypeface
                 verticalAlignment: Text.AlignVCenter
             }
         }

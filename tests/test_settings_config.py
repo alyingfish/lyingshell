@@ -133,7 +133,7 @@ def main() -> None:
     default_settings = {
         "language": "en",
         "bar": {"height": 34},
-        "theme": {"mode": "system", "accentColor": "#80cbc4"},
+        "theme": {"mode": "system", "accentColor": "#4F6357"},
     }
     assert schema_snapshot["defaults"] == default_settings
     assert schema_snapshot["generatedDefaults"] == default_settings
@@ -146,7 +146,7 @@ def main() -> None:
         "  },\n"
         '  "theme": {\n'
         '    "mode": "system",\n'
-        '    "accentColor": "#80cbc4"\n'
+        '    "accentColor": "#4F6357"\n'
         "  }\n"
         "}\n"
     )
@@ -155,7 +155,7 @@ def main() -> None:
     assert run_settings_js("mergeRuntime", '{ "bar": { "height": 48 } } // user override\n') == {
         "language": "en",
         "bar": {"height": 48},
-        "theme": {"mode": "system", "accentColor": "#80cbc4"},
+        "theme": {"mode": "system", "accentColor": "#4F6357"},
     }
     assert partial == {"bar": {"height": 48}}
     assert run_settings_js("runtime", '{ "theme": { "accentColor": "#aabbcc" }, "language": "zh-CN" }') == {
