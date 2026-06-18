@@ -33,6 +33,7 @@ function loadSource(path) {
 
 const schemaPath = process.argv[2];
 const command = process.argv[3];
+let source = loadSource(schemaPath);
 const schema = {
     Array: Array,
     Error: Error,
@@ -43,8 +44,12 @@ const schema = {
     isFinite: isFinite
 };
 
+if (command === "invalidDefault") {
+    source = source.replace('"defaultValue": 34', '"defaultValue": 0');
+}
+
 vm.createContext(schema);
-vm.runInContext(loadSource(schemaPath), schema, { filename: schemaPath });
+vm.runInContext(source, schema, { filename: schemaPath });
 
 if (command === "snapshot") {
     console.log(JSON.stringify({
@@ -59,6 +64,8 @@ if (command === "snapshot") {
 } else if (command === "mergeRuntime") {
     const runtime = schema.parseRuntime(process.argv[4]);
     console.log(JSON.stringify(schema.mergeDefaults(schema.defaultSettings(), runtime)));
+} else if (command === "invalidDefault") {
+    console.log(JSON.stringify(schema.defaultSettings()));
 } else {
     throw new Error("unknown command: " + command);
 }
@@ -83,6 +90,14 @@ def run_settings_js(command: str, *args: str) -> Any:
 def expect_error(name: str, text: str) -> None:
     try:
         run_settings_js("runtime", text)
+    except Exception:
+        return
+    raise AssertionError(f"{name} unexpectedly passed")
+
+
+def expect_js_error(name: str, command: str) -> None:
+    try:
+        run_settings_js(command)
     except Exception:
         return
     raise AssertionError(f"{name} unexpectedly passed")
@@ -122,6 +137,7 @@ def main() -> None:
     }
     assert schema_snapshot["defaults"] == default_settings
     assert schema_snapshot["generatedDefaults"] == default_settings
+    expect_js_error("invalid registry default", "invalidDefault")
     assert schema_snapshot["template"] == (
         "{\n"
         '  "language": "en",\n'

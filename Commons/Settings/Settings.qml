@@ -123,8 +123,15 @@ Singleton {
     }
 
     function loadRuntimeSettings() {
+        var defaults;
         try {
-            var defaults = SettingsSchema.defaultSettings();
+            defaults = SettingsSchema.defaultSettings();
+        } catch (error) {
+            handleRuntimeSettingsError("Failed to load default settings: " + SettingsSchema.errorMessageText(error));
+            return;
+        }
+
+        try {
             var parsed = SettingsSchema.parseRuntime(runtimeSettingsFile.text());
             applySettings(SettingsSchema.mergeDefaults(defaults, parsed));
         } catch (error) {
@@ -147,8 +154,13 @@ Singleton {
     }
 
     function createRuntimeSettingsFile() {
-        creatingRuntimeFile = true;
-        runtimeSettingsFile.setText(SettingsSchema.defaultSettingsText());
+        try {
+            creatingRuntimeFile = true;
+            runtimeSettingsFile.setText(SettingsSchema.defaultSettingsText());
+        } catch (error) {
+            creatingRuntimeFile = false;
+            handleRuntimeSettingsError("Failed to load default settings: " + SettingsSchema.errorMessageText(error));
+        }
     }
 
     function ensureLoadedWithDefaults() {

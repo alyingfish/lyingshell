@@ -44,7 +44,7 @@ function parseRuntime(text) {
 }
 
 function defaultSettings() {
-    return defaultSettingsObject(registry());
+    return validate(defaultSettingsObject(registry()), true);
 }
 
 function defaultSettingsText() {
