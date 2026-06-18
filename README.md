@@ -58,8 +58,8 @@ The launcher starts Quickshell with this repository as the shell path and adds
 ## Settings
 
 On first launch, Lying Shell creates
-`~/.config/lyingshell/settings.jsonc` from
-`Commons/Settings/default-settings.jsonc`. The file supports `//` and
+`~/.config/lyingshell/settings.jsonc` from the settings registry in
+`Commons/Settings/SettingsSchema.js`. The runtime file supports `//` and
 `/* ... */` comments.
 
 User settings may define only the fields they want to override. Missing fields

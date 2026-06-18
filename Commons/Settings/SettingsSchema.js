@@ -1,9 +1,10 @@
 .pragma library
 
-function schema() {
+function registry() {
     return {
         "language": {
             "type": "string",
+            "defaultValue": "en",
             "allowed": ["en", "zh-CN"]
         },
         "bar": {
@@ -11,6 +12,7 @@ function schema() {
             "properties": {
                 "height": {
                     "type": "number",
+                    "defaultValue": 34,
                     "minExclusive": 0
                 }
             }
@@ -20,10 +22,12 @@ function schema() {
             "properties": {
                 "mode": {
                     "type": "string",
+                    "defaultValue": "system",
                     "allowed": ["system", "light", "dark"]
                 },
                 "accentColor": {
                     "type": "string",
+                    "defaultValue": "#80cbc4",
                     "pattern": /^#[0-9a-fA-F]{6}$/
                 }
             }
@@ -32,7 +36,145 @@ function schema() {
 }
 
 function validate(raw, requireAllFields) {
-    return validateObject("settings", raw, schema(), requireAllFields);
+    return validateObject("settings", raw, registry(), requireAllFields);
+}
+
+function parseRuntime(text) {
+    return validate(parseJsonc(text), false);
+}
+
+function defaultSettings() {
+    return defaultSettingsObject(registry());
+}
+
+function defaultSettingsText() {
+    return JSON.stringify(defaultSettings(), null, 2) + "\n";
+}
+
+function mergeDefaults(defaultSettings, runtimeSettings) {
+    return deepMerge(defaultSettings, runtimeSettings);
+}
+
+function parseJsonc(text) {
+    return JSON.parse(stripComments(text));
+}
+
+function stripComments(text) {
+    var result = "";
+    var inString = false;
+    var escaping = false;
+    var inLineComment = false;
+    var inBlockComment = false;
+
+    for (var index = 0; index < text.length; index++) {
+        var character = text[index];
+        var nextCharacter = index + 1 < text.length ? text[index + 1] : "";
+
+        if (inLineComment) {
+            if (character === "\n" || character === "\r") {
+                inLineComment = false;
+                result += character;
+            } else {
+                result += " ";
+            }
+            continue;
+        }
+
+        if (inBlockComment) {
+            if (character === "*" && nextCharacter === "/") {
+                result += "  ";
+                index += 1;
+                inBlockComment = false;
+            } else if (character === "\n" || character === "\r") {
+                result += character;
+            } else {
+                result += " ";
+            }
+            continue;
+        }
+
+        if (inString) {
+            result += character;
+            if (escaping) {
+                escaping = false;
+            } else if (character === "\\") {
+                escaping = true;
+            } else if (character === "\"") {
+                inString = false;
+            }
+            continue;
+        }
+
+        if (character === "\"") {
+            inString = true;
+            result += character;
+            continue;
+        }
+
+        if (character === "/" && nextCharacter === "/") {
+            result += "  ";
+            index += 1;
+            inLineComment = true;
+            continue;
+        }
+
+        if (character === "/" && nextCharacter === "*") {
+            result += "  ";
+            index += 1;
+            inBlockComment = true;
+            continue;
+        }
+
+        result += character;
+    }
+
+    if (inBlockComment) {
+        throw new Error("unterminated block comment");
+    }
+
+    return result;
+}
+
+function deepMerge(base, override) {
+    var result = cloneObject(base);
+    if (!isObject(override)) {
+        return result;
+    }
+
+    for (var key in override) {
+        if (isObject(override[key]) && isObject(result[key])) {
+            result[key] = deepMerge(result[key], override[key]);
+        } else {
+            result[key] = override[key];
+        }
+    }
+
+    return result;
+}
+
+function cloneObject(value) {
+    if (!isObject(value)) {
+        return value;
+    }
+
+    var result = ({});
+    for (var key in value) {
+        result[key] = isObject(value[key]) ? cloneObject(value[key]) : value[key];
+    }
+
+    return result;
+}
+
+function defaultSettingsObject(objectSchema) {
+    var result = ({});
+    for (var key in objectSchema) {
+        var definition = objectSchema[key];
+        result[key] = definition.type === "object"
+            ? defaultSettingsObject(definition.properties)
+            : definition.defaultValue;
+    }
+
+    return result;
 }
 
 function validateObject(path, raw, objectSchema, requireAllFields) {
@@ -57,11 +199,9 @@ function validateObject(path, raw, objectSchema, requireAllFields) {
             continue;
         }
 
-        if (definition.type === "object") {
-            result[key] = validateObject(path + "." + key, raw[key], definition.properties, requireAllFields);
-        } else {
-            result[key] = validateScalar(path + "." + key, raw[key], definition);
-        }
+        result[key] = definition.type === "object"
+            ? validateObject(path + "." + key, raw[key], definition.properties, requireAllFields)
+            : validateScalar(path + "." + key, raw[key], definition);
     }
 
     return result;
@@ -93,4 +233,8 @@ function validateScalar(path, value, definition) {
 
 function isObject(value) {
     return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function errorMessageText(error) {
+    return error && error.message !== undefined ? String(error.message) : String(error);
 }
