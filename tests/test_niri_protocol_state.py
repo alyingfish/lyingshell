@@ -72,12 +72,27 @@ same(JSON.parse(protocol.encodeRequest(protocol.focusWorkspaceByNameRequest("cha
 same(JSON.parse(protocol.encodeRequest(protocol.focusWindowRequest("42"))), {
     Action: { FocusWindow: { id: 42 } }
 }, "focus window action");
+same(JSON.parse(protocol.encodeRequest(protocol.focusColumnLeftRequest())), {
+    Action: { FocusColumnLeft: {} }
+}, "focus column left action");
+same(JSON.parse(protocol.encodeRequest(protocol.focusColumnRightRequest())), {
+    Action: { FocusColumnRight: {} }
+}, "focus column right action");
+same(JSON.parse(protocol.encodeRequest(protocol.focusWorkspaceUpRequest())), {
+    Action: { FocusWorkspaceUp: {} }
+}, "focus workspace up action");
+same(JSON.parse(protocol.encodeRequest(protocol.focusWorkspaceDownRequest())), {
+    Action: { FocusWorkspaceDown: {} }
+}, "focus workspace down action");
 same(JSON.parse(protocol.encodeRequest(protocol.toggleOverviewRequest())), {
     Action: { ToggleOverview: {} }
 }, "toggle overview action");
 same(JSON.parse(protocol.encodeRequest(protocol.setFocusedWorkspaceNameRequest("ops"))), {
     Action: { SetWorkspaceName: { name: "ops", workspace: null } }
 }, "set focused workspace name action");
+same(JSON.parse(protocol.encodeRequest(protocol.unsetFocusedWorkspaceNameRequest())), {
+    Action: { UnsetWorkspaceName: { reference: null } }
+}, "unset focused workspace name action");
 
 let reply = protocol.parseReplyLine('{"Ok":{"Outputs":{}}}');
 assert(reply.ok && reply.payload.Outputs, "Ok reply parses");
