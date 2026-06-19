@@ -41,7 +41,7 @@ Row {
 
     MD.IconLabel {
         anchors.verticalCenter: parent.verticalCenter
-        spacing: 6
+        spacing: 4
         text: root.temperatureText
         color: MD.Token.color.on_surface_variant
         icon.name: Weather.conditionIconName

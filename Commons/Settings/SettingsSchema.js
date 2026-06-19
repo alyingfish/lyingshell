@@ -12,7 +12,7 @@ function registry() {
             "properties": {
                 "height": {
                     "type": "number",
-                    "defaultValue": 34,
+                    "defaultValue": 32,
                     "minExclusive": 0
                 },
                 "workspaces": {

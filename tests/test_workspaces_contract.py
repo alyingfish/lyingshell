@@ -9,6 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 APP = ROOT / "App" / "Shell.qml"
 BAR = ROOT / "Modules" / "Bar" / "Bar.qml"
+DATE_TIME = ROOT / "Modules" / "Bar" / "Widgets" / "DateTime.qml"
 WORKSPACES = ROOT / "Modules" / "Bar" / "Widgets" / "Workspaces.qml"
 WORKSPACE_DOT = ROOT / "Modules" / "Bar" / "Widgets" / "WorkspaceDot.qml"
 NIRI_QML = ROOT / "Services" / "Niri" / "Niri.qml"
@@ -31,6 +32,7 @@ def read(path: Path) -> str:
 def main() -> None:
     app = read(APP)
     bar = read(BAR)
+    date_time = read(DATE_TIME)
     workspaces = read(WORKSPACES)
     workspace_dot = read(WORKSPACE_DOT)
     niri_qml = read(NIRI_QML)
@@ -52,6 +54,12 @@ def main() -> None:
     assert "Niri.workspacesByOutput[root.screen.name]" in bar
     assert "Niri.focusWorkspaceById(workspaceId)" in bar
     assert "centerContentVisible" in bar
+    assert "readonly property int edgeMargin: 8" in bar
+    assert "readonly property int rowSpacing: 8" in bar
+
+    assert "spacing: 12" in date_time
+    assert "spacing: 4" in date_time
+    assert "icon.size: 16" in date_time
 
     assert "function focusWorkspaceById(id: string): bool" in niri_qml
     assert "NiriProtocol.focusWorkspaceByIdRequest(id)" in niri_qml
@@ -84,8 +92,17 @@ def main() -> None:
     assert "workspace.urgent && !isFocused" in workspace_dot
     assert "workspace.hasWindows && !isFocused && !isUrgent" in workspace_dot
     assert "urgentInitialized && isUrgent && !wasUrgent" in workspace_dot
+    assert "readonly property int dotSize: 8" in workspace_dot
+    assert "readonly property int activeWidth: 24" in workspace_dot
+    assert "readonly property int hoverHaloExtension: 8" in workspace_dot
+    assert "readonly property int pressedHaloExtension: 10" in workspace_dot
+    assert "readonly property int morphDuration: 220" in workspace_dot
+    assert "readonly property int pulseDuration: 600" in workspace_dot
     assert "loops: 2" in workspace_dot
 
+    assert "readonly property int horizontalPadding: 8" in workspaces
+    assert "readonly property int controlHeight: 24" in workspaces
+    assert "readonly property int dotGap: 6" in workspaces
     assert "Settings.options.bar.workspaces.reverseScroll" in workspaces
     assert "Settings.options.bar.workspaces.scrollLoop" in workspaces
     assert "Settings.options.bar.workspaces.urgentPulse" in workspaces

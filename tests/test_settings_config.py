@@ -45,7 +45,7 @@ const schema = {
 };
 
 if (command === "invalidDefault") {
-    source = source.replace('"defaultValue": 34', '"defaultValue": 0');
+    source = source.replace('"defaultValue": 32', '"defaultValue": 0');
 }
 
 vm.createContext(schema);
@@ -134,7 +134,7 @@ def main() -> None:
     default_settings = {
         "language": "en",
         "bar": {
-            "height": 34,
+            "height": 32,
             "workspaces": {
                 "reverseScroll": False,
                 "scrollLoop": True,
@@ -150,7 +150,7 @@ def main() -> None:
         "{\n"
         '  "language": "en",\n'
         '  "bar": {\n'
-        '    "height": 34,\n'
+        '    "height": 32,\n'
         '    "workspaces": {\n'
         '      "reverseScroll": false,\n'
         '      "scrollLoop": true,\n'
@@ -184,7 +184,7 @@ def main() -> None:
     assert run_settings_js("mergeRuntime", '{ "bar": { "workspaces": { "urgentPulse": false } } }') == {
         "language": "en",
         "bar": {
-            "height": 34,
+            "height": 32,
             "workspaces": {
                 "reverseScroll": False,
                 "scrollLoop": True,
@@ -201,7 +201,7 @@ def main() -> None:
         "url": "https://example.test/*not-comment*/",
     }
     expect_error("unknown top-level field", '{ "extra": true }')
-    expect_error("unknown nested field", '{ "bar": { "height": 34, "gap": 2 } }')
+    expect_error("unknown nested field", '{ "bar": { "height": 32, "gap": 2 } }')
     expect_error("invalid language", '{ "language": "fr" }')
     expect_error("invalid bar height", '{ "bar": { "height": 0 } }')
     expect_error("invalid workspace bool", '{ "bar": { "workspaces": { "reverseScroll": "no" } } }')

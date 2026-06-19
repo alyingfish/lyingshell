@@ -26,7 +26,7 @@ Singleton {
 
         property string language: "en"
         readonly property QtObject bar: QtObject {
-            property real height: 34
+            property real height: 32
             readonly property QtObject workspaces: QtObject {
                 property bool reverseScroll: false
                 property bool scrollLoop: true
