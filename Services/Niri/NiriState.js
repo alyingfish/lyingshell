@@ -3,22 +3,12 @@
 function initialState() {
     return derive({
         outputs: [],
-        outputsByName: {},
         workspaces: [],
-        workspacesById: {},
-        workspacesByOutput: {},
         focusedOutputName: "",
-        focusedWorkspaceId: "",
-        focusedWorkspace: null,
-        currentOutputWorkspaces: [],
         windows: [],
-        windowsById: {},
-        focusedWindowId: "",
-        focusedWindow: null,
         overviewOpen: false,
         keyboardLayoutNames: [],
-        currentKeyboardLayoutIndex: -1,
-        currentKeyboardLayoutName: ""
+        currentKeyboardLayoutIndex: -1
     });
 }
 
@@ -59,7 +49,7 @@ function applyEvent(state, event) {
     case "WorkspaceActiveWindowChanged":
         return applyWorkspaceActiveWindowChanged(state, payload);
     case "WorkspaceUrgencyChanged":
-        return updateWorkspaceFlag(state, payload, "urgent");
+        return applyWorkspaceUrgencyChanged(state, payload);
     case "WindowsChanged":
         return applyWindowsChanged(state, payload);
     case "WindowOpenedOrChanged":
@@ -71,7 +61,7 @@ function applyEvent(state, event) {
     case "WindowLayoutsChanged":
         return applyWindowLayoutsChanged(state, payload);
     case "WindowUrgencyChanged":
-        return updateWindowFlag(state, payload, "urgent");
+        return applyWindowUrgencyChanged(state, payload);
     case "OutputsChanged":
         return applyOutputs(state, payload ? payload.outputs : null);
     case "OverviewOpenedOrClosed":
@@ -188,7 +178,7 @@ function applyWorkspaceActiveWindowChanged(state, payload) {
     return result(derive(next), true, "");
 }
 
-function updateWorkspaceFlag(state, payload, propertyName) {
+function applyWorkspaceUrgencyChanged(state, payload) {
     if (!payload || idText(payload.id).length === 0 || typeof payload.urgent !== "boolean") {
         return result(state, false, "Invalid WorkspaceUrgencyChanged event");
     }
@@ -200,7 +190,7 @@ function updateWorkspaceFlag(state, payload, propertyName) {
 
     var next = copyState(state);
     next.workspaces = mapReplace(next.workspaces, idKey, function(workspace) {
-        workspace[propertyName] = payload.urgent;
+        workspace.urgent = payload.urgent;
         return workspace;
     });
     return result(derive(next), true, "");
@@ -293,7 +283,7 @@ function applyWindowLayoutsChanged(state, payload) {
     return result(derive(next), true, "");
 }
 
-function updateWindowFlag(state, payload, propertyName) {
+function applyWindowUrgencyChanged(state, payload) {
     if (!payload || idText(payload.id).length === 0 || typeof payload.urgent !== "boolean") {
         return result(state, false, "Invalid WindowUrgencyChanged event");
     }
@@ -305,7 +295,7 @@ function updateWindowFlag(state, payload, propertyName) {
 
     var next = copyState(state);
     next.windows = mapReplace(next.windows, idKey, function(window) {
-        window[propertyName] = payload.urgent;
+        window.urgent = payload.urgent;
         return window;
     });
     return result(derive(next), true, "");
@@ -323,7 +313,7 @@ function applyOutputs(state, payload) {
     }
 
     var next = copyState(state);
-    next.outputs = sortOutputs(outputs);
+    next.outputs = outputs;
     return result(derive(next), true, "");
 }
 
@@ -498,24 +488,6 @@ function sortWindows(windows, workspacesById) {
     });
 }
 
-function sortOutputs(outputs) {
-    return outputs.slice().sort(function(a, b) {
-        var ax = a.logical && Number.isFinite(a.logical.x) ? a.logical.x : 999999;
-        var bx = b.logical && Number.isFinite(b.logical.x) ? b.logical.x : 999999;
-        if (ax !== bx) {
-            return ax - bx;
-        }
-
-        var ay = a.logical && Number.isFinite(a.logical.y) ? a.logical.y : 999999;
-        var by = b.logical && Number.isFinite(b.logical.y) ? b.logical.y : 999999;
-        if (ay !== by) {
-            return ay - by;
-        }
-
-        return compareString(a.name, b.name);
-    });
-}
-
 function compareWorkspace(a, b) {
     var outputCompare = compareString(a.outputName, b.outputName);
     if (outputCompare !== 0) {
@@ -540,22 +512,12 @@ function mapReplace(items, id, replacer) {
 function copyState(state) {
     return {
         outputs: state.outputs ? state.outputs.slice() : [],
-        outputsByName: copyObject(state.outputsByName),
         workspaces: state.workspaces ? state.workspaces.slice() : [],
-        workspacesById: copyObject(state.workspacesById),
-        workspacesByOutput: copyObject(state.workspacesByOutput),
         focusedOutputName: optionalString(state.focusedOutputName),
-        focusedWorkspaceId: optionalString(state.focusedWorkspaceId),
-        focusedWorkspace: state.focusedWorkspace || null,
-        currentOutputWorkspaces: state.currentOutputWorkspaces ? state.currentOutputWorkspaces.slice() : [],
         windows: state.windows ? state.windows.slice() : [],
-        windowsById: copyObject(state.windowsById),
-        focusedWindowId: optionalString(state.focusedWindowId),
-        focusedWindow: state.focusedWindow || null,
         overviewOpen: state.overviewOpen === true,
         keyboardLayoutNames: state.keyboardLayoutNames ? state.keyboardLayoutNames.slice() : [],
-        currentKeyboardLayoutIndex: safeInteger(state.currentKeyboardLayoutIndex, -1),
-        currentKeyboardLayoutName: optionalString(state.currentKeyboardLayoutName)
+        currentKeyboardLayoutIndex: safeInteger(state.currentKeyboardLayoutIndex, -1)
     };
 }
 

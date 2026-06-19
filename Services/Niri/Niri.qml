@@ -230,14 +230,13 @@ Singleton {
             return false;
         }
 
-        var prepared = NiriProtocol.prepareRequest(requestSocket.connected, request);
-        if (!prepared.ok) {
-            _setError(prepared.error);
+        if (!requestSocket.connected) {
+            _setError("Niri IPC request socket is not connected");
             return false;
         }
 
         _requestPending = true;
-        requestSocket.write(prepared.line);
+        requestSocket.write(NiriProtocol.encodeRequest(request));
         requestSocket.flush();
         return true;
     }

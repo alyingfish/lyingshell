@@ -11,6 +11,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 NIRI_DIR = ROOT / "Services" / "Niri"
+NIRI_QML = NIRI_DIR / "Niri.qml"
 PROTOCOL_JS = NIRI_DIR / "NiriProtocol.js"
 STATE_JS = NIRI_DIR / "NiriState.js"
 
@@ -79,7 +80,6 @@ let reply = protocol.parseReplyLine('{"Ok":{"Outputs":{}}}');
 assert(reply.ok && reply.payload.Outputs, "Ok reply parses");
 reply = protocol.parseReplyLine('{"Err":"nope"}');
 assert(!reply.ok && reply.error === "nope", "Err reply parses");
-assert(!protocol.prepareRequest(false, "Outputs").ok, "disconnected request is rejected");
 
 let current = state.initialState();
 let reduced = state.applyEventLine(current, JSON.stringify({
@@ -106,7 +106,7 @@ let reduced = state.applyEventLine(current, JSON.stringify({
 }));
 assert(reduced.changed && reduced.error === "", "outputs event applies");
 current = reduced.state;
-same(current.outputs.map(output => output.name), ["eDP-1", "HDMI-A-1"], "outputs sort by logical position");
+same(current.outputs.map(output => output.name), ["HDMI-A-1", "eDP-1"], "outputs preserve Niri order");
 
 reduced = state.applyEventLine(current, JSON.stringify({
     WorkspacesChanged: {
@@ -206,8 +206,14 @@ def run_node() -> Any:
 
 
 def main() -> None:
+    assert NIRI_QML.exists()
     assert PROTOCOL_JS.exists()
     assert STATE_JS.exists()
+
+    niri_qml = NIRI_QML.read_text(encoding="utf-8")
+    assert "prepareRequest" not in niri_qml
+    assert "if (!requestSocket.connected)" in niri_qml
+    assert '"Niri IPC request socket is not connected"' in niri_qml
     assert run_node() == {"ok": True}
 
 

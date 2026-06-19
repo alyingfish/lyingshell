@@ -24,18 +24,6 @@ function encodeRequest(request) {
     return JSON.stringify(request) + "\n";
 }
 
-function prepareRequest(connected, request) {
-    if (!connected) {
-        return fail("Niri IPC request socket is not connected");
-    }
-
-    try {
-        return ok(encodeRequest(request));
-    } catch (error) {
-        return fail(errorMessageText(error));
-    }
-}
-
 function parseReplyLine(line) {
     var reply = null;
 
@@ -70,7 +58,7 @@ function focusWorkspaceByIndexRequest(index) {
 
 function focusWorkspaceByReferenceRequest(reference) {
     return actionRequest("FocusWorkspace", {
-        reference: validateWorkspaceReference(reference)
+        reference: reference
     });
 }
 
@@ -131,24 +119,6 @@ function actionRequest(actionName, payload) {
     return {
         Action: action
     };
-}
-
-function validateWorkspaceReference(reference) {
-    if (!reference || typeof reference !== "object" || Array.isArray(reference)) {
-        throw new Error("workspace reference must be an object");
-    }
-
-    var hasName = Object.prototype.hasOwnProperty.call(reference, "Name");
-    var hasIndex = Object.prototype.hasOwnProperty.call(reference, "Index");
-    if (hasName === hasIndex) {
-        throw new Error("workspace reference must contain exactly one of Name or Index");
-    }
-
-    if (hasName) {
-        return workspaceNameReference(reference.Name);
-    }
-
-    return workspaceIndexReference(reference.Index);
 }
 
 function requiredIntegerId(value, label) {
