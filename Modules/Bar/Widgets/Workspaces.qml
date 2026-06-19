@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import Qcm.Material as MD
 import qs.Commons.Settings
 
@@ -16,6 +17,7 @@ Item {
     readonly property int workspaceCount: workspaceModel && workspaceModel.length !== undefined ? workspaceModel.length : 0
     readonly property bool hasWorkspaces: workspaceCount > 0
     readonly property bool hovered: pillMouseArea.containsMouse || hasHoveredDot()
+    readonly property var renderedWorkspaceValues: normalizedWorkspaces(workspaceModel)
     readonly property int enterDuration: reducedMotion ? 0 : MD.Token.duration.short4
     readonly property int exitDuration: reducedMotion ? 0 : MD.Token.duration.short3
     readonly property int displacedDuration: reducedMotion ? 0 : MD.Token.duration.short4
@@ -26,14 +28,11 @@ Item {
     width: implicitWidth
     height: implicitHeight
 
-    onWorkspaceModelChanged: syncWorkspaceModel()
-
-    Component.onCompleted: syncWorkspaceModel()
-
-    ListModel {
+    ScriptModel {
         id: renderedWorkspaces
 
-        dynamicRoles: true
+        objectProp: "id"
+        values: root.renderedWorkspaceValues
     }
 
     MD.Rectangle {
@@ -82,7 +81,8 @@ Item {
         delegate: Item {
             id: workspaceDelegate
 
-            required property var workspace
+            required property var modelData
+            readonly property var workspace: modelData
 
             readonly property bool hovered: dot.hovered
             readonly property bool pressed: dot.pressed
@@ -207,45 +207,13 @@ Item {
         return false;
     }
 
-    function syncWorkspaceModel() {
-        var nextWorkspaces = workspaceModel && workspaceModel.length !== undefined ? workspaceModel : [];
-        for (var oldIndex = renderedWorkspaces.count - 1; oldIndex >= 0; oldIndex--) {
-            var oldWorkspaceId = String(renderedWorkspaces.get(oldIndex).workspace.id);
-            if (!nextWorkspaces.some(function(workspace) {
-                return String(workspace.id) === oldWorkspaceId;
-            })) {
-                renderedWorkspaces.remove(oldIndex);
-            }
+    function normalizedWorkspaces(sourceModel) {
+        if (!sourceModel || sourceModel.length === undefined) {
+            return [];
         }
 
-        for (var nextIndex = 0; nextIndex < nextWorkspaces.length; nextIndex++) {
-            var workspace = nextWorkspaces[nextIndex];
-            var existingIndex = renderedWorkspaceIndex(workspace.id);
-            if (existingIndex < 0) {
-                renderedWorkspaces.insert(nextIndex, workspaceRole(workspace));
-                continue;
-            }
-
-            if (existingIndex !== nextIndex) {
-                renderedWorkspaces.move(existingIndex, nextIndex, 1);
-            }
-            renderedWorkspaces.set(nextIndex, workspaceRole(workspace));
-        }
-    }
-
-    function renderedWorkspaceIndex(workspaceId) {
-        var id = String(workspaceId);
-        for (var index = 0; index < renderedWorkspaces.count; index++) {
-            if (String(renderedWorkspaces.get(index).workspace.id) === id) {
-                return index;
-            }
-        }
-        return -1;
-    }
-
-    function workspaceRole(workspace) {
-        return {
-            "workspace": {
+        return sourceModel.map(function(workspace) {
+            return {
                 "id": String(workspace.id),
                 "index": Number(workspace.index),
                 "outputName": String(workspace.outputName || ""),
@@ -254,7 +222,7 @@ Item {
                 "focused": workspace.focused === true,
                 "urgent": workspace.urgent === true,
                 "hasWindows": String(workspace.activeWindowId || "").length > 0
-            }
-        };
+            };
+        });
     }
 }

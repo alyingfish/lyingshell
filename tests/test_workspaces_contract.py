@@ -15,8 +15,12 @@ NIRI_QML = ROOT / "Services" / "Niri" / "Niri.qml"
 NIRI_PROTOCOL = ROOT / "Services" / "Niri" / "NiriProtocol.js"
 NIRI_STATE = ROOT / "Services" / "Niri" / "NiriState.js"
 OLD_NIRI = ROOT / "Services" / "Niri.qml"
-WORKSPACE_FIXTURES = ROOT / "tests" / "qml" / "WorkspaceFixtures.qml"
-WORKSPACES_IPC_HARNESS = ROOT / "tests" / "qml" / "WorkspacesIpcHarness.qml"
+REMOVED_IPC_TEST_FILES = [
+    ROOT / "tests" / ("test_" + "workspaces_ipc.py"),
+    ROOT / "tests" / "qml" / ("Workspaces" + "IpcShell.qml"),
+    ROOT / "tests" / "qml" / ("Workspaces" + "IpcHarness.qml"),
+    ROOT / "tests" / "qml" / ("Workspace" + "Fixtures.qml"),
+]
 WORKSPACES_POINTER_TEST = ROOT / "tests" / "qml" / "tst_workspaces_pointer.qml"
 
 
@@ -32,8 +36,6 @@ def main() -> None:
     niri_qml = read(NIRI_QML)
     niri_protocol = read(NIRI_PROTOCOL)
     niri_state = read(NIRI_STATE)
-    workspace_fixtures = read(WORKSPACE_FIXTURES)
-    workspaces_ipc_harness = read(WORKSPACES_IPC_HARNESS)
     workspaces_pointer_test = read(WORKSPACES_POINTER_TEST)
     product_qml = "\n".join(
         read(path)
@@ -42,6 +44,8 @@ def main() -> None:
     )
 
     assert not OLD_NIRI.exists()
+    assert all(not path.exists() for path in REMOVED_IPC_TEST_FILES)
+
     assert "root.ready ? Quickshell.screens : []" in app
 
     assert "import qs.Services.Niri" in bar
@@ -57,11 +61,14 @@ def main() -> None:
 
     assert "required property var workspaceModel" in workspaces
     assert "signal focusRequested(string workspaceId)" in workspaces
-    assert "ListModel {" in workspaces
-    assert "dynamicRoles: true" in workspaces
-    assert "renderedWorkspaces.insert" in workspaces
-    assert "renderedWorkspaces.move" in workspaces
-    assert "renderedWorkspaces.remove" in workspaces
+    assert "ScriptModel {" in workspaces
+    assert 'objectProp: "id"' in workspaces
+    assert "values: root.renderedWorkspaceValues" in workspaces
+    assert "ListModel {" not in workspaces
+    assert "dynamicRoles" not in workspaces
+    assert "renderedWorkspaces.insert" not in workspaces
+    assert "renderedWorkspaces.move" not in workspaces
+    assert "renderedWorkspaces.remove" not in workspaces
     assert "workspace.active === true" in workspaces
     assert '"active": workspace.active === true' in workspaces
     assert '"focused": workspace.focused === true' in workspaces
@@ -71,6 +78,7 @@ def main() -> None:
     assert "Quickshell.env" not in workspaces
 
     assert "required property var workspace" in workspace_dot
+    assert "property bool pulseEnabled: true" in workspace_dot
     assert "signal activated(string workspaceId)" in workspace_dot
     assert "workspace.active || workspace.focused" in workspace_dot
     assert "workspace.urgent && !isFocused" in workspace_dot
@@ -81,13 +89,6 @@ def main() -> None:
     assert "Settings.options.bar.workspaces.reverseScroll" in workspaces
     assert "Settings.options.bar.workspaces.scrollLoop" in workspaces
     assert "Settings.options.bar.workspaces.urgentPulse" in workspaces
-
-    assert "IpcHandler {" in workspaces_ipc_harness
-    assert "fixtures.workspacesForScreen(screen)" in workspaces_ipc_harness
-    assert "Niri.workspacesByOutput[screen.name]" in workspaces_ipc_harness
-    assert "Niri.focusWorkspaceById(workspaceId)" in workspaces_ipc_harness
-    assert "function workspacesForScreen(screen)" in workspace_fixtures
-    assert "function focusWorkspace(workspaceId)" in workspace_fixtures
     assert "Workspaces {" in workspaces_pointer_test
     assert "tester.mouseWheel(workspaces" in workspaces_pointer_test
 
@@ -95,7 +96,7 @@ def main() -> None:
     assert "niri msg" not in product_qml
     assert "Quickshell.Hyprland" not in product_qml
     assert "Quickshell.I3" not in product_qml
-    assert "LYINGSHELL_WORKSPACES_" not in product_qml
+    assert "LYINGSHELL_" + "WORKSPACES_" not in product_qml
     assert "IpcHandler {" not in product_qml
 
 

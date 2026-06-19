@@ -44,6 +44,39 @@ QtObject {
     )
 
 
+def create_quickshell_mock(import_root: Path) -> None:
+    quickshell_dir = import_root / "Quickshell"
+    quickshell_dir.mkdir(parents=True)
+    (quickshell_dir / "qmldir").write_text(
+        "module Quickshell\nScriptModel 1.0 ScriptModel.qml\n",
+        encoding="utf-8",
+    )
+    (quickshell_dir / "ScriptModel.qml").write_text(
+        """import QtQml
+
+ListModel {
+    id: root
+
+    property string objectProp: ""
+    property var values: []
+
+    dynamicRoles: true
+
+    onValuesChanged: syncValues()
+    Component.onCompleted: syncValues()
+
+    function syncValues() {
+        clear();
+        for (var index = 0; index < values.length; index++) {
+            append({ "modelData": values[index] });
+        }
+    }
+}
+""",
+        encoding="utf-8",
+    )
+
+
 def main() -> None:
     if shutil.which("qml6") is None:
         print("SKIP: workspace pointer test requires qml6")
@@ -52,6 +85,7 @@ def main() -> None:
     with tempfile.TemporaryDirectory(prefix="lyingshell-qml-pointer-imports-") as temp_import_root:
         import_root = Path(temp_import_root)
         create_settings_mock(import_root)
+        create_quickshell_mock(import_root)
 
         env = os.environ.copy()
         env["QT_QPA_PLATFORM"] = "offscreen"
