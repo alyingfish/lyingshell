@@ -27,6 +27,11 @@ Singleton {
         property string language: "en"
         readonly property QtObject bar: QtObject {
             property real height: 34
+            readonly property QtObject workspaces: QtObject {
+                property bool reverseScroll: false
+                property bool scrollLoop: true
+                property bool urgentPulse: true
+            }
         }
         readonly property QtObject theme: QtObject {
             property string mode: "system"
@@ -148,6 +153,9 @@ Singleton {
     function applySettings(nextSettings) {
         optionsSettings.language = nextSettings.language;
         optionsSettings.bar.height = nextSettings.bar.height;
+        optionsSettings.bar.workspaces.reverseScroll = nextSettings.bar.workspaces.reverseScroll;
+        optionsSettings.bar.workspaces.scrollLoop = nextSettings.bar.workspaces.scrollLoop;
+        optionsSettings.bar.workspaces.urgentPulse = nextSettings.bar.workspaces.urgentPulse;
         optionsSettings.theme.mode = nextSettings.theme.mode;
         optionsSettings.theme.accentColor = nextSettings.theme.accentColor;
         errorMessage = "";

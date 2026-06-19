@@ -52,6 +52,12 @@ function focusWorkspaceByNameRequest(name) {
     return focusWorkspaceByReferenceRequest(workspaceNameReference(name));
 }
 
+function focusWorkspaceByIdRequest(id) {
+    return focusWorkspaceByReferenceRequest({
+        Id: requiredIntegerId(id, "workspace id")
+    });
+}
+
 function focusWorkspaceByIndexRequest(index) {
     return focusWorkspaceByReferenceRequest(workspaceIndexReference(index));
 }

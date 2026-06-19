@@ -75,53 +75,6 @@ function applyEvent(state, event) {
     }
 }
 
-function workspaceReferenceForId(state, id) {
-    var idKey = idText(id);
-    if (idKey.length === 0) {
-        return {
-            ok: false,
-            reference: null,
-            error: "workspace id is required"
-        };
-    }
-
-    var workspace = state.workspacesById[idKey];
-    if (!workspace) {
-        return {
-            ok: false,
-            reference: null,
-            error: "Unknown Niri workspace id: " + idKey
-        };
-    }
-
-    if (workspace.name.length > 0) {
-        return {
-            ok: true,
-            reference: {
-                Name: workspace.name
-            },
-            error: ""
-        };
-    }
-
-    if (workspace.index > 0 && workspace.outputName.length > 0 && workspace.outputName === state.focusedOutputName) {
-        return {
-            ok: true,
-            reference: {
-                Index: workspace.index
-            },
-            error: ""
-        };
-    }
-
-    // ponytail: ceiling is by-id focus only for named workspaces or current-output indexes; upgrade path is a verified FocusMonitor + FocusWorkspace sequence if cross-output by-id focus becomes a real UI need.
-    return {
-        ok: false,
-        reference: null,
-        error: "Niri cannot focus this workspace by id without changing monitor focus first"
-    };
-}
-
 function applyWorkspacesChanged(state, payload) {
     if (!payload || !Array.isArray(payload.workspaces)) {
         return result(state, false, "Invalid WorkspacesChanged event");

@@ -128,11 +128,19 @@ def main() -> None:
     assert "function getPath" not in settings_schema
     assert "function setPath" not in settings_schema
     assert "optionsSettings.language = nextSettings.language" in settings_qml
+    assert "optionsSettings.bar.workspaces.reverseScroll = nextSettings.bar.workspaces.reverseScroll" in settings_qml
     assert "optionsSettings.theme.accentColor = nextSettings.theme.accentColor" in settings_qml
 
     default_settings = {
         "language": "en",
-        "bar": {"height": 34},
+        "bar": {
+            "height": 34,
+            "workspaces": {
+                "reverseScroll": False,
+                "scrollLoop": True,
+                "urgentPulse": True,
+            },
+        },
         "theme": {"mode": "system", "accentColor": "#4F6357"},
     }
     assert schema_snapshot["defaults"] == default_settings
@@ -142,7 +150,12 @@ def main() -> None:
         "{\n"
         '  "language": "en",\n'
         '  "bar": {\n'
-        '    "height": 34\n'
+        '    "height": 34,\n'
+        '    "workspaces": {\n'
+        '      "reverseScroll": false,\n'
+        '      "scrollLoop": true,\n'
+        '      "urgentPulse": true\n'
+        "    }\n"
         "  },\n"
         '  "theme": {\n'
         '    "mode": "system",\n'
@@ -154,10 +167,32 @@ def main() -> None:
     partial = run_settings_js("runtime", '{ "bar": { "height": 48 } } // user override\n')
     assert run_settings_js("mergeRuntime", '{ "bar": { "height": 48 } } // user override\n') == {
         "language": "en",
-        "bar": {"height": 48},
+        "bar": {
+            "height": 48,
+            "workspaces": {
+                "reverseScroll": False,
+                "scrollLoop": True,
+                "urgentPulse": True,
+            },
+        },
         "theme": {"mode": "system", "accentColor": "#4F6357"},
     }
     assert partial == {"bar": {"height": 48}}
+    assert run_settings_js("runtime", '{ "bar": { "workspaces": { "scrollLoop": false } } }') == {
+        "bar": {"workspaces": {"scrollLoop": False}},
+    }
+    assert run_settings_js("mergeRuntime", '{ "bar": { "workspaces": { "urgentPulse": false } } }') == {
+        "language": "en",
+        "bar": {
+            "height": 34,
+            "workspaces": {
+                "reverseScroll": False,
+                "scrollLoop": True,
+                "urgentPulse": False,
+            },
+        },
+        "theme": {"mode": "system", "accentColor": "#4F6357"},
+    }
     assert run_settings_js("runtime", '{ "theme": { "accentColor": "#aabbcc" }, "language": "zh-CN" }') == {
         "language": "zh-CN",
         "theme": {"accentColor": "#aabbcc"},
@@ -169,6 +204,7 @@ def main() -> None:
     expect_error("unknown nested field", '{ "bar": { "height": 34, "gap": 2 } }')
     expect_error("invalid language", '{ "language": "fr" }')
     expect_error("invalid bar height", '{ "bar": { "height": 0 } }')
+    expect_error("invalid workspace bool", '{ "bar": { "workspaces": { "reverseScroll": "no" } } }')
     expect_error("invalid accent color", '{ "theme": { "accentColor": "teal" } }')
     expect_error("malformed jsonc", '{ "language": "en", }')
     expect_error("unterminated block comment", '{ /* broken ')

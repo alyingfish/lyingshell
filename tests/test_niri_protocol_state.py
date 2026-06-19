@@ -63,6 +63,9 @@ same(protocol.eventStreamRequest(), "EventStream", "event stream request");
 same(JSON.parse(protocol.encodeRequest(protocol.focusWorkspaceByIndexRequest(2))), {
     Action: { FocusWorkspace: { reference: { Index: 2 } } }
 }, "focus workspace by index action");
+same(JSON.parse(protocol.encodeRequest(protocol.focusWorkspaceByIdRequest("5"))), {
+    Action: { FocusWorkspace: { reference: { Id: 5 } } }
+}, "focus workspace by id action");
 same(JSON.parse(protocol.encodeRequest(protocol.focusWorkspaceByNameRequest("chat"))), {
     Action: { FocusWorkspace: { reference: { Name: "chat" } } }
 }, "focus workspace by name action");
@@ -174,18 +177,6 @@ assert(current.currentKeyboardLayoutName === "de", "keyboard layout derives");
 reduced = state.applyEventLine(current, JSON.stringify({ FutureEvent: { value: true } }));
 assert(!reduced.changed && reduced.error === "", "unknown events are ignored");
 
-same(state.workspaceReferenceForId(current, "5"), {
-    ok: true,
-    reference: { Name: "chat" },
-    error: ""
-}, "named workspace id resolves to name reference");
-same(state.workspaceReferenceForId(current, "7"), {
-    ok: true,
-    reference: { Index: 2 },
-    error: ""
-}, "current-output workspace id resolves to index reference");
-assert(!state.workspaceReferenceForId(current, "9").ok, "cross-output unnamed workspace id is deferred");
-
 process.stdout.write(JSON.stringify({ ok: true }));
 """
 
@@ -211,9 +202,12 @@ def main() -> None:
     assert STATE_JS.exists()
 
     niri_qml = NIRI_QML.read_text(encoding="utf-8")
+    state_js = STATE_JS.read_text(encoding="utf-8")
     assert "prepareRequest" not in niri_qml
     assert "if (!requestSocket.connected)" in niri_qml
     assert '"Niri IPC request socket is not connected"' in niri_qml
+    assert "focusWorkspaceByIdRequest" in niri_qml
+    assert "workspaceReferenceForId" not in state_js
     assert run_node() == {"ok": True}
 
 

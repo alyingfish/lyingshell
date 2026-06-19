@@ -1,5 +1,6 @@
 pragma Singleton
 
+import QtQml
 import Quickshell
 import Quickshell.Io
 import "NiriState.js" as NiriState
@@ -98,14 +99,8 @@ Singleton {
     }
 
     function focusWorkspaceById(id: string): bool {
-        var resolved = NiriState.workspaceReferenceForId(_state, id);
-        if (!resolved.ok) {
-            _setError(resolved.error);
-            return false;
-        }
-
         return _sendBuiltAction(function() {
-            return NiriProtocol.focusWorkspaceByReferenceRequest(resolved.reference);
+            return NiriProtocol.focusWorkspaceByIdRequest(id);
         });
     }
 

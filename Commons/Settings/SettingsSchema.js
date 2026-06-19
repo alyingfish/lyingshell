@@ -14,6 +14,23 @@ function registry() {
                     "type": "number",
                     "defaultValue": 34,
                     "minExclusive": 0
+                },
+                "workspaces": {
+                    "type": "object",
+                    "properties": {
+                        "reverseScroll": {
+                            "type": "bool",
+                            "defaultValue": false
+                        },
+                        "scrollLoop": {
+                            "type": "bool",
+                            "defaultValue": true
+                        },
+                        "urgentPulse": {
+                            "type": "bool",
+                            "defaultValue": true
+                        }
+                    }
                 }
             }
         },
@@ -214,6 +231,10 @@ function validateScalar(path, value, definition) {
 
     if (definition.type === "number" && (typeof value !== "number" || !isFinite(value))) {
         throw new Error(path + " must be a finite number");
+    }
+
+    if (definition.type === "bool" && typeof value !== "boolean") {
+        throw new Error(path + " must be a boolean");
     }
 
     if (definition.allowed !== undefined && definition.allowed.indexOf(value) === -1) {
