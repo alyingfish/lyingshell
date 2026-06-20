@@ -46,6 +46,11 @@ function registry() {
                     "type": "string",
                     "defaultValue": "#4F6357",
                     "pattern": /^#[0-9a-fA-F]{6}$/
+                },
+                "font": {
+                    "type": "string",
+                    "defaultValue": "Noto Sans",
+                    "pattern": /\S/
                 }
             }
         }

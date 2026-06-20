@@ -130,6 +130,7 @@ def main() -> None:
     assert "optionsSettings.language = nextSettings.language" in settings_qml
     assert "optionsSettings.bar.workspaces.reverseScroll = nextSettings.bar.workspaces.reverseScroll" in settings_qml
     assert "optionsSettings.theme.accentColor = nextSettings.theme.accentColor" in settings_qml
+    assert "optionsSettings.theme.font = nextSettings.theme.font" in settings_qml
 
     default_settings = {
         "language": "en",
@@ -141,7 +142,7 @@ def main() -> None:
                 "urgentPulse": True,
             },
         },
-        "theme": {"mode": "system", "accentColor": "#4F6357"},
+        "theme": {"mode": "system", "accentColor": "#4F6357", "font": "Noto Sans"},
     }
     assert schema_snapshot["defaults"] == default_settings
     assert schema_snapshot["generatedDefaults"] == default_settings
@@ -159,7 +160,8 @@ def main() -> None:
         "  },\n"
         '  "theme": {\n'
         '    "mode": "system",\n'
-        '    "accentColor": "#4F6357"\n'
+        '    "accentColor": "#4F6357",\n'
+        '    "font": "Noto Sans"\n'
         "  }\n"
         "}\n"
     )
@@ -175,7 +177,7 @@ def main() -> None:
                 "urgentPulse": True,
             },
         },
-        "theme": {"mode": "system", "accentColor": "#4F6357"},
+        "theme": {"mode": "system", "accentColor": "#4F6357", "font": "Noto Sans"},
     }
     assert partial == {"bar": {"height": 48}}
     assert run_settings_js("runtime", '{ "bar": { "workspaces": { "scrollLoop": false } } }') == {
@@ -191,11 +193,11 @@ def main() -> None:
                 "urgentPulse": False,
             },
         },
-        "theme": {"mode": "system", "accentColor": "#4F6357"},
+        "theme": {"mode": "system", "accentColor": "#4F6357", "font": "Noto Sans"},
     }
-    assert run_settings_js("runtime", '{ "theme": { "accentColor": "#aabbcc" }, "language": "zh-CN" }') == {
+    assert run_settings_js("runtime", '{ "theme": { "accentColor": "#aabbcc", "font": "Inter" }, "language": "zh-CN" }') == {
         "language": "zh-CN",
-        "theme": {"accentColor": "#aabbcc"},
+        "theme": {"accentColor": "#aabbcc", "font": "Inter"},
     }
     assert run_settings_js("parseJsonc", '{ "url": "https://example.test/*not-comment*/" }') == {
         "url": "https://example.test/*not-comment*/",
@@ -206,6 +208,7 @@ def main() -> None:
     expect_error("invalid bar height", '{ "bar": { "height": 0 } }')
     expect_error("invalid workspace bool", '{ "bar": { "workspaces": { "reverseScroll": "no" } } }')
     expect_error("invalid accent color", '{ "theme": { "accentColor": "teal" } }')
+    expect_error("invalid font", '{ "theme": { "font": "   " } }')
     expect_error("malformed jsonc", '{ "language": "en", }')
     expect_error("unterminated block comment", '{ /* broken ')
 

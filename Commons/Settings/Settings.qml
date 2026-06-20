@@ -36,6 +36,7 @@ Singleton {
         readonly property QtObject theme: QtObject {
             property string mode: "system"
             property string accentColor: "#4F6357"
+            property string font: "Noto Sans"
         }
     }
 
@@ -158,6 +159,7 @@ Singleton {
         optionsSettings.bar.workspaces.urgentPulse = nextSettings.bar.workspaces.urgentPulse;
         optionsSettings.theme.mode = nextSettings.theme.mode;
         optionsSettings.theme.accentColor = nextSettings.theme.accentColor;
+        optionsSettings.theme.font = nextSettings.theme.font;
         errorMessage = "";
     }
 
