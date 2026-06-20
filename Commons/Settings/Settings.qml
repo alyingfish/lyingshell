@@ -3,7 +3,6 @@ pragma Singleton
 import QtQml
 import Quickshell
 import Quickshell.Io
-import "SettingsSchema.js" as SettingsSchema
 
 Singleton {
     id: root
@@ -11,34 +10,16 @@ Singleton {
     property bool isLoaded: false
     property bool directoriesReady: false
     property bool creatingRuntimeFile: false
+    property bool loadingRuntimeFile: false
     property string errorMessage: ""
 
-    readonly property QtObject options: optionsSettings
+    readonly property alias options: settingsAdapter
     readonly property bool hasError: errorMessage.length > 0
     readonly property string homeDir: String(Quickshell.env("HOME") || "")
     readonly property string configDir: homeDir + "/.config/lyingshell"
-    readonly property string settingsPath: configDir + "/settings.jsonc"
+    readonly property string settingsPath: configDir + "/settings.json"
 
     Component.onCompleted: initialize()
-
-    QtObject {
-        id: optionsSettings
-
-        property string language: "en"
-        readonly property QtObject bar: QtObject {
-            property real height: 32
-            readonly property QtObject workspaces: QtObject {
-                property bool reverseScroll: false
-                property bool scrollLoop: true
-                property bool urgentPulse: true
-            }
-        }
-        readonly property QtObject theme: QtObject {
-            property string mode: "system"
-            property string accentColor: "#4F6357"
-            property string font: "Noto Sans"
-        }
-    }
 
     Timer {
         id: externalReloadTimer
@@ -47,7 +28,7 @@ Singleton {
 
         onTriggered: {
             if (runtimeSettingsFile.path.length > 0) {
-                runtimeSettingsFile.reload();
+                root.reloadRuntimeSettings();
             }
         }
     }
@@ -93,17 +74,20 @@ Singleton {
         onFileChanged: externalReloadTimer.restart()
 
         onLoaded: {
-            root.loadRuntimeSettings();
+            root.loadingRuntimeFile = false;
+            root.isLoaded = true;
+            root.errorMessage = "";
         }
 
         onSaved: {
             if (root.creatingRuntimeFile) {
                 root.creatingRuntimeFile = false;
-                reload();
+                root.reloadRuntimeSettings();
             }
         }
 
         onLoadFailed: function(error) {
+            root.loadingRuntimeFile = false;
             if (error === FileViewError.FileNotFound) {
                 root.createRuntimeSettingsFile();
                 return;
@@ -115,8 +99,36 @@ Singleton {
 
         onSaveFailed: function(error) {
             root.creatingRuntimeFile = false;
+            root.loadingRuntimeFile = false;
             root.ensureLoadedWithDefaults();
             root.handleRuntimeSettingsError("Failed to create settings file: " + FileViewError.toString(error));
+        }
+
+        onAdapterUpdated: {
+            if (!root.isLoaded || root.loadingRuntimeFile || root.creatingRuntimeFile) {
+                return;
+            }
+
+            writeAdapter();
+        }
+
+        adapter: JsonAdapter {
+            id: settingsAdapter
+
+            property string language: "en"
+            property JsonObject bar: JsonObject {
+                property real height: 32
+                property JsonObject workspaces: JsonObject {
+                    property bool reverseScroll: false
+                    property bool scrollLoop: true
+                    property bool urgentPulse: true
+                }
+            }
+            property JsonObject theme: JsonObject {
+                property string mode: "system"
+                property string accentColor: "#4F6357"
+                property string font: "Noto Sans"
+            }
         }
     }
 
@@ -128,49 +140,14 @@ Singleton {
         createConfigDir.running = true;
     }
 
-    function loadRuntimeSettings() {
-        var defaults;
-        try {
-            defaults = SettingsSchema.defaultSettings();
-        } catch (error) {
-            handleRuntimeSettingsError("Failed to load default settings: " + SettingsSchema.errorMessageText(error));
-            return;
-        }
-
-        try {
-            var parsed = SettingsSchema.parseRuntime(runtimeSettingsFile.text());
-            applySettings(SettingsSchema.mergeDefaults(defaults, parsed));
-        } catch (error) {
-            ensureLoadedWithDefaults();
-            handleRuntimeSettingsError("Failed to load settings: " + SettingsSchema.errorMessageText(error));
-            return;
-        }
-
-        if (!isLoaded) {
-            isLoaded = true;
-        }
-    }
-
-    function applySettings(nextSettings) {
-        optionsSettings.language = nextSettings.language;
-        optionsSettings.bar.height = nextSettings.bar.height;
-        optionsSettings.bar.workspaces.reverseScroll = nextSettings.bar.workspaces.reverseScroll;
-        optionsSettings.bar.workspaces.scrollLoop = nextSettings.bar.workspaces.scrollLoop;
-        optionsSettings.bar.workspaces.urgentPulse = nextSettings.bar.workspaces.urgentPulse;
-        optionsSettings.theme.mode = nextSettings.theme.mode;
-        optionsSettings.theme.accentColor = nextSettings.theme.accentColor;
-        optionsSettings.theme.font = nextSettings.theme.font;
-        errorMessage = "";
+    function reloadRuntimeSettings() {
+        loadingRuntimeFile = true;
+        runtimeSettingsFile.reload();
     }
 
     function createRuntimeSettingsFile() {
-        try {
-            creatingRuntimeFile = true;
-            runtimeSettingsFile.setText(SettingsSchema.defaultSettingsText());
-        } catch (error) {
-            creatingRuntimeFile = false;
-            handleRuntimeSettingsError("Failed to load default settings: " + SettingsSchema.errorMessageText(error));
-        }
+        creatingRuntimeFile = true;
+        runtimeSettingsFile.writeAdapter();
     }
 
     function ensureLoadedWithDefaults() {
@@ -178,12 +155,7 @@ Singleton {
             return;
         }
 
-        try {
-            applySettings(SettingsSchema.defaultSettings());
-            isLoaded = true;
-        } catch (error) {
-            errorMessage = "Failed to load default settings: " + SettingsSchema.errorMessageText(error);
-        }
+        isLoaded = true;
     }
 
     function handleRuntimeSettingsError(message) {
