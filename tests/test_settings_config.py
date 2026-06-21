@@ -45,6 +45,11 @@ def main() -> None:
     assert "settings.jsonc" not in settings_qml
     assert "JsonAdapter" in settings_qml
     assert "property JsonObject bar" in settings_qml
+    assert "property JsonObject shape" in settings_qml
+    assert "property JsonObject floating" in settings_qml
+    assert "property JsonObject softAttach" in settings_qml
+    assert "property JsonObject fullWidth" in settings_qml
+    assert "property JsonObject hug" in settings_qml
     assert "property JsonObject workspaces" in settings_qml
     assert "property JsonObject theme" in settings_qml
     assert "runtimeSettingsFile.writeAdapter()" in settings_qml
@@ -63,6 +68,18 @@ def main() -> None:
 
     assert 'property string language: "en"' in settings_qml
     assert "property real height: 32" in settings_qml
+    assert 'property string currentShape: "floating"' in settings_qml
+    assert "property int margin: 8" in settings_qml
+    assert "property int cornerRadius: 16" in settings_qml
+    assert "property int topCornerRadius: 0" in settings_qml
+    assert "property int bottomCornerRadius: 16" in settings_qml
+    assert "property int reversedCornerRadius: 16" in settings_qml
+    assert "property bool enableShadow: true" in settings_qml
+    assert "property bool enableShadow: false" in settings_qml
+    assert "property real opacity: 0.92" in settings_qml
+    assert "property real blur: 8.0" in settings_qml
+    assert "property real opacity: 1.0" in settings_qml
+    assert "property real blur: 0.0" in settings_qml
     assert "property bool reverseScroll: false" in settings_qml
     assert "property bool scrollLoop: true" in settings_qml
     assert "property bool urgentPulse: true" in settings_qml

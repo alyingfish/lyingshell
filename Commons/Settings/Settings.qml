@@ -118,6 +118,38 @@ Singleton {
             property string language: "en"
             property JsonObject bar: JsonObject {
                 property real height: 32
+                property string currentShape: "floating"
+                property JsonObject shape: JsonObject {
+                    property JsonObject floating: JsonObject {
+                        property int margin: 8
+                        property int cornerRadius: 16
+                        property bool enableShadow: true
+                        property real opacity: 0.92
+                        property real blur: 8.0
+                    }
+                    property JsonObject softAttach: JsonObject {
+                        property int margin: 0
+                        property int topCornerRadius: 0
+                        property int bottomCornerRadius: 16
+                        property bool enableShadow: true
+                        property real opacity: 0.92
+                        property real blur: 8.0
+                    }
+                    property JsonObject fullWidth: JsonObject {
+                        property int margin: 0
+                        property int cornerRadius: 0
+                        property bool enableShadow: false
+                        property real opacity: 1.0
+                        property real blur: 0.0
+                    }
+                    property JsonObject hug: JsonObject {
+                        property int margin: 0
+                        property int reversedCornerRadius: 16
+                        property bool enableShadow: false
+                        property real opacity: 1.0
+                        property real blur: 0.0
+                    }
+                }
                 property JsonObject workspaces: JsonObject {
                     property bool reverseScroll: false
                     property bool scrollLoop: true

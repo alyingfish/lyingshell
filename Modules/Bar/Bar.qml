@@ -1,5 +1,6 @@
 import QtQuick
 import Quickshell
+import Quickshell.Wayland
 import Qcm.Material as MD
 import qs.Commons.I18n
 import qs.Commons.Settings
@@ -16,24 +17,59 @@ PanelWindow {
         right: true
     }
 
-    implicitHeight: Settings.options.bar.height
-    exclusiveZone: implicitHeight
-    color: MD.Token.color.surface_container
+    // Transparent window; the visible bar is the inset BarSurface so margins,
+    // rounded corners, opacity, and shadow can render around it.
+    color: "transparent"
+    implicitHeight: barSurface.totalHeight
+    exclusiveZone: barSurface.isHidden
+        ? 0
+        : Math.round(barSurface.animMargin + barSurface.barHeight)
+
+    // Restrict input to the visible surface so the transparent margins, shadow
+    // buffer, and slid-away (hidden) state stay click-through.
+    mask: Region {
+        item: maskItem
+    }
+
+    // Best-effort background blur behind the surface. A no-op where the
+    // compositor lacks ext-background-effect-v1 (e.g. current Niri); the rounded
+    // region approximates the bar body (wings excluded).
+    BackgroundEffect.blurRegion: barSurface.blurEnabled ? blurRegion : null
+
+    Region {
+        id: blurRegion
+
+        item: maskItem
+        topLeftRadius: Math.round(barSurface.animTopRadius)
+        topRightRadius: Math.round(barSurface.animTopRadius)
+        bottomLeftRadius: Math.round(barSurface.animBottomRadius)
+        bottomRightRadius: Math.round(barSurface.animBottomRadius)
+    }
+
+    BarSurface {
+        id: barSurface
+
+        anchors.fill: parent
+        barHeight: Settings.options.bar.height
+    }
 
     Item {
         id: content
 
-        readonly property int edgeMargin: 8
+        readonly property int edgeMargin: Math.max(8, Math.round(Math.max(barSurface.animTopRadius, barSurface.animBottomRadius)))
         readonly property int rowSpacing: 8
         readonly property int minimumCenterGap: 24
-        readonly property real availableWidth: width - edgeMargin * 2
+        readonly property real availableWidth: width
         readonly property bool rightContentVisible: availableWidth >= leftContent.implicitWidth + rightContent.implicitWidth + minimumCenterGap
         readonly property bool centerContentVisible: rightContentVisible
             && availableWidth >= leftContent.implicitWidth + rightContent.implicitWidth + centerDateTime.implicitWidth + minimumCenterGap * 2
 
-        anchors.fill: parent
-        anchors.leftMargin: edgeMargin
-        anchors.rightMargin: edgeMargin
+        // Tracks the surface rect (incl. the hidden slide-out) so content
+        // moves with the background instead of blinking on shape change.
+        x: barSurface.surfaceX + edgeMargin
+        y: barSurface.surfaceY
+        width: Math.max(0, barSurface.surfaceWidth - edgeMargin * 2)
+        height: barSurface.surfaceHeight
 
         Row {
             id: leftContent
@@ -85,5 +121,14 @@ PanelWindow {
             anchors.centerIn: parent
             visible: content.centerContentVisible
         }
+    }
+
+    Item {
+        id: maskItem
+
+        x: barSurface.surfaceX
+        y: barSurface.surfaceY
+        width: barSurface.surfaceWidth
+        height: barSurface.surfaceHeight
     }
 }

@@ -54,7 +54,9 @@ def main() -> None:
     assert "Niri.workspacesByOutput[root.screen.name]" in bar
     assert "Niri.focusWorkspaceById(workspaceId)" in bar
     assert "centerContentVisible" in bar
-    assert "readonly property int edgeMargin: 8" in bar
+    # Edge inset keeps an 8px baseline but grows to clear the active shape's
+    # rounded corners.
+    assert "readonly property int edgeMargin: Math.max(8," in bar
     assert "readonly property int rowSpacing: 8" in bar
 
     assert "spacing: 12" in date_time
