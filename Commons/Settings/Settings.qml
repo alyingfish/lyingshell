@@ -151,6 +151,19 @@ Singleton {
                         property real blur: 0.0
                     }
                 }
+                // When currentShape is "autoShape", the shape is selected per
+                // output from live state. Each field is a shape name; "" means
+                // null (do not switch on this state, fall through). See
+                // Modules/Bar/AutoShape.js.
+                property JsonObject autoShape: JsonObject {
+                    property string noWindowShape: "floating"
+                    property string hasWindowShape: "fullWidth"
+                    property string floatingWindowShape: "softAttach"
+                    property string maximizedColumnShape: "hug"
+                    property string overviewShape: "hidden"
+                    property string lockscreenShape: "hidden"
+                    property string unfocusedOutputShape: ""
+                }
                 property JsonObject workspaces: JsonObject {
                     property bool reverseScroll: false
                     property bool scrollLoop: true

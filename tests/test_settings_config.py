@@ -50,6 +50,15 @@ def main() -> None:
     assert "property JsonObject softAttach" in settings_qml
     assert "property JsonObject fullWidth" in settings_qml
     assert "property JsonObject hug" in settings_qml
+    # autoShape: state -> shape map; "" encodes null (no switch on that state).
+    assert "property JsonObject autoShape" in settings_qml
+    assert 'property string noWindowShape: "floating"' in settings_qml
+    assert 'property string hasWindowShape: "fullWidth"' in settings_qml
+    assert 'property string floatingWindowShape: "softAttach"' in settings_qml
+    assert 'property string maximizedColumnShape: "hug"' in settings_qml
+    assert 'property string overviewShape: "hidden"' in settings_qml
+    assert 'property string lockscreenShape: "hidden"' in settings_qml
+    assert 'property string unfocusedOutputShape: ""' in settings_qml
     assert "property JsonObject workspaces" in settings_qml
     assert "property JsonObject theme" in settings_qml
     assert "runtimeSettingsFile.writeAdapter()" in settings_qml

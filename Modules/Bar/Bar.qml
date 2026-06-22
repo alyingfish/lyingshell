@@ -51,6 +51,7 @@ PanelWindow {
 
         anchors.fill: parent
         barHeight: Settings.options.bar.height
+        outputName: root.screen ? root.screen.name : ""
     }
 
     Item {

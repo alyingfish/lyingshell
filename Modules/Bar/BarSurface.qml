@@ -2,6 +2,8 @@ import QtQuick
 import QtQuick.Shapes
 import Qcm.Material as MD
 import qs.Commons.Settings
+import qs.Services.Niri
+import "AutoShape.js" as AutoShape
 
 // Animated Bar background surface. One CurveRenderer Shape whose path, MD3
 // elevation shadow, and fill opacity are driven by scalar properties. Each
@@ -17,7 +19,19 @@ Item {
     // Bar thickness (content band height) supplied by the owning window.
     property real barHeight: 32
 
-    readonly property string shape: Settings.options.bar.currentShape
+    // Output this bar lives on; needed for per-output autoShape resolution.
+    property string outputName: ""
+    // ponytail: inert until a lock signal exists (no lock module / niri IPC
+    // does not expose session-lock). lockscreenShape never matches today.
+    property bool locked: false
+
+    // When currentShape is "autoShape", select a concrete shape per-output from
+    // live Niri state; otherwise pass the setting through. Reads Niri.* inside
+    // resolve() so the binding re-evaluates on state changes, and every
+    // downstream scalar already animates via its Behavior.
+    readonly property string shape: Settings.options.bar.currentShape === "autoShape"
+        ? AutoShape.resolve(Settings.options.bar.autoShape, Niri, outputName, locked)
+        : Settings.options.bar.currentShape
     readonly property var shapeOptions: Settings.options.bar.shape
     readonly property bool isHidden: shape === "hidden"
 

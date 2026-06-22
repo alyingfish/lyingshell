@@ -401,6 +401,7 @@ function normalizeWindow(window, workspacesById) {
         outputName: workspace ? workspace.outputName : "",
         focused: window.is_focused === true,
         urgent: window.is_urgent === true,
+        isFloating: window.is_floating === true,
         layout: window.layout || null
     };
 }
