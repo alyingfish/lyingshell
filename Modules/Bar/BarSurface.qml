@@ -48,9 +48,12 @@ Item {
     // they differ only in corner radius, not in shadow implementation, so they
     // read identically. level2 == 3dp.
     readonly property real shadowElevation: MD.Token.elevation.level2
-    // Drop-shadow fade (0..1). Animates on/off in step with the shape morph; a
-    // single Behavior here (no nested elevation animation) keeps the shadow in
-    // sync instead of lagging a beat behind.
+    // Drop-shadow fade (0..1), applied via the shadow item's `opacity` so it
+    // tweens in step with the shape morph. NOTE: it must NOT be carried by the
+    // shadow color's alpha — RRectShadowImpl drops the color alpha
+    // (QColor::rgb()) before rendering, so a color-alpha fade is a no-op and the
+    // shadow would only vanish when `visible` flips at the very end. Item
+    // opacity reaches the shader's qt_Opacity, which it honours.
     property real shadowStrength: config.shadow ? 1 : 0
 
     // Best-effort background blur (compositor effect; not animated).
@@ -142,22 +145,22 @@ Item {
     // Driven by corner radii from the same animated scalars as the fill, so the
     // shadow tracks the floating<->soft-attach morph. Only those two shapes set
     // config.shadow (shadowStrength > 0); both feed the same component, so their
-    // shadows are identical apart from corner radius. Color alpha carries the
-    // fade (the component applies its own ambient/spot opacities internally).
+    // shadows are identical apart from corner radius. The fade rides on `opacity`
+    // (reaches the shader's qt_Opacity); the color stays full-alpha so the
+    // component can apply its own ambient/spot opacities. `visible` only culls
+    // once fully faded.
     MD.RRectShadowImpl {
         x: root.surfaceX
         y: root.surfaceY
         width: root.surfaceWidth
         height: root.surfaceHeight
         visible: root.shadowStrength > 0.001
+        opacity: root.shadowStrength
         elevation: root.shadowElevation
         corners: MD.Util.corners(root.animTopRadius, root.animTopRadius,
             Math.max(0, root.animBottomRadius), Math.max(0, root.animBottomRadius))
 
-        readonly property color shadowColor: MD.Token.color.shadow
-
-        color: Qt.rgba(shadowColor.r, shadowColor.g, shadowColor.b,
-            shadowColor.a * root.shadowStrength)
+        color: MD.Token.color.shadow
     }
 
     // Surface fill, painted once on top of the shadow.

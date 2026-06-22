@@ -59,6 +59,11 @@ def main() -> None:
     assert "MD.RRectShadowImpl" in surface
     assert "MD.Token.elevation.level2" in surface
     assert "elevation: root.shadowElevation" in surface
+    # The shadow fade MUST ride on item opacity, not color alpha:
+    # RRectShadowImpl drops the color alpha (QColor::rgb()) before rendering, so
+    # a color-alpha fade is a no-op and the shadow would pop off only when
+    # `visible` flips at the end of the morph instead of fading with it.
+    assert "opacity: root.shadowStrength" in surface
     assert "MD.Util.corners(" in surface
     # Fill painted once on top of the shadow.
     assert "id: surfaceFill" in surface
