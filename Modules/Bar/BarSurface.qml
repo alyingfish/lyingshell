@@ -124,6 +124,15 @@ Item {
         width: root.surfaceWidth
         height: root.surfaceHeight
         visible: root.shadowElevation > 0.001
+        // The Skia shadow keeps a constant peak alpha as elevation drops (only
+        // its spread shrinks), so at low elevation it's a thin, still-dark band
+        // that `visible` then hard-culls — a pop, made visible here only because
+        // the bar fill is translucent (an opaque fill, like ElevationRectangle,
+        // hides it). Fade the whole shadow out over the last ~1.5dp via item
+        // opacity, which the shader honors. The shader cubes qt_Opacity
+        // (pow(opacity,3)), so cbrt it here to get a fade that's linear in
+        // elevation rather than a cliff near the top of the ramp.
+        opacity: Math.cbrt(Math.min(1, root.shadowElevation / 1.5))
         elevation: root.shadowElevation
         corners: MD.Util.corners(root.animTopRadius, root.animTopRadius,
             Math.max(0, root.animBottomRadius), Math.max(0, root.animBottomRadius))
