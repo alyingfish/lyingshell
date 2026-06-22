@@ -74,8 +74,8 @@ def main() -> None:
     assert "property int topCornerRadius: 0" in settings_qml
     assert "property int bottomCornerRadius: 16" in settings_qml
     assert "property int reversedCornerRadius: 16" in settings_qml
-    assert "property bool enableShadow: true" in settings_qml
-    assert "property bool enableShadow: false" in settings_qml
+    assert "property real elevation: 3" in settings_qml
+    assert "property real elevation: 0" in settings_qml
     assert "property real opacity: 0.92" in settings_qml
     assert "property real blur: 8.0" in settings_qml
     assert "property real opacity: 1.0" in settings_qml

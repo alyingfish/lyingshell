@@ -53,17 +53,17 @@ def main() -> None:
     assert "MD.Token.color.surface_container" in surface
     assert "MD.Token.color.shadow" in surface
     # MD3 elevation via QmlMaterial's own RRectShadowImpl (Skia ambient + spot
-    # model). Only floating/soft-attach enable a shadow, and both are rounded
-    # rects, so both feed the SAME component for an identical look (differ only in
-    # corner radius). Driven by the animated radii + an elevation token.
+    # model). Every shape feeds the SAME component, differing only in corner
+    # radius and the user-configurable per-shape `elevation` (dp). Depth is
+    # driven by the animated radii + the animated shadowElevation scalar.
     assert "MD.RRectShadowImpl" in surface
-    assert "MD.Token.elevation.level2" in surface
     assert "elevation: root.shadowElevation" in surface
-    # The shadow fade MUST ride on item opacity, not color alpha:
-    # RRectShadowImpl drops the color alpha (QColor::rgb()) before rendering, so
-    # a color-alpha fade is a no-op and the shadow would pop off only when
-    # `visible` flips at the end of the morph instead of fading with it.
-    assert "opacity: root.shadowStrength" in surface
+    assert "property real shadowElevation: config.elevation" in surface
+    # The shadow fade MUST ride on elevation, not color alpha: RRectShadowImpl
+    # drops the color alpha (QColor::rgb()) before rendering, so a color-alpha
+    # fade is a no-op. A shape with elevation 0 renders no shadow; `visible`
+    # culls only once the depth eases to ~0.
+    assert "visible: root.shadowElevation > 0.001" in surface
     assert "MD.Util.corners(" in surface
     # Fill painted once on top of the shadow.
     assert "id: surfaceFill" in surface
@@ -73,7 +73,7 @@ def main() -> None:
 
     # --- BarSurface: animated scalars all have Behaviors ------------------
     for scalar in ("animMargin", "animTopRadius", "animBottomRadius",
-                   "animReversed", "animOpacity", "shadowStrength", "revealOffset"):
+                   "animReversed", "animOpacity", "shadowElevation", "revealOffset"):
         assert "property real " + scalar in surface, scalar
         assert "Behavior on " + scalar in surface, scalar
 

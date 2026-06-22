@@ -42,19 +42,17 @@ Item {
     property real animOpacity: config.opacity
     property real revealOffset: isHidden ? -(animMargin + barHeight + shadowBuffer + 8) : 0
 
-    // MD3 elevation, via QmlMaterial's own RRectShadowImpl (the Skia ambient +
-    // spot light shadow model). Only floating and soft-attach enable a shadow,
-    // and both are rounded rects, so both go through the SAME RRectShadowImpl —
-    // they differ only in corner radius, not in shadow implementation, so they
-    // read identically. level2 == 3dp.
-    readonly property real shadowElevation: MD.Token.elevation.level2
-    // Drop-shadow fade (0..1), applied via the shadow item's `opacity` so it
-    // tweens in step with the shape morph. NOTE: it must NOT be carried by the
-    // shadow color's alpha — RRectShadowImpl drops the color alpha
-    // (QColor::rgb()) before rendering, so a color-alpha fade is a no-op and the
-    // shadow would only vanish when `visible` flips at the very end. Item
-    // opacity reaches the shader's qt_Opacity, which it honours.
-    property real shadowStrength: config.shadow ? 1 : 0
+    // MD3 elevation (dp) of the bar's drop shadow, user-configurable per shape
+    // via Settings.options.bar.shape.<shape>.elevation. Feeds QmlMaterial's
+    // RRectShadowImpl (the Skia ambient + spot light shadow model) directly:
+    // 0 == no shadow, higher values spread/soften the shadow and push it further
+    // down. Every shape goes through the SAME RRectShadowImpl, differing only in
+    // corner radius and this elevation. Animated so the depth tweens in step with
+    // the shape morph (e.g. floating's 3dp eases to full-width's 0dp), and so a
+    // shadow grows/shrinks naturally rather than popping. The fade rides on
+    // elevation, not opacity or color alpha — RRectShadowImpl drops the color
+    // alpha (QColor::rgb()) before rendering, so a color-alpha fade is a no-op.
+    property real shadowElevation: config.elevation
 
     // Best-effort background blur (compositor effect; not animated).
     readonly property real blurSigma: config.blur
@@ -65,7 +63,7 @@ Item {
     Behavior on animBottomRadius { NumberAnimation { duration: MD.Token.duration.medium2; easing: MD.Token.easing.emphasized } }
     Behavior on animReversed { NumberAnimation { duration: MD.Token.duration.medium2; easing: MD.Token.easing.emphasized } }
     Behavior on animOpacity { NumberAnimation { duration: MD.Token.duration.medium2; easing: MD.Token.easing.standard } }
-    Behavior on shadowStrength { NumberAnimation { duration: MD.Token.duration.medium2; easing: MD.Token.easing.standard } }
+    Behavior on shadowElevation { NumberAnimation { duration: MD.Token.duration.medium2; easing: MD.Token.easing.standard } }
     Behavior on revealOffset { NumberAnimation { duration: MD.Token.duration.long2; easing: MD.Token.easing.emphasized } }
 
     // ---- Derived surface rectangle within this item ----
@@ -84,24 +82,24 @@ Item {
         case "floating":
             return { margin: o.floating.margin, topRadius: o.floating.cornerRadius,
                 bottomRadius: o.floating.cornerRadius, reversed: 0,
-                opacity: o.floating.opacity, shadow: o.floating.enableShadow,
+                opacity: o.floating.opacity, elevation: o.floating.elevation,
                 blur: o.floating.blur };
         case "soft-attach":
             return { margin: o.softAttach.margin, topRadius: o.softAttach.topCornerRadius,
                 bottomRadius: o.softAttach.bottomCornerRadius, reversed: 0,
-                opacity: o.softAttach.opacity, shadow: o.softAttach.enableShadow,
+                opacity: o.softAttach.opacity, elevation: o.softAttach.elevation,
                 blur: o.softAttach.blur };
         case "hug":
             return { margin: o.hug.margin, topRadius: 0, bottomRadius: 0,
                 reversed: o.hug.reversedCornerRadius,
-                opacity: o.hug.opacity, shadow: o.hug.enableShadow,
+                opacity: o.hug.opacity, elevation: o.hug.elevation,
                 blur: o.hug.blur };
         case "hidden":
         case "full-width":
         default:
             return { margin: o.fullWidth.margin, topRadius: o.fullWidth.cornerRadius,
                 bottomRadius: o.fullWidth.cornerRadius, reversed: 0,
-                opacity: o.fullWidth.opacity, shadow: o.fullWidth.enableShadow,
+                opacity: o.fullWidth.opacity, elevation: o.fullWidth.elevation,
                 blur: o.fullWidth.blur };
         }
     }
@@ -143,19 +141,17 @@ Item {
     // is the Skia ambient + spot model (soft ambient base + a downward-projected
     // directional shadow), so it reads as natural depth rather than a flat halo.
     // Driven by corner radii from the same animated scalars as the fill, so the
-    // shadow tracks the floating<->soft-attach morph. Only those two shapes set
-    // config.shadow (shadowStrength > 0); both feed the same component, so their
-    // shadows are identical apart from corner radius. The fade rides on `opacity`
-    // (reaches the shader's qt_Opacity); the color stays full-alpha so the
-    // component can apply its own ambient/spot opacities. `visible` only culls
-    // once fully faded.
+    // shadow tracks the floating<->soft-attach morph. The user-configurable
+    // per-shape `elevation` (animated via root.shadowElevation) sets the depth:
+    // the shadow grows/shrinks with it, and a shape whose elevation is 0 renders
+    // no shadow. The color stays full-alpha so the component can apply its own
+    // ambient/spot opacities. `visible` culls once the depth eases to ~0.
     MD.RRectShadowImpl {
         x: root.surfaceX
         y: root.surfaceY
         width: root.surfaceWidth
         height: root.surfaceHeight
-        visible: root.shadowStrength > 0.001
-        opacity: root.shadowStrength
+        visible: root.shadowElevation > 0.001
         elevation: root.shadowElevation
         corners: MD.Util.corners(root.animTopRadius, root.animTopRadius,
             Math.max(0, root.animBottomRadius), Math.max(0, root.animBottomRadius))

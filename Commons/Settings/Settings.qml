@@ -123,7 +123,7 @@ Singleton {
                     property JsonObject floating: JsonObject {
                         property int margin: 8
                         property int cornerRadius: 16
-                        property bool enableShadow: true
+                        property real elevation: 3
                         property real opacity: 0.92
                         property real blur: 8.0
                     }
@@ -131,21 +131,21 @@ Singleton {
                         property int margin: 0
                         property int topCornerRadius: 0
                         property int bottomCornerRadius: 16
-                        property bool enableShadow: true
+                        property real elevation: 3
                         property real opacity: 0.92
                         property real blur: 8.0
                     }
                     property JsonObject fullWidth: JsonObject {
                         property int margin: 0
                         property int cornerRadius: 0
-                        property bool enableShadow: false
+                        property real elevation: 0
                         property real opacity: 1.0
                         property real blur: 0.0
                     }
                     property JsonObject hug: JsonObject {
                         property int margin: 0
                         property int reversedCornerRadius: 16
-                        property bool enableShadow: false
+                        property real elevation: 0
                         property real opacity: 1.0
                         property real blur: 0.0
                     }
