@@ -21,11 +21,17 @@ Item {
     readonly property var shapeOptions: Settings.options.bar.shape
     readonly property bool isHidden: shape === "hidden"
 
-    // Discrete per-shape geometry target, re-resolved when shape/settings change.
-    readonly property var config: resolveConfig(shape)
+    // The last non-hidden shape, so `hidden` keeps the current geometry while it
+    // slides away instead of first morphing to full-width.
+    property string lastVisibleShape: "floating"
+    onShapeChanged: if (shape !== "hidden") lastVisibleShape = shape
 
-    // Extra vertical room kept below the bar so the elevation shadow (and, in
-    // PR3, the hug overhang) is not clipped by the layer surface.
+    // Discrete per-shape geometry target, re-resolved when shape/settings change.
+    readonly property var config: resolveConfig(isHidden ? lastVisibleShape : shape)
+
+    // Extra vertical room kept below the bar so the elevation shadow and the hug
+    // overhang are not clipped by the layer surface. This region is click-through
+    // (see Bar.qml mask), so the headroom is free.
     readonly property real shadowBuffer: 24
 
     // ---- Animated scalars (binding target + Behavior == smooth morph) ----
@@ -34,8 +40,18 @@ Item {
     property real animBottomRadius: config.bottomRadius
     property real animReversed: config.reversed
     property real animOpacity: config.opacity
-    property real animElevation: config.shadow ? MD.Token.elevation.level2 : MD.Token.elevation.level0
     property real revealOffset: isHidden ? -(animMargin + barHeight + shadowBuffer + 8) : 0
+
+    // MD3 elevation, via QmlMaterial's own RRectShadowImpl (the Skia ambient +
+    // spot light shadow model). Only floating and soft-attach enable a shadow,
+    // and both are rounded rects, so both go through the SAME RRectShadowImpl —
+    // they differ only in corner radius, not in shadow implementation, so they
+    // read identically. level2 == 3dp.
+    readonly property real shadowElevation: MD.Token.elevation.level2
+    // Drop-shadow fade (0..1). Animates on/off in step with the shape morph; a
+    // single Behavior here (no nested elevation animation) keeps the shadow in
+    // sync instead of lagging a beat behind.
+    property real shadowStrength: config.shadow ? 1 : 0
 
     // Best-effort background blur (compositor effect; not animated).
     readonly property real blurSigma: config.blur
@@ -46,7 +62,7 @@ Item {
     Behavior on animBottomRadius { NumberAnimation { duration: MD.Token.duration.medium2; easing: MD.Token.easing.emphasized } }
     Behavior on animReversed { NumberAnimation { duration: MD.Token.duration.medium2; easing: MD.Token.easing.emphasized } }
     Behavior on animOpacity { NumberAnimation { duration: MD.Token.duration.medium2; easing: MD.Token.easing.standard } }
-    Behavior on animElevation { NumberAnimation { duration: MD.Token.duration.medium2; easing: MD.Token.easing.emphasized } }
+    Behavior on shadowStrength { NumberAnimation { duration: MD.Token.duration.medium2; easing: MD.Token.easing.standard } }
     Behavior on revealOffset { NumberAnimation { duration: MD.Token.duration.long2; easing: MD.Token.easing.emphasized } }
 
     // ---- Derived surface rectangle within this item ----
@@ -87,62 +103,67 @@ Item {
         }
     }
 
-    // Clockwise rounded-rect SVG path with independent top/bottom corner radii.
-    function rectPath(w, h, tl, tr, br, bl) {
-        const maxR = Math.min(w, h) / 2;
-        tl = Math.max(0, Math.min(tl, maxR));
-        tr = Math.max(0, Math.min(tr, maxR));
-        br = Math.max(0, Math.min(br, maxR));
-        bl = Math.max(0, Math.min(bl, maxR));
+    // One continuous CurveRenderer path for every shape. Top corners are convex
+    // (`animTopRadius`). The bottom is a single SIGNED value
+    // `animBottomRadius - animReversed`: positive draws convex corners
+    // (floating/soft-attach/full-width), negative draws reversed concave wings
+    // that extend below the baseline (hug). Sweeping through 0 (square) makes
+    // every transition — including hug<->convex shapes — morph continuously.
+    function surfacePath(w, h) {
+        const lim = Math.min(w / 2, h);
+        const tr = Math.max(0, Math.min(animTopRadius, lim));
+        const tl = tr;
+        const signed = animBottomRadius - animReversed;
+        const convex = signed >= 0;
+        const b = Math.max(0, Math.min(Math.abs(signed), lim));
+
         let p = "M " + tl + " 0";
         p += " L " + (w - tr) + " 0";
         p += (tr > 0.01) ? (" A " + tr + " " + tr + " 0 0 1 " + w + " " + tr) : (" L " + w + " 0");
-        p += " L " + w + " " + (h - br);
-        p += (br > 0.01) ? (" A " + br + " " + br + " 0 0 1 " + (w - br) + " " + h) : (" L " + w + " " + h);
-        p += " L " + bl + " " + h;
-        p += (bl > 0.01) ? (" A " + bl + " " + bl + " 0 0 1 0 " + (h - bl)) : (" L 0 " + h);
+        if (convex) {
+            p += " L " + w + " " + (h - b);
+            p += (b > 0.01) ? (" A " + b + " " + b + " 0 0 1 " + (w - b) + " " + h) : (" L " + w + " " + h);
+            p += " L " + b + " " + h;
+            p += (b > 0.01) ? (" A " + b + " " + b + " 0 0 1 0 " + (h - b)) : (" L 0 " + h);
+        } else {
+            p += " L " + w + " " + (h + b);
+            p += (b > 0.01) ? (" A " + b + " " + b + " 0 0 0 " + (w - b) + " " + h) : (" L " + w + " " + h);
+            p += " L " + b + " " + h;
+            p += (b > 0.01) ? (" A " + b + " " + b + " 0 0 0 0 " + (h + b)) : (" L 0 " + h);
+        }
         p += " L 0 " + tl;
         p += (tl > 0.01) ? (" A " + tl + " " + tl + " 0 0 1 " + tl + " 0") : (" L 0 0");
         return p + " Z";
     }
 
-    // `hug` path: square top + full width, with the bottom-left/right edges
-    // extended downward by `r` and closed with inner reversed (concave) fillets.
-    // At r == 0 this collapses to the plain rectangle, so morphing in/out of
-    // full-width stays continuous.
-    function hugPath(w, h, r) {
-        r = Math.max(0, Math.min(r, Math.min(w / 2, h)));
-        let p = "M 0 0 L " + w + " 0";
-        if (r > 0.01) {
-            p += " L " + w + " " + (h + r);
-            p += " A " + r + " " + r + " 0 0 0 " + (w - r) + " " + h;
-            p += " L " + r + " " + h;
-            p += " A " + r + " " + r + " 0 0 0 0 " + (h + r);
-        } else {
-            p += " L " + w + " " + h + " L 0 " + h;
-        }
-        return p + " Z";
-    }
-
-    function surfacePath(w, h) {
-        return animReversed > 0.01
-            ? hugPath(w, h, animReversed)
-            : rectPath(w, h, animTopRadius, animTopRadius, animBottomRadius, animBottomRadius);
-    }
-
-    // MD3 drop shadow behind the surface (hidden at elevation level0).
-    MD.Elevation {
+    // MD3 elevation shadow, drawn behind the fill. QmlMaterial's RRectShadowImpl
+    // is the Skia ambient + spot model (soft ambient base + a downward-projected
+    // directional shadow), so it reads as natural depth rather than a flat halo.
+    // Driven by corner radii from the same animated scalars as the fill, so the
+    // shadow tracks the floating<->soft-attach morph. Only those two shapes set
+    // config.shadow (shadowStrength > 0); both feed the same component, so their
+    // shadows are identical apart from corner radius. Color alpha carries the
+    // fade (the component applies its own ambient/spot opacities internally).
+    MD.RRectShadowImpl {
         x: root.surfaceX
         y: root.surfaceY
         width: root.surfaceWidth
         height: root.surfaceHeight
-        elevation: root.animElevation
+        visible: root.shadowStrength > 0.001
+        elevation: root.shadowElevation
         corners: MD.Util.corners(root.animTopRadius, root.animTopRadius,
-            root.animBottomRadius, root.animBottomRadius)
+            Math.max(0, root.animBottomRadius), Math.max(0, root.animBottomRadius))
+
+        readonly property color shadowColor: MD.Token.color.shadow
+
+        color: Qt.rgba(shadowColor.r, shadowColor.g, shadowColor.b,
+            shadowColor.a * root.shadowStrength)
     }
 
-    // Surface fill.
+    // Surface fill, painted once on top of the shadow.
     MD.Shape {
+        id: surfaceFill
+
         x: root.surfaceX
         y: root.surfaceY
         width: root.surfaceWidth

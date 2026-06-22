@@ -36,35 +36,43 @@ def main() -> None:
     assert "o.fullWidth.cornerRadius" in surface
     assert "o.hug.reversedCornerRadius" in surface
 
-    # --- BarSurface: geometry + path generators ---------------------------
-    assert "function rectPath(" in surface
-    assert "function hugPath(" in surface
+    # --- BarSurface: one continuous signed-bottom path generator ----------
     assert "function surfacePath(" in surface
-    # Concave fillets use SVG sweep-flag 0; convex corners use sweep-flag 1.
+    # Single signed bottom value morphs convex<->concave continuously.
+    assert "animBottomRadius - animReversed" in surface
+    # Concave wings use SVG sweep-flag 0; convex corners use sweep-flag 1.
     assert "0 0 0 " in surface
     assert "0 0 1 " in surface
-    # hug renders only while the reversed radius is non-trivial.
-    assert "animReversed > 0.01" in surface
+    # hidden keeps the last visible shape's geometry while sliding away.
+    assert "property string lastVisibleShape" in surface
+    assert "if (shape !== \"hidden\") lastVisibleShape = shape" in surface
 
-    # --- BarSurface: MD3 tokens for motion, elevation, color --------------
+    # --- BarSurface: MD3 tokens + directional drop shadow -----------------
     assert "MD.Token.duration." in surface
     assert "MD.Token.easing." in surface
-    assert "MD.Token.elevation.level2" in surface
-    assert "MD.Token.elevation.level0" in surface
     assert "MD.Token.color.surface_container" in surface
-    assert "MD.Elevation" in surface
+    assert "MD.Token.color.shadow" in surface
+    # MD3 elevation via QmlMaterial's own RRectShadowImpl (Skia ambient + spot
+    # model). Only floating/soft-attach enable a shadow, and both are rounded
+    # rects, so both feed the SAME component for an identical look (differ only in
+    # corner radius). Driven by the animated radii + an elevation token.
+    assert "MD.RRectShadowImpl" in surface
+    assert "MD.Token.elevation.level2" in surface
+    assert "elevation: root.shadowElevation" in surface
     assert "MD.Util.corners(" in surface
+    # Fill painted once on top of the shadow.
+    assert "id: surfaceFill" in surface
     # Opacity is fill-alpha, not item opacity.
     assert "Qt.rgba(" in surface
     assert "fillColor:" in surface
 
     # --- BarSurface: animated scalars all have Behaviors ------------------
     for scalar in ("animMargin", "animTopRadius", "animBottomRadius",
-                   "animReversed", "animOpacity", "animElevation", "revealOffset"):
+                   "animReversed", "animOpacity", "shadowStrength", "revealOffset"):
         assert "property real " + scalar in surface, scalar
         assert "Behavior on " + scalar in surface, scalar
 
-    # Shadow buffer keeps the elevation/hug overhang from being clipped.
+    # Shadow buffer keeps the shadow/hug overhang from being clipped.
     assert "shadowBuffer" in surface
 
     # --- BarSurface: best-effort blur exposure ----------------------------
