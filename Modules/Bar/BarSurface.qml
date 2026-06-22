@@ -22,7 +22,7 @@ Item {
     readonly property bool isHidden: shape === "hidden"
 
     // The last non-hidden shape, so `hidden` keeps the current geometry while it
-    // slides away instead of first morphing to full-width.
+    // slides away instead of first morphing to fullWidth.
     property string lastVisibleShape: "floating"
     onShapeChanged: if (shape !== "hidden") lastVisibleShape = shape
 
@@ -48,7 +48,7 @@ Item {
     // 0 == no shadow, higher values spread/soften the shadow and push it further
     // down. Every shape goes through the SAME RRectShadowImpl, differing only in
     // corner radius and this elevation. Animated so the depth tweens in step with
-    // the shape morph (e.g. floating's 3dp eases to full-width's 0dp), and so a
+    // the shape morph (e.g. floating's 3dp eases to fullWidth's 0dp), and so a
     // shadow grows/shrinks naturally rather than popping. The fade rides on
     // elevation, not opacity or color alpha — RRectShadowImpl drops the color
     // alpha (QColor::rgb()) before rendering, so a color-alpha fade is a no-op.
@@ -84,7 +84,7 @@ Item {
                 bottomRadius: o.floating.cornerRadius, reversed: 0,
                 opacity: o.floating.opacity, elevation: o.floating.elevation,
                 blur: o.floating.blur };
-        case "soft-attach":
+        case "softAttach":
             return { margin: o.softAttach.margin, topRadius: o.softAttach.topCornerRadius,
                 bottomRadius: o.softAttach.bottomCornerRadius, reversed: 0,
                 opacity: o.softAttach.opacity, elevation: o.softAttach.elevation,
@@ -95,7 +95,7 @@ Item {
                 opacity: o.hug.opacity, elevation: o.hug.elevation,
                 blur: o.hug.blur };
         case "hidden":
-        case "full-width":
+        case "fullWidth":
         default:
             return { margin: o.fullWidth.margin, topRadius: o.fullWidth.cornerRadius,
                 bottomRadius: o.fullWidth.cornerRadius, reversed: 0,
@@ -107,7 +107,7 @@ Item {
     // One continuous CurveRenderer path for every shape. Top corners are convex
     // (`animTopRadius`). The bottom is a single SIGNED value
     // `animBottomRadius - animReversed`: positive draws convex corners
-    // (floating/soft-attach/full-width), negative draws reversed concave wings
+    // (floating/softAttach/fullWidth), negative draws reversed concave wings
     // that extend below the baseline (hug). Sweeping through 0 (square) makes
     // every transition — including hug<->convex shapes — morph continuously.
     function surfacePath(w, h) {
@@ -141,7 +141,7 @@ Item {
     // is the Skia ambient + spot model (soft ambient base + a downward-projected
     // directional shadow), so it reads as natural depth rather than a flat halo.
     // Driven by corner radii from the same animated scalars as the fill, so the
-    // shadow tracks the floating<->soft-attach morph. The user-configurable
+    // shadow tracks the floating<->softAttach morph. The user-configurable
     // per-shape `elevation` (animated via root.shadowElevation) sets the depth:
     // the shadow grows/shrinks with it, and a shape whose elevation is 0 renders
     // no shadow. The color stays full-alpha so the component can apply its own

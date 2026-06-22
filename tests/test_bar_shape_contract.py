@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the Bar shape surface contract (floating/soft-attach/full-width/hug/hidden)."""
+"""Validate the Bar shape surface contract (floating/softAttach/fullWidth/hug/hidden)."""
 
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ def main() -> None:
     assert "import Qcm.Material as MD" in surface
     assert "Settings.options.bar.currentShape" in surface
     assert "readonly property var shapeOptions: Settings.options.bar.shape" in surface
-    for name in ('"floating"', '"soft-attach"', '"full-width"', '"hug"', '"hidden"'):
+    for name in ('"floating"', '"softAttach"', '"fullWidth"', '"hug"', '"hidden"'):
         assert name in surface, name
 
     # Each shape's leaves are consumed from settings.
