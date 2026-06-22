@@ -26,15 +26,24 @@ def main() -> None:
     assert "import Qcm.Material as MD" in surface
     assert "Settings.options.bar.currentShape" in surface
     assert "readonly property var shapeOptions: Settings.options.bar.shape" in surface
-    for name in ('"floating"', '"softAttach"', '"fullWidth"', '"hug"', '"hidden"'):
+    # fullWidth is the unquoted fallback target (shapeOptions.fullWidth); the
+    # rest are matched by name in the geometry bindings.
+    for name in ('"floating"', '"softAttach"', '"hug"', '"hidden"'):
         assert name in surface, name
 
-    # Each shape's leaves are consumed from settings.
-    assert "o.floating.cornerRadius" in surface
-    assert "o.softAttach.topCornerRadius" in surface
-    assert "o.softAttach.bottomCornerRadius" in surface
-    assert "o.fullWidth.cornerRadius" in surface
-    assert "o.hug.reversedCornerRadius" in surface
+    # Uniform settings: the active shape's object is indexed by name (fullWidth
+    # fallback) and its leaves consumed directly, no per-shape resolver.
+    assert "resolveConfig" not in surface
+    assert "shapeOptions[activeShape]" in surface
+    assert "shapeOptions.fullWidth" in surface
+    for leaf in ("config.margin", "config.radius", "config.opacity",
+                 "config.elevation", "config.blur"):
+        assert leaf in surface, leaf
+    # The single `radius` lands per shape: softAttach/hug square the top,
+    # hug squares the bottom and drives the reversed concave wings.
+    assert 'activeShape === "softAttach" || activeShape === "hug" ? 0 : config.radius' in surface
+    assert 'activeShape === "hug" ? 0 : config.radius' in surface
+    assert 'activeShape === "hug" ? config.radius : 0' in surface
 
     # --- BarSurface: one continuous signed-bottom path generator ----------
     assert "function surfacePath(" in surface
@@ -83,7 +92,6 @@ def main() -> None:
     # --- BarSurface: best-effort blur exposure ----------------------------
     assert "readonly property real blurSigma: config.blur" in surface
     assert "readonly property bool blurEnabled: blurSigma > 0" in surface
-    assert "o.floating.blur" in surface
 
     # --- Bar.qml: window wiring -------------------------------------------
     assert "import Quickshell.Wayland" in bar

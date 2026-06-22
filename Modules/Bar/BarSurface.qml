@@ -26,8 +26,15 @@ Item {
     property string lastVisibleShape: "floating"
     onShapeChanged: if (shape !== "hidden") lastVisibleShape = shape
 
-    // Discrete per-shape geometry target, re-resolved when shape/settings change.
-    readonly property var config: resolveConfig(isHidden ? lastVisibleShape : shape)
+    // Active shape (held at the last visible one while hidden) and its uniform
+    // settings object. Fall back to fullWidth for an unknown currentShape.
+    readonly property string activeShape: isHidden ? lastVisibleShape : shape
+    readonly property var config: shapeOptions[activeShape] || shapeOptions.fullWidth
+
+    // Where the shape's single `radius` lands: floating/fullWidth round all
+    // corners, softAttach only the bottom, hug turns it into reversed concave
+    // wings (top/bottom stay square).
+    readonly property real reversedTarget: activeShape === "hug" ? config.radius : 0
 
     // Extra vertical room kept below the bar so the elevation shadow and the hug
     // overhang are not clipped by the layer surface. This region is click-through
@@ -36,22 +43,15 @@ Item {
 
     // ---- Animated scalars (binding target + Behavior == smooth morph) ----
     property real animMargin: config.margin
-    property real animTopRadius: config.topRadius
-    property real animBottomRadius: config.bottomRadius
-    property real animReversed: config.reversed
+    property real animTopRadius: activeShape === "softAttach" || activeShape === "hug" ? 0 : config.radius
+    property real animBottomRadius: activeShape === "hug" ? 0 : config.radius
+    property real animReversed: reversedTarget
     property real animOpacity: config.opacity
     property real revealOffset: isHidden ? -(animMargin + barHeight + shadowBuffer + 8) : 0
 
-    // MD3 elevation (dp) of the bar's drop shadow, user-configurable per shape
-    // via Settings.options.bar.shape.<shape>.elevation. Feeds QmlMaterial's
-    // RRectShadowImpl (the Skia ambient + spot light shadow model) directly:
-    // 0 == no shadow, higher values spread/soften the shadow and push it further
-    // down. Every shape goes through the SAME RRectShadowImpl, differing only in
-    // corner radius and this elevation. Animated so the depth tweens in step with
-    // the shape morph (e.g. floating's 3dp eases to fullWidth's 0dp), and so a
-    // shadow grows/shrinks naturally rather than popping. The fade rides on
-    // elevation, not opacity or color alpha — RRectShadowImpl drops the color
-    // alpha (QColor::rgb()) before rendering, so a color-alpha fade is a no-op.
+    // MD3 elevation (dp) feeding RRectShadowImpl, animated so depth tweens with
+    // the morph. The fade MUST ride on elevation, not color alpha: RRectShadowImpl
+    // drops the color alpha before rendering, so an alpha fade is a no-op.
     property real shadowElevation: config.elevation
 
     // Best-effort background blur (compositor effect; not animated).
@@ -70,39 +70,11 @@ Item {
     // Keep room below the bar for the shadow and the hug overhang. Uses the
     // discrete target (not the animated value) so the window resizes once per
     // shape switch rather than every animation frame.
-    readonly property real totalHeight: animMargin + barHeight + Math.max(shadowBuffer, config.reversed + 4)
+    readonly property real totalHeight: animMargin + barHeight + Math.max(shadowBuffer, reversedTarget + 4)
     readonly property real surfaceX: animMargin
     readonly property real surfaceY: animMargin + revealOffset
     readonly property real surfaceWidth: Math.max(0, width - animMargin * 2)
     readonly property real surfaceHeight: barHeight
-
-    function resolveConfig(name) {
-        const o = shapeOptions;
-        switch (name) {
-        case "floating":
-            return { margin: o.floating.margin, topRadius: o.floating.cornerRadius,
-                bottomRadius: o.floating.cornerRadius, reversed: 0,
-                opacity: o.floating.opacity, elevation: o.floating.elevation,
-                blur: o.floating.blur };
-        case "softAttach":
-            return { margin: o.softAttach.margin, topRadius: o.softAttach.topCornerRadius,
-                bottomRadius: o.softAttach.bottomCornerRadius, reversed: 0,
-                opacity: o.softAttach.opacity, elevation: o.softAttach.elevation,
-                blur: o.softAttach.blur };
-        case "hug":
-            return { margin: o.hug.margin, topRadius: 0, bottomRadius: 0,
-                reversed: o.hug.reversedCornerRadius,
-                opacity: o.hug.opacity, elevation: o.hug.elevation,
-                blur: o.hug.blur };
-        case "hidden":
-        case "fullWidth":
-        default:
-            return { margin: o.fullWidth.margin, topRadius: o.fullWidth.cornerRadius,
-                bottomRadius: o.fullWidth.cornerRadius, reversed: 0,
-                opacity: o.fullWidth.opacity, elevation: o.fullWidth.elevation,
-                blur: o.fullWidth.blur };
-        }
-    }
 
     // One continuous CurveRenderer path for every shape. Top corners are convex
     // (`animTopRadius`). The bottom is a single SIGNED value
