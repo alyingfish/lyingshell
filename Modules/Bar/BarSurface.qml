@@ -26,12 +26,18 @@ Item {
     property bool locked: false
 
     // When currentShape is "autoShape", select a concrete shape per-output from
-    // live Niri state; otherwise pass the setting through. Reads Niri.* inside
-    // resolve() so the binding re-evaluates on state changes, and every
-    // downstream scalar already animates via its Behavior.
-    readonly property string shape: Settings.options.bar.currentShape === "autoShape"
-        ? AutoShape.resolve(Settings.options.bar.autoShape, Niri, outputName, locked)
-        : Settings.options.bar.currentShape
+    // live Niri state; otherwise pass the setting through. `width` is the output
+    // logical width (the bar spans the whole output) used for the maximized-
+    // column heuristic. Touch Niri.lastEventVersion so the binding re-evaluates
+    // on every Niri state change: QML property capture does NOT see the Niri.*
+    // reads that happen inside the .pragma library resolve(), so without this
+    // the shape would freeze. Every downstream scalar animates via its Behavior.
+    readonly property string shape: {
+        if (Settings.options.bar.currentShape !== "autoShape")
+            return Settings.options.bar.currentShape;
+        void Niri.lastEventVersion;
+        return AutoShape.resolve(Settings.options.bar.autoShape, Niri, outputName, locked, width);
+    }
     readonly property var shapeOptions: Settings.options.bar.shape
     readonly property bool isHidden: shape === "hidden"
 

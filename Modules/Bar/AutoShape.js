@@ -6,9 +6,11 @@
 // free (BarSurface scalars all have Behaviors).
 //
 // `niri` is the Niri singleton (or any object with the same readonly props):
-//   overviewOpen, focusedOutputName, workspacesByOutput, windowsById,
-//   outputsByName.
-function resolve(autoShape, niri, outputName, locked) {
+//   overviewOpen, focusedOutputName, workspacesByOutput, windowsById.
+// `outputWidth` is this output's logical width (the bar spans the whole
+// output, so the caller passes its own width). niri's event stream does not
+// emit OutputsChanged at connect, so outputsByName is unreliable for geometry.
+function resolve(autoShape, niri, outputName, locked, outputWidth) {
     var pick = function(name) {
         return (typeof name === "string" && name.length > 0) ? name : null;
     };
@@ -37,7 +39,7 @@ function resolve(autoShape, niri, outputName, locked) {
         if (window.isFloating) {
             var f = pick(autoShape.floatingWindowShape);
             if (f) return f;
-        } else if (isMaximizedColumn(niri, outputName, window)) {
+        } else if (isMaximizedColumn(window, outputWidth)) {
             var m = pick(autoShape.maximizedColumnShape);
             if (m) return m;
         }
@@ -67,15 +69,14 @@ function activeWindowFor(niri, outputName) {
 // tiled column whose tile fills ~the whole output width reads as maximized.
 // Swap for a real flag if niri exposes one. Ceiling: a manually full-width
 // column also matches.
-function isMaximizedColumn(niri, outputName, window) {
+function isMaximizedColumn(window, outputWidth) {
     if (!window || window.isFloating || !window.layout || !window.layout.tile_size) {
         return false;
     }
-    var output = niri && niri.outputsByName ? niri.outputsByName[outputName] : null;
-    if (!output || !output.logical || !output.logical.width) {
+    if (!outputWidth) {
         return false;
     }
-    return window.layout.tile_size[0] >= 0.9 * output.logical.width;
+    return window.layout.tile_size[0] >= 0.9 * outputWidth;
 }
 
 // ---- self-check: run with `qjs AutoShape.js` or node ----
@@ -118,27 +119,30 @@ function _demo() {
         return n;
     };
 
+    var W = 2000; // output logical width
     // rule order: locked beats everything
-    assert(resolve(defaults, withWindow(tiled), "DP-1", true) === "hidden", "locked");
+    assert(resolve(defaults, withWindow(tiled), "DP-1", true, W) === "hidden", "locked");
     // overview beats window state
     var ov = withWindow(tiled); ov.overviewOpen = true;
-    assert(resolve(defaults, ov, "DP-1", false) === "hidden", "overview");
+    assert(resolve(defaults, ov, "DP-1", false, W) === "hidden", "overview");
     // unfocused output: default "" falls through to THIS output's own window state
-    assert(resolve(defaults, withWindow(tiled, "DP-2"), "DP-2", false) === "fullWidth", "unfocused null falls through");
+    assert(resolve(defaults, withWindow(tiled, "DP-2"), "DP-2", false, W) === "fullWidth", "unfocused null falls through");
     // unfocused output: when set, wins over window state
     var d2 = Object.assign({}, defaults, { unfocusedOutputShape: "hug" });
-    assert(resolve(d2, withWindow(tiled, "DP-2"), "DP-2", false) === "hug", "unfocused set");
+    assert(resolve(d2, withWindow(tiled, "DP-2"), "DP-2", false, W) === "hug", "unfocused set");
     // no window
-    assert(resolve(defaults, niri({}), "DP-1", false) === "floating", "no window");
+    assert(resolve(defaults, niri({}), "DP-1", false, W) === "floating", "no window");
     // floating focused
-    assert(resolve(defaults, withWindow(floating), "DP-1", false) === "softAttach", "floating");
+    assert(resolve(defaults, withWindow(floating), "DP-1", false, W) === "softAttach", "floating");
     // maximized column (width heuristic)
-    assert(resolve(defaults, withWindow(maxed), "DP-1", false) === "hug", "maximized");
+    assert(resolve(defaults, withWindow(maxed), "DP-1", false, W) === "hug", "maximized");
+    // maximized column but output width unknown -> falls through to hasWindowShape
+    assert(resolve(defaults, withWindow(maxed), "DP-1", false, 0) === "fullWidth", "maximized needs width");
     // normal tiled window
-    assert(resolve(defaults, withWindow(tiled), "DP-1", false) === "fullWidth", "has window");
+    assert(resolve(defaults, withWindow(tiled), "DP-1", false, W) === "fullWidth", "has window");
     // null fall-through: floating field null -> hasWindowShape
     var d3 = Object.assign({}, defaults, { floatingWindowShape: "" });
-    assert(resolve(d3, withWindow(floating), "DP-1", false) === "fullWidth", "floating null falls through");
+    assert(resolve(d3, withWindow(floating), "DP-1", false, W) === "fullWidth", "floating null falls through");
 
     console.log("AutoShape: all checks passed");
 }
