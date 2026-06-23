@@ -101,7 +101,7 @@ PanelWindow {
             MD.Icon {
                 anchors.verticalCenter: parent.verticalCenter
                 name: "dashboard"
-                size: 20
+                size: 16
                 color: MD.Token.color.primary
                 fill: true
             }
