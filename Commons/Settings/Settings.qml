@@ -171,7 +171,7 @@ Singleton {
                 }
             }
             property JsonObject theme: JsonObject {
-                property string mode: "system"
+                property string mode: "light"
                 property string accentColor: "#4F6357"
                 property string font: "Noto Sans"
             }
