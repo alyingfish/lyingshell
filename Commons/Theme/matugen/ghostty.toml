@@ -1,0 +1,5 @@
+[config]
+
+[templates.ghostty]
+input_path = './templates/ghostty'
+output_path = '~/.config/ghostty/lyingshell-colors'

@@ -1,0 +1,5 @@
+[config]
+
+[templates.gtk4]
+input_path = './templates/gtk.css'
+output_path = '~/.config/gtk-4.0/gtk.css'
