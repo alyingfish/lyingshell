@@ -2,11 +2,11 @@
 // Included after layout.kdl so these colors win (niri merges layout nodes).
 layout {
     focus-ring {
-        active-color "{{colors.primary.default.hex}}"
+        active-gradient from="{{colors.primary.default.hex}}" to="{{colors.tertiary.default.hex}}" angle=45 in="oklch shorter hue"
         inactive-color "{{colors.outline_variant.default.hex}}"
     }
     border {
-        active-color "{{colors.primary.default.hex}}"
+        active-gradient from="{{colors.primary.default.hex}}" to="{{colors.tertiary.default.hex}}" angle=45 in="oklch shorter hue"
         inactive-color "{{colors.outline_variant.default.hex}}"
     }
 }
