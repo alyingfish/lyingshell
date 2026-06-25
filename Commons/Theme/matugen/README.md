@@ -21,7 +21,7 @@ mode-appropriate set of fixed ANSI accent hues injected via
 | App | Output | Reload |
 |-----|--------|--------|
 | kitty | `~/.config/kitty/current-theme.conf` | live via `SIGUSR1` post_hook (no remote control needed) |
-| ghostty | `~/.config/ghostty/lyingshell-colors` | new windows |
+| ghostty | `~/.config/ghostty/lyingshell-colors` | live via `SIGUSR2` post_hook |
 | alacritty | `~/.config/alacritty/lyingshell-colors.toml` | auto |
 | niri | `~/.config/niri/lyingshell-colors.kdl` | auto |
 | GTK 3/4 | `~/.config/gtk-{3,4}.0/gtk.css` | app launch |

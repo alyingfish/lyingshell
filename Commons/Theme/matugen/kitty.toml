@@ -5,4 +5,4 @@ input_path = './templates/kitty.conf'
 output_path = '~/.config/kitty/current-theme.conf'
 # kitty reloads its full config (incl. the included theme file) on SIGUSR1 — no
 # remote control needed, unlike `kitty @` which can't reach a tty from the shell.
-post_hook = 'pkill -USR1 -x kitty 2>/dev/null || true'
+post_hook = 'pkill -USR1 -x kitty 2>/dev/null; pkill -USR1 -x .kitty-wrapped 2>/dev/null; true'
