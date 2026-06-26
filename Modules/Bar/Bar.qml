@@ -21,9 +21,14 @@ PanelWindow {
     // rounded corners, opacity, and shadow can render around it.
     color: "transparent"
     implicitHeight: barSurface.totalHeight
+    // Reserve from the discrete target margin, not the animated `animMargin`:
+    // an animated exclusiveZone repushes to the compositor every frame, so the
+    // tiled terminal re-tiles (and reflows) on every morph frame. Using the
+    // settled target makes the zone — and thus the terminal — change exactly
+    // once per shape switch. The surface still morphs smoothly via animMargin.
     exclusiveZone: barSurface.isHidden
         ? 0
-        : Math.round(barSurface.animMargin + barSurface.barHeight)
+        : Math.round(barSurface.config.margin + barSurface.barHeight)
 
     // Restrict input to the visible surface so the transparent margins, shadow
     // buffer, and slid-away (hidden) state stay click-through.
