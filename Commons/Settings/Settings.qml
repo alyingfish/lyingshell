@@ -194,7 +194,6 @@ Singleton {
                 property var transitionType: ["fade"]
                 property int transitionDuration: 1000
                 property real transitionEdgeSmoothness: 0.05
-                property bool skipStartupTransition: false
                 // Niri overview backdrop (needs a place-within-backdrop layer rule).
                 property bool overviewEnabled: true
                 property real overviewBlur: 16

@@ -22,7 +22,6 @@ Variants {
 
             property string transitionType: "fade"
             property real transitionProgress: 0
-            property bool isStartupTransition: true
             property bool wallpaperReady: false
 
             visible: wallpaperReady
@@ -62,7 +61,6 @@ Variants {
 
             Component.onDestruction: {
                 transitionAnimation.stop();
-                startupTransitionTimer.stop();
                 debounceTimer.stop();
                 currentWallpaper.source = "";
                 nextWallpaper.source = "";
@@ -103,15 +101,6 @@ Variants {
                 running: false
                 repeat: false
                 onTriggered: changeWallpaper()
-            }
-
-            // Delay startup transition until the compositor has mapped the window.
-            Timer {
-                id: startupTransitionTimer
-                interval: 100
-                running: false
-                repeat: false
-                onTriggered: _executeStartupTransition()
             }
 
             Image {
@@ -199,9 +188,6 @@ Variants {
                 duration: Settings.options.wallpaper.transitionDuration
                 easing.type: Easing.InOutCubic
                 onFinished: {
-                    if (isStartupTransition) {
-                        isStartupTransition = false;
-                    }
                     transitioningToOriginalPath = "";
 
                     const tempSource = nextWallpaper.source;
@@ -234,7 +220,14 @@ Variants {
                     return;
                 }
                 futureWallpaper = Wallpaper.getWallpaper(modelData.name);
-                performStartupTransition();
+                if (futureWallpaper) {
+                    // Sync-decode the first paint so the window maps with the
+                    // image already Ready instead of hidden behind an async
+                    // decode. Reset to async for later swaps.
+                    currentWallpaper.asynchronous = false;
+                    currentWallpaper.source = futureWallpaper;
+                    Qt.callLater(() => currentWallpaper.asynchronous = true);
+                }
                 Wallpaper.wallpaperProcessingComplete(modelData.name, futureWallpaper, "");
             }
 
@@ -356,38 +349,6 @@ Variants {
                 }
             }
 
-            // ------------------------------------------------------
-            function performStartupTransition() {
-                if (Settings.options.wallpaper.skipStartupTransition || !futureWallpaper) {
-                    setWallpaperImmediate(futureWallpaper);
-                    isStartupTransition = false;
-                    return;
-                }
-
-                // Only wipe/stripes differ from the property defaults at startup;
-                // disc/pixelate/honeycomb already sit at their centered defaults.
-                _pickTransitionType();
-                switch (transitionType) {
-                case "wipe":
-                    wipeDirection = Math.random() * 4;
-                    break;
-                case "stripes":
-                    stripesCount = Math.round(Math.random() * 20 + 4);
-                    stripesAngle = Math.random() * 360;
-                    break;
-                }
-
-                startupTransitionTimer.start();
-            }
-
-            function _executeStartupTransition() {
-                if (transitionType === "none") {
-                    setWallpaperImmediate(futureWallpaper);
-                    isStartupTransition = false;
-                } else {
-                    setWallpaperWithTransition(futureWallpaper);
-                }
-            }
         }
     }
 }
