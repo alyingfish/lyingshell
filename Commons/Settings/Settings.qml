@@ -174,6 +174,9 @@ Singleton {
                 property string mode: "light"
                 property string accentColor: "#4F6357"
                 property string font: "Noto Sans"
+                // When true, accentColor is re-derived from the current wallpaper
+                // via matugen on each wallpaper change. mode stays manual.
+                property bool useWallpaperColor: false
             }
             property JsonObject wallpaper: JsonObject {
                 property bool enabled: true
