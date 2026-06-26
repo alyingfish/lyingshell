@@ -10,3 +10,11 @@ layout {
         inactive-color "{{colors.outline_variant.default.hex}}"
     }
 }
+
+// Pin the shell's overview wallpaper surface into the overview backdrop.
+// Static (color-independent), but lives here so it rides the existing
+// `include "lyingshell-colors.kdl"` — no extra user setup.
+layer-rule {
+    match namespace="lyingshell-overview"
+    place-within-backdrop true
+}

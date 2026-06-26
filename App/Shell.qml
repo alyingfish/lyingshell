@@ -2,6 +2,7 @@ import Quickshell
 import qs.Commons.I18n
 import qs.Commons.Settings
 import qs.Commons.Theme
+import qs.Modules.Background
 import qs.Modules.Bar
 
 Scope {
@@ -9,6 +10,11 @@ Scope {
 
     readonly property bool ready: Settings.isLoaded && I18n.isLoaded
     readonly property string activeThemeMode: Theme.effectiveMode
+
+    // Wallpaper surfaces handle their own per-output Variants/Loaders.
+    Background {}
+
+    Overview {}
 
     Variants {
         model: root.ready ? Quickshell.screens : []

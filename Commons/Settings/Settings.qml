@@ -175,6 +175,28 @@ Singleton {
                 property string accentColor: "#4F6357"
                 property string font: "Noto Sans"
             }
+            property JsonObject wallpaper: JsonObject {
+                property bool enabled: true
+                // Source folder scanned for the picker/IPC; "" → ~/Pictures/Wallpapers.
+                property string directory: ""
+                // Per-output selection: { "DP-1": "/path/a.jpg", ... }. Edit by
+                // hand or via `qs ipc call wallpaper set <path> [output]`.
+                property var perScreen: ({})
+                // Shown on any output without a perScreen entry.
+                property string defaultPath: ""
+                // center | crop | fit | stretch | repeat (maps to shader uniform).
+                property string fillMode: "crop"
+                property string fillColor: "#000000"
+                // Pool to pick from on each change; random when >1, "none" = instant.
+                property var transitionType: ["fade"]
+                property int transitionDuration: 1000
+                property real transitionEdgeSmoothness: 0.05
+                property bool skipStartupTransition: false
+                // Niri overview backdrop (needs a place-within-backdrop layer rule).
+                property bool overviewEnabled: true
+                property real overviewBlur: 16
+                property real overviewTint: 0.3
+            }
         }
     }
 
