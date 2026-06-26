@@ -58,6 +58,15 @@ Singleton {
         function onDirectoryChanged() {
             root.refreshWallpapersList();
         }
+        // Editing defaultPath (settings UI or hand-edited settings.json) must
+        // re-render. Emit per screen via getWallpaper so perScreen overrides win
+        // and unchanged screens no-op in Background's same-path guard.
+        function onDefaultPathChanged() {
+            for (var i = 0; i < Quickshell.screens.length; i++) {
+                var name = Quickshell.screens[i].name;
+                root.wallpaperChanged(name, root.getWallpaper(name));
+            }
+        }
     }
 
     // ----------------------------------------------------------------
