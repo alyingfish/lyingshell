@@ -44,7 +44,8 @@ Item {
     // The last non-hidden shape, so `hidden` keeps the current geometry while it
     // slides away instead of first morphing to fullWidth.
     property string lastVisibleShape: "floating"
-    onShapeChanged: if (shape !== "hidden") lastVisibleShape = shape
+    onShapeChanged: if (shape !== "hidden")
+        lastVisibleShape = shape
 
     // Active shape (held at the last visible one while hidden) and its uniform
     // settings object. Fall back to fullWidth for an unknown currentShape.
@@ -78,18 +79,56 @@ Item {
     readonly property real blurSigma: config.blur
     readonly property bool blurEnabled: blurSigma > 0
 
-    Behavior on animMargin { NumberAnimation { duration: MD.Token.duration.medium2; easing: MD.Token.easing.emphasized } }
-    Behavior on animTopRadius { NumberAnimation { duration: MD.Token.duration.medium2; easing: MD.Token.easing.emphasized } }
-    Behavior on animBottomRadius { NumberAnimation { duration: MD.Token.duration.medium2; easing: MD.Token.easing.emphasized } }
-    Behavior on animReversed { NumberAnimation { duration: MD.Token.duration.medium2; easing: MD.Token.easing.emphasized } }
-    Behavior on animOpacity { NumberAnimation { duration: MD.Token.duration.medium2; easing: MD.Token.easing.standard } }
-    Behavior on shadowElevation { NumberAnimation { duration: MD.Token.duration.medium2; easing: MD.Token.easing.standard } }
-    Behavior on revealOffset { NumberAnimation { duration: MD.Token.duration.long2; easing: MD.Token.easing.emphasized } }
+    Behavior on animMargin {
+        NumberAnimation {
+            duration: MD.Token.duration.medium2
+            easing: MD.Token.easing.emphasized
+        }
+    }
+    Behavior on animTopRadius {
+        NumberAnimation {
+            duration: MD.Token.duration.medium2
+            easing: MD.Token.easing.emphasized
+        }
+    }
+    Behavior on animBottomRadius {
+        NumberAnimation {
+            duration: MD.Token.duration.medium2
+            easing: MD.Token.easing.emphasized
+        }
+    }
+    Behavior on animReversed {
+        NumberAnimation {
+            duration: MD.Token.duration.medium2
+            easing: MD.Token.easing.emphasized
+        }
+    }
+    Behavior on animOpacity {
+        NumberAnimation {
+            duration: MD.Token.duration.medium2
+            easing: MD.Token.easing.standard
+        }
+    }
+    Behavior on shadowElevation {
+        NumberAnimation {
+            duration: MD.Token.duration.medium2
+            easing: MD.Token.easing.standard
+        }
+    }
+    Behavior on revealOffset {
+        NumberAnimation {
+            duration: MD.Token.duration.long2
+            easing: MD.Token.easing.emphasized
+        }
+    }
 
     // ---- Derived surface rectangle within this item ----
-    // Keep room below the bar for the shadow and the hug overhang. Uses the
-    // discrete target (not the animated value) so the window resizes once per
-    // shape switch rather than every animation frame.
+    // Keep room below the bar for the shadow and the hug overhang. The surface
+    // tracks the *fractional* animMargin so the slide is continuous (sub-pixel)
+    // — rounding it here makes an N-px slide N discrete 1px jumps, i.e. visible
+    // stepping. The wobble that fractional geometry caused on centered content
+    // is fixed where it originates (Bar.qml centers with a non-rounding binding
+    // instead of the anchor, which rounds), so geometry can stay smooth here.
     readonly property real totalHeight: animMargin + barHeight + Math.max(shadowBuffer, reversedTarget + 4)
     readonly property real surfaceX: animMargin
     readonly property real surfaceY: animMargin + revealOffset
@@ -154,8 +193,7 @@ Item {
         // elevation rather than a cliff near the top of the ramp.
         opacity: Math.cbrt(Math.min(1, root.shadowElevation / 1.5))
         elevation: root.shadowElevation
-        corners: MD.Util.corners(root.animTopRadius, root.animTopRadius,
-            Math.max(0, root.animBottomRadius), Math.max(0, root.animBottomRadius))
+        corners: MD.Util.corners(root.animTopRadius, root.animTopRadius, Math.max(0, root.animBottomRadius), Math.max(0, root.animBottomRadius))
 
         color: MD.Token.color.shadow
     }

@@ -124,7 +124,13 @@ PanelWindow {
         DateTime {
             id: centerDateTime
 
-            anchors.centerIn: parent
+            // Center with a plain binding, NOT anchors.centerIn: the anchor
+            // rounds its offset to whole pixels, and against the fractional
+            // (smoothly sliding) parent that rounding flips sign each half-pixel
+            // — the ±1px morph wobble. The un-rounded offset cancels the parent's
+            // fractional x/y exactly, so the centre stays put while the bar slides.
+            x: (parent.width - width) / 2
+            y: (parent.height - height) / 2
             visible: content.centerContentVisible
         }
     }
