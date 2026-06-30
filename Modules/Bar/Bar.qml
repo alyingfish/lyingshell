@@ -62,7 +62,21 @@ PanelWindow {
     Item {
         id: content
 
-        readonly property int edgeMargin: Math.max(8, Math.round(Math.max(barSurface.animTopRadius, barSurface.animBottomRadius)))
+        // Horizontal inset that keeps the side rows clear of the rounded corners.
+        // Animated off the SETTLED target (max(8, contentRadiusTarget)) with its
+        // own emphasized Behavior, NOT max(8, animRadius): clamping the per-frame
+        // eased radius clips the ease flat once radius drops below 8, putting a
+        // velocity kink mid-morph (the rows sprint then abruptly settle). A clean
+        // 8<->16 emphasized curve here sums with animMargin (same easing/duration)
+        // into a single MD3 emphasized slide. Fractional, so no 1px stepping.
+        property real edgeMargin: Math.max(8, barSurface.contentRadiusTarget)
+
+        Behavior on edgeMargin {
+            NumberAnimation {
+                duration: MD.Token.duration.medium2
+                easing: MD.Token.easing.emphasized
+            }
+        }
         readonly property int rowSpacing: 8
         readonly property int minimumCenterGap: 24
         readonly property real availableWidth: width
