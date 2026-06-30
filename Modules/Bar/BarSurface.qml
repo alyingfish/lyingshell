@@ -57,6 +57,13 @@ Item {
     // wings (top/bottom stay square).
     readonly property real reversedTarget: activeShape === "hug" ? config.radius : 0
 
+    // Settled (un-eased) max convex corner radius, for content edge insets. The
+    // bottom target is config.radius for every non-hug shape (>= the top target),
+    // so this is just config.radius unless hug squares the corners. Consumers
+    // animate this target with their own Behavior; clamping the per-frame eased
+    // radius instead (max(8, animRadius)) clips the ease and kinks the motion.
+    readonly property real contentRadiusTarget: activeShape === "hug" ? 0 : config.radius
+
     // Extra vertical room kept below the bar so the elevation shadow and the hug
     // overhang are not clipped by the layer surface. This region is click-through
     // (see Bar.qml mask), so the headroom is free.
@@ -106,13 +113,13 @@ Item {
     Behavior on animOpacity {
         NumberAnimation {
             duration: MD.Token.duration.medium2
-            easing: MD.Token.easing.standard
+            easing: MD.Token.easing.emphasized
         }
     }
     Behavior on shadowElevation {
         NumberAnimation {
             duration: MD.Token.duration.medium2
-            easing: MD.Token.easing.standard
+            easing: MD.Token.easing.emphasized
         }
     }
     Behavior on revealOffset {

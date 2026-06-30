@@ -82,14 +82,14 @@ Item {
     Behavior on width {
         NumberAnimation {
             duration: root.morphDuration
-            easing.type: MD.Token.easing.standard.type
+            easing: MD.Token.easing.standard
         }
     }
 
     Behavior on haloExtension {
         NumberAnimation {
             duration: MD.Token.duration.short2
-            easing.type: MD.Token.easing.standard.type
+            easing: MD.Token.easing.standard
         }
     }
 
@@ -106,14 +106,14 @@ Item {
         Behavior on color {
             ColorAnimation {
                 duration: MD.Token.duration.short2
-                easing.type: MD.Token.easing.standard.type
+                easing: MD.Token.easing.standard
             }
         }
 
         Behavior on opacity {
             NumberAnimation {
                 duration: MD.Token.duration.short2
-                easing.type: MD.Token.easing.standard.type
+                easing: MD.Token.easing.standard
             }
         }
     }
@@ -141,7 +141,7 @@ Item {
         Behavior on color {
             ColorAnimation {
                 duration: root.morphDuration
-                easing.type: MD.Token.easing.standard.type
+                easing: MD.Token.easing.standard
             }
         }
     }
@@ -173,7 +173,7 @@ Item {
                 from: 1
                 to: 0
                 duration: root.pulseDuration
-                easing.type: MD.Token.easing.standard.type
+                easing: MD.Token.easing.standard
             }
 
             NumberAnimation {
@@ -182,7 +182,7 @@ Item {
                 from: 1
                 to: 3
                 duration: root.pulseDuration
-                easing.type: MD.Token.easing.standard.type
+                easing: MD.Token.easing.standard
             }
         }
 
