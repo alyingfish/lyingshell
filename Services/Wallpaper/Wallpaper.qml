@@ -5,12 +5,8 @@ import Quickshell
 import Quickshell.Io
 import qs.Commons.Settings
 
-// Per-output wallpaper manager. Holds the selection (persisted in settings.json
-// under `wallpaper.perScreen`), scans a source directory for the picker/IPC, and
-// signals the Background/Overview surfaces to swap. Trimmed from Noctalia's
-// WallpaperService: no favorites, automation, browse modes, solid color,
-// online sources, or ImageMagick cache. ponytail: add those when a real need
-// shows up.
+// Per-output wallpaper manager: holds the selection (settings.json
+// `wallpaper.perScreen`), scans a source dir, signals surfaces to swap.
 Singleton {
     id: root
 
@@ -58,9 +54,7 @@ Singleton {
         function onDirectoryChanged() {
             root.refreshWallpapersList();
         }
-        // Editing defaultPath (settings UI or hand-edited settings.json) must
-        // re-render. Emit per screen via getWallpaper so perScreen overrides win
-        // and unchanged screens no-op in Background's same-path guard.
+        // Emit per screen so perScreen overrides win and unchanged screens no-op.
         function onDefaultPathChanged() {
             for (var i = 0; i < Quickshell.screens.length; i++) {
                 var name = Quickshell.screens[i].name;
@@ -69,7 +63,6 @@ Singleton {
         }
     }
 
-    // ----------------------------------------------------------------
     function preprocessPath(path) {
         if (!path || typeof path !== "string") {
             return "";
@@ -95,7 +88,6 @@ Singleton {
         }
     }
 
-    // ----------------------------------------------------------------
     function getWallpaper(screenName) {
         var per = Settings.options.wallpaper.perScreen || {};
         if (per[screenName]) {
@@ -104,7 +96,7 @@ Singleton {
         if (Settings.options.wallpaper.defaultPath) {
             return preprocessPath(Settings.options.wallpaper.defaultPath);
         }
-        // Inherit from any output that does have one, so new monitors aren't blank.
+        // Inherit any set output so new monitors aren't blank.
         for (var k in per) {
             if (per[k]) {
                 return preprocessPath(per[k]);
@@ -142,7 +134,6 @@ Singleton {
         changeWallpaper(p, screenName);
     }
 
-    // ----------------------------------------------------------------
     function refreshWallpapersList() {
         var dir = root.defaultDirectory;
         if (!dir || scanProcess.running) {
@@ -182,7 +173,6 @@ Singleton {
         }
     }
 
-    // ----------------------------------------------------------------
     // `qs ipc call wallpaper set <path> [output]`, `... random [output]`,
     // `... get [output]`. Output omitted → applies to every screen.
     IpcHandler {

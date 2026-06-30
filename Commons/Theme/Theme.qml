@@ -49,10 +49,8 @@ Singleton {
         MD.Token.color.mode = effectiveMode === "dark" ? MD.Enum.Dark : MD.Enum.Light;
     }
 
-    // Lying Shell is the desktop, so its mode is authority: push it onto the
-    // freedesktop color-scheme so portal-aware apps (libadwaita/GTK4, Qt6,
-    // Electron) follow, plus the adw-gtk3 theme name so legacy GTK3 apps switch.
-    // light maps to "default" (universally accepted; "prefer-light" is newer).
+    // Push mode onto the freedesktop color-scheme + adw-gtk3 theme name so
+    // portal apps and legacy GTK3 follow. light maps to "default".
     // ponytail: gsettings/dconf only. Qt-non-portal and KDE are later phases.
     function pushSystemMode() {
         systemModePush.run(effectiveMode === "dark");
@@ -73,10 +71,8 @@ Singleton {
         }
     }
 
-    // Push the accent out to external apps via matugen. matugen has no
-    // conditional templates, so we run it once per *installed* app with a
-    // per-app config (selective: absent apps get nothing written), injecting
-    // the mode's fixed ANSI accent hues as JSON. Mirrors pushSystemMode.
+    // Push the accent to external apps via matugen, run once per installed app
+    // (no conditional templates) with the mode's ANSI hues injected as JSON.
     function pushAccentColor() {
         accentPush.run(requestedAccentColor, effectiveMode, matugenDir);
     }
@@ -96,13 +92,8 @@ Singleton {
         }
     }
 
-    // --- Wallpaper-derived accent -------------------------------------------
-    // When useWallpaperColor is on, extract the wallpaper's matugen primary and
-    // write it to theme.accentColor (which then drives apply()/pushAccentColor
-    // via onRequestedAccentColorChanged above). mode stays manual.
-
-    // Re-extract when the feature is toggled on (mode flips are handled in the
-    // onEffectiveModeChanged above). Wallpaper swaps via the Connections below.
+    // When useWallpaperColor is on, extract the wallpaper's matugen primary into
+    // theme.accentColor (which drives apply()/pushAccentColor). mode stays manual.
     Connections {
         target: Settings.options.theme
         function onUseWallpaperColorChanged() {

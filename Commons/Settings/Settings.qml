@@ -119,8 +119,7 @@ Singleton {
             property JsonObject bar: JsonObject {
                 property real height: 32
                 property string currentShape: "floating"
-                // Uniform per-shape fields; `radius` is applied per shape by
-                // BarSurface (all corners / bottom only / reversed concave).
+                // Per-shape fields; `radius` applied per shape by BarSurface.
                 property JsonObject shape: JsonObject {
                     property JsonObject floating: JsonObject {
                         property int margin: 8
@@ -151,10 +150,7 @@ Singleton {
                         property real blur: 0.0
                     }
                 }
-                // When currentShape is "autoShape", the shape is selected per
-                // output from live state. Each field is a shape name; "" means
-                // null (do not switch on this state, fall through). See
-                // Modules/Bar/AutoShape.js.
+                // autoShape state→shape map; "" = fall through. See Modules/Bar/AutoShape.js.
                 property JsonObject autoShape: JsonObject {
                     property string noWindowShape: "floating"
                     property string hasWindowShape: "fullWidth"
@@ -174,16 +170,14 @@ Singleton {
                 property string mode: "light"
                 property string accentColor: "#4F6357"
                 property string font: "Noto Sans"
-                // When true, accentColor is re-derived from the current wallpaper
-                // via matugen on each wallpaper change. mode stays manual.
+                // Re-derive accentColor from the wallpaper via matugen on each change.
                 property bool useWallpaperColor: false
             }
             property JsonObject wallpaper: JsonObject {
                 property bool enabled: true
                 // Source folder scanned for the picker/IPC; "" → ~/Pictures/Wallpapers.
                 property string directory: ""
-                // Per-output selection: { "DP-1": "/path/a.jpg", ... }. Edit by
-                // hand or via `qs ipc call wallpaper set <path> [output]`.
+                // Per-output selection: { "DP-1": "/path/a.jpg", ... }.
                 property var perScreen: ({})
                 // Shown on any output without a perScreen entry.
                 property string defaultPath: ""

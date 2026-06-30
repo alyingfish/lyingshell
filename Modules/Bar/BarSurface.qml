@@ -5,33 +5,21 @@ import qs.Commons.Settings
 import qs.Services.Niri
 import "AutoShape.js" as AutoShape
 
-// Animated Bar background surface. One CurveRenderer Shape whose path, MD3
-// elevation shadow, and fill opacity are driven by scalar properties. Each
-// scalar binds to the active shape's target value AND has a Behavior, so
-// switching `Settings.options.bar.currentShape` morphs smoothly. The `hug` shape
-// extends its bottom-left/right edges downward and closes them with inner
-// reversed (concave) fillets. `blurSigma`/`blurEnabled` feed the owner window's
-// BackgroundEffect (best-effort; a no-op where the compositor lacks
-// ext-background-effect-v1, e.g. current Niri).
+// Animated Bar surface: one CurveRenderer Shape whose scalars each bind to the
+// active shape's target and have a Behavior, so switching currentShape morphs.
 Item {
     id: root
 
-    // Bar thickness (content band height) supplied by the owning window.
     property real barHeight: 32
 
-    // Output this bar lives on; needed for per-output autoShape resolution.
+    // Output for per-output autoShape resolution.
     property string outputName: ""
     // ponytail: inert until a lock signal exists (no lock module / niri IPC
     // does not expose session-lock). lockscreenShape never matches today.
     property bool locked: false
 
-    // When currentShape is "autoShape", select a concrete shape per-output from
-    // live Niri state; otherwise pass the setting through. `width` is the output
-    // logical width (the bar spans the whole output) used for the maximized-
-    // column heuristic. Touch Niri.lastEventVersion so the binding re-evaluates
-    // on every Niri state change: QML property capture does NOT see the Niri.*
-    // reads that happen inside the .pragma library resolve(), so without this
-    // the shape would freeze. Every downstream scalar animates via its Behavior.
+    // Touch Niri.lastEventVersion so the binding re-runs on Niri changes: QML
+    // capture can't see the Niri.* reads inside resolve()'s .pragma library.
     readonly property string shape: {
         if (Settings.options.bar.currentShape !== "autoShape")
             return Settings.options.bar.currentShape;
@@ -41,35 +29,23 @@ Item {
     readonly property var shapeOptions: Settings.options.bar.shape
     readonly property bool isHidden: shape === "hidden"
 
-    // The last non-hidden shape, so `hidden` keeps the current geometry while it
-    // slides away instead of first morphing to fullWidth.
+    // Last non-hidden shape, so `hidden` keeps its geometry while sliding away.
     property string lastVisibleShape: "floating"
     onShapeChanged: if (shape !== "hidden")
         lastVisibleShape = shape
 
-    // Active shape (held at the last visible one while hidden) and its uniform
-    // settings object. Fall back to fullWidth for an unknown currentShape.
     readonly property string activeShape: isHidden ? lastVisibleShape : shape
     readonly property var config: shapeOptions[activeShape] || shapeOptions.fullWidth
 
-    // Where the shape's single `radius` lands: floating/fullWidth round all
-    // corners, softAttach only the bottom, hug turns it into reversed concave
-    // wings (top/bottom stay square).
     readonly property real reversedTarget: activeShape === "hug" ? config.radius : 0
 
-    // Settled (un-eased) max convex corner radius, for content edge insets. The
-    // bottom target is config.radius for every non-hug shape (>= the top target),
-    // so this is just config.radius unless hug squares the corners. Consumers
-    // animate this target with their own Behavior; clamping the per-frame eased
-    // radius instead (max(8, animRadius)) clips the ease and kinks the motion.
+    // Settled radius for content insets; consumers animate it. Clamping the eased
+    // radius (max(8, animRadius)) instead clips the ease and kinks the motion.
     readonly property real contentRadiusTarget: activeShape === "hug" ? 0 : config.radius
 
-    // Extra vertical room kept below the bar so the elevation shadow and the hug
-    // overhang are not clipped by the layer surface. This region is click-through
-    // (see Bar.qml mask), so the headroom is free.
+    // Click-through headroom below the bar for the shadow and hug overhang.
     readonly property real shadowBuffer: 24
 
-    // ---- Animated scalars (binding target + Behavior == smooth morph) ----
     property real animMargin: config.margin
     property real animTopRadius: activeShape === "softAttach" || activeShape === "hug" ? 0 : config.radius
     property real animBottomRadius: activeShape === "hug" ? 0 : config.radius
@@ -77,9 +53,7 @@ Item {
     property real animOpacity: config.opacity
     property real revealOffset: isHidden ? -(animMargin + barHeight + shadowBuffer + 8) : 0
 
-    // MD3 elevation (dp) feeding RRectShadowImpl, animated so depth tweens with
-    // the morph. The fade MUST ride on elevation, not color alpha: RRectShadowImpl
-    // drops the color alpha before rendering, so an alpha fade is a no-op.
+    // Fade MUST ride on elevation: RRectShadowImpl drops color alpha pre-render.
     property real shadowElevation: config.elevation
 
     // Best-effort background blur (compositor effect; not animated).
@@ -129,25 +103,16 @@ Item {
         }
     }
 
-    // ---- Derived surface rectangle within this item ----
-    // Keep room below the bar for the shadow and the hug overhang. The surface
-    // tracks the *fractional* animMargin so the slide is continuous (sub-pixel)
-    // — rounding it here makes an N-px slide N discrete 1px jumps, i.e. visible
-    // stepping. The wobble that fractional geometry caused on centered content
-    // is fixed where it originates (Bar.qml centers with a non-rounding binding
-    // instead of the anchor, which rounds), so geometry can stay smooth here.
+    // Track fractional animMargin (no rounding) so the slide stays sub-pixel
+    // smooth; centered-content wobble is handled in Bar.qml's centering binding.
     readonly property real totalHeight: animMargin + barHeight + Math.max(shadowBuffer, reversedTarget + 4)
     readonly property real surfaceX: animMargin
     readonly property real surfaceY: animMargin + revealOffset
     readonly property real surfaceWidth: Math.max(0, width - animMargin * 2)
     readonly property real surfaceHeight: barHeight
 
-    // One continuous CurveRenderer path for every shape. Top corners are convex
-    // (`animTopRadius`). The bottom is a single SIGNED value
-    // `animBottomRadius - animReversed`: positive draws convex corners
-    // (floating/softAttach/fullWidth), negative draws reversed concave wings
-    // that extend below the baseline (hug). Sweeping through 0 (square) makes
-    // every transition — including hug<->convex shapes — morph continuously.
+    // Bottom radius is signed (animBottomRadius - animReversed): positive = convex
+    // corners, negative = concave hug wings. Sweeping through 0 morphs continuously.
     function surfacePath(w, h) {
         const lim = Math.min(w / 2, h);
         const tr = Math.max(0, Math.min(animTopRadius, lim));
@@ -175,29 +140,15 @@ Item {
         return p + " Z";
     }
 
-    // MD3 elevation shadow, drawn behind the fill. QmlMaterial's RRectShadowImpl
-    // is the Skia ambient + spot model (soft ambient base + a downward-projected
-    // directional shadow), so it reads as natural depth rather than a flat halo.
-    // Driven by corner radii from the same animated scalars as the fill, so the
-    // shadow tracks the floating<->softAttach morph. The user-configurable
-    // per-shape `elevation` (animated via root.shadowElevation) sets the depth:
-    // the shadow grows/shrinks with it, and a shape whose elevation is 0 renders
-    // no shadow. The color stays full-alpha so the component can apply its own
-    // ambient/spot opacities. `visible` culls once the depth eases to ~0.
+    // MD3 elevation shadow behind the fill; radii/depth animate with it.
     MD.RRectShadowImpl {
         x: root.surfaceX
         y: root.surfaceY
         width: root.surfaceWidth
         height: root.surfaceHeight
         visible: root.shadowElevation > 0.001
-        // The Skia shadow keeps a constant peak alpha as elevation drops (only
-        // its spread shrinks), so at low elevation it's a thin, still-dark band
-        // that `visible` then hard-culls — a pop, made visible here only because
-        // the bar fill is translucent (an opaque fill, like ElevationRectangle,
-        // hides it). Fade the whole shadow out over the last ~1.5dp via item
-        // opacity, which the shader honors. The shader cubes qt_Opacity
-        // (pow(opacity,3)), so cbrt it here to get a fade that's linear in
-        // elevation rather than a cliff near the top of the ramp.
+        // Skia keeps peak alpha as elevation drops, so fade the band out over the
+        // last ~1.5dp; shader cubes qt_Opacity, hence cbrt for a linear fade.
         opacity: Math.cbrt(Math.min(1, root.shadowElevation / 1.5))
         elevation: root.shadowElevation
         corners: MD.Util.corners(root.animTopRadius, root.animTopRadius, Math.max(0, root.animBottomRadius), Math.max(0, root.animBottomRadius))
@@ -205,7 +156,6 @@ Item {
         color: MD.Token.color.shadow
     }
 
-    // Surface fill, painted once on top of the shadow.
     MD.Shape {
         id: surfaceFill
 

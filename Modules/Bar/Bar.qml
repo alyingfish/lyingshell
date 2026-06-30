@@ -17,28 +17,20 @@ PanelWindow {
         right: true
     }
 
-    // Transparent window; the visible bar is the inset BarSurface so margins,
-    // rounded corners, opacity, and shadow can render around it.
     color: "transparent"
     implicitHeight: barSurface.totalHeight
-    // Reserve from the discrete target margin, not the animated `animMargin`:
-    // an animated exclusiveZone repushes to the compositor every frame, so the
-    // tiled terminal re-tiles (and reflows) on every morph frame. Using the
-    // settled target makes the zone — and thus the terminal — change exactly
-    // once per shape switch. The surface still morphs smoothly via animMargin.
+    // Reserve from the settled target, not animMargin: an animated zone repushes
+    // every frame and re-tiles windows on every morph frame.
     exclusiveZone: barSurface.isHidden
         ? 0
         : Math.round(barSurface.config.margin + barSurface.barHeight)
 
-    // Restrict input to the visible surface so the transparent margins, shadow
-    // buffer, and slid-away (hidden) state stay click-through.
+    // Restrict input to the visible surface; margins/shadow/hidden stay click-through.
     mask: Region {
         item: maskItem
     }
 
-    // Best-effort background blur behind the surface. A no-op where the
-    // compositor lacks ext-background-effect-v1 (e.g. current Niri); the rounded
-    // region approximates the bar body (wings excluded).
+    // Best-effort background blur (no-op without ext-background-effect-v1).
     BackgroundEffect.blurRegion: barSurface.blurEnabled ? blurRegion : null
 
     Region {
@@ -62,13 +54,8 @@ PanelWindow {
     Item {
         id: content
 
-        // Horizontal inset that keeps the side rows clear of the rounded corners.
-        // Animated off the SETTLED target (max(8, contentRadiusTarget)) with its
-        // own emphasized Behavior, NOT max(8, animRadius): clamping the per-frame
-        // eased radius clips the ease flat once radius drops below 8, putting a
-        // velocity kink mid-morph (the rows sprint then abruptly settle). A clean
-        // 8<->16 emphasized curve here sums with animMargin (same easing/duration)
-        // into a single MD3 emphasized slide. Fractional, so no 1px stepping.
+        // Inset off the SETTLED target, not max(8, animRadius): clamping the eased
+        // radius once it drops below 8 kinks the morph.
         property real edgeMargin: Math.max(8, barSurface.contentRadiusTarget)
 
         Behavior on edgeMargin {
@@ -84,8 +71,7 @@ PanelWindow {
         readonly property bool centerContentVisible: rightContentVisible
             && availableWidth >= leftContent.implicitWidth + rightContent.implicitWidth + centerDateTime.implicitWidth + minimumCenterGap * 2
 
-        // Tracks the surface rect (incl. the hidden slide-out) so content
-        // moves with the background instead of blinking on shape change.
+        // Track the surface rect so content moves with the background.
         x: barSurface.surfaceX + edgeMargin
         y: barSurface.surfaceY
         width: Math.max(0, barSurface.surfaceWidth - edgeMargin * 2)
@@ -138,11 +124,8 @@ PanelWindow {
         DateTime {
             id: centerDateTime
 
-            // Center with a plain binding, NOT anchors.centerIn: the anchor
-            // rounds its offset to whole pixels, and against the fractional
-            // (smoothly sliding) parent that rounding flips sign each half-pixel
-            // — the ±1px morph wobble. The un-rounded offset cancels the parent's
-            // fractional x/y exactly, so the centre stays put while the bar slides.
+            // Plain binding, NOT anchors.centerIn: the anchor rounds its offset and
+            // flips sign against the fractional sliding parent — the ±1px wobble.
             x: (parent.width - width) / 2
             y: (parent.height - height) / 2
             visible: content.centerContentVisible

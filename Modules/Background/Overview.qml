@@ -8,14 +8,9 @@ import qs.Commons.Theme
 import qs.Services.Niri
 import qs.Services.Wallpaper
 
-// Blurred + tinted wallpaper copy for the niri overview backdrop. It shares the
-// cached texture with Background.qml. Niri only shows it in the overview when a
-// layer rule pins this namespace into the backdrop:
-//
-//   layer-rule {
-//       match namespace="lyingshell-overview"
-//       place-within-backdrop true
-//   }
+// Blurred + tinted wallpaper copy for the niri overview backdrop, sharing
+// Background's cached texture. Needs a niri layer-rule with
+// place-within-backdrop on namespace "lyingshell-overview".
 Loader {
     active: Niri.available && Settings.options.wallpaper.enabled && Settings.options.wallpaper.overviewEnabled
 
@@ -31,8 +26,7 @@ Loader {
 
             visible: wallpaper !== ""
 
-            // Seed immediately: Background may emit wallpaperProcessingComplete
-            // before this delegate's Connections exist (no async cache to delay it).
+            // Seed now: Background may emit before this delegate's Connections exist.
             Component.onCompleted: wallpaper = Wallpaper.getWallpaper(modelData.name)
 
             Component.onDestruction: bgImage.source = ""
@@ -74,8 +68,7 @@ Loader {
                 asynchronous: true
             }
 
-            // Blur via a standalone MultiEffect (the item-`layer.effect` path
-            // renders empty on this backdrop surface).
+            // Standalone MultiEffect; item-layer.effect renders empty on this surface.
             MultiEffect {
                 anchors.fill: parent
                 source: bgImage

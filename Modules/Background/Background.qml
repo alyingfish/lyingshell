@@ -4,10 +4,7 @@ import Quickshell.Wayland
 import qs.Commons.Settings
 import qs.Services.Wallpaper
 
-// Per-output wallpaper surface on the background layer, with the six ported
-// GPU transition shaders. Trimmed from Noctalia: no resize cache, no compositor
-// scale tracking, no solid-color mode (shaders still receive the isSolid/solid
-// uniforms, pinned off, so the .qsb files are reused unmodified).
+// Per-output wallpaper surface on the background layer, with six GPU transitions.
 Variants {
     id: backgroundVariants
     model: Quickshell.screens
@@ -43,7 +40,6 @@ Variants {
             // Honeycomb
             property real honeycombCellSize: 0.04
 
-            // Debounced future wallpaper + the path we're transitioning toward.
             property string futureWallpaper: ""
             property string transitioningToOriginalPath: ""
 
@@ -51,7 +47,7 @@ Variants {
             property color _fillColor: Qt.color(Settings.options.wallpaper.fillColor)
             property vector4d fillColor: Qt.vector4d(_fillColor.r, _fillColor.g, _fillColor.b, 1.0)
 
-            // Solid-color mode is cut; keep the uniforms pinned off for the shaders.
+            // Solid-color mode cut; uniforms pinned off so the .qsb files reuse unchanged.
             readonly property real isSolid1: 0.0
             readonly property real isSolid2: 0.0
             readonly property vector4d solidColor1: Qt.vector4d(0, 0, 0, 1)
@@ -146,9 +142,8 @@ Variants {
                 }
             }
 
-            // One ShaderEffect for all six transitions. Each .qsb binds only the
-            // uniforms its shader declares; the union below covers every one, and
-            // any property a given shader doesn't use is ignored.
+            // One ShaderEffect for all six transitions; the union of uniforms below
+            // covers every shader, unused ones ignored.
             ShaderEffect {
                 anchors.fill: parent
                 property variant source1: currentWallpaper
@@ -203,8 +198,7 @@ Variants {
                 }
             }
 
-            // Normalize url/string for comparison (Image.source is a url type that
-            // may carry a file:// prefix).
+            // Image.source is a url that may carry a file:// prefix; strip for comparison.
             function _pathStr(p) {
                 var s = p.toString();
                 if (s.startsWith("file://")) {
@@ -213,7 +207,6 @@ Variants {
                 return s;
             }
 
-            // ------------------------------------------------------
             function setWallpaperInitial() {
                 if (!Wallpaper.isInitialized) {
                     Qt.callLater(setWallpaperInitial);
@@ -221,9 +214,7 @@ Variants {
                 }
                 futureWallpaper = Wallpaper.getWallpaper(modelData.name);
                 if (futureWallpaper) {
-                    // Sync-decode the first paint so the window maps with the
-                    // image already Ready instead of hidden behind an async
-                    // decode. Reset to async for later swaps.
+                    // Sync-decode the first paint so the window maps with the image Ready.
                     currentWallpaper.asynchronous = false;
                     currentWallpaper.source = futureWallpaper;
                     Qt.callLater(() => currentWallpaper.asynchronous = true);
@@ -231,7 +222,6 @@ Variants {
                 Wallpaper.wallpaperProcessingComplete(modelData.name, futureWallpaper, "");
             }
 
-            // ------------------------------------------------------
             function requestPreprocessedWallpaper(originalPath) {
                 if (transitioning && originalPath === transitioningToOriginalPath) {
                     return;
@@ -249,7 +239,6 @@ Variants {
                 Wallpaper.wallpaperProcessingComplete(modelData.name, originalPath, "");
             }
 
-            // ------------------------------------------------------
             function setWallpaperImmediate(source) {
                 transitionAnimation.stop();
                 transitionProgress = 0.0;
@@ -260,7 +249,6 @@ Variants {
                 });
             }
 
-            // ------------------------------------------------------
             function setWallpaperWithTransition(source) {
                 if (!source || _pathStr(source) === _pathStr(currentWallpaper.source)) {
                     return;
@@ -298,7 +286,6 @@ Variants {
                 }
             }
 
-            // ------------------------------------------------------
             function _pickTransitionType() {
                 var selected = Settings.options.wallpaper.transitionType;
                 if (!selected || selected.length === 0) {
