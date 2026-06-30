@@ -173,7 +173,10 @@ Item {
                 from: 1
                 to: 0
                 duration: root.pulseDuration
-                easing: MD.Token.easing.standard
+                // Linear, not standard: standard front-loads the fade (alpha drops
+                // below 0.27 by ~200ms) so the ring is invisible long before it
+                // finishes expanding. Linear keeps it visible across the expansion.
+                easing: MD.Token.easing.linear
             }
 
             NumberAnimation {
@@ -184,6 +187,13 @@ Item {
                 duration: root.pulseDuration
                 easing: MD.Token.easing.standard
             }
+        }
+
+        // Gap between beats: without it the second loop snaps opacity 0->1 in one
+        // frame glued onto the end of the first, reading as a glitch rather than a
+        // deliberate second pulse.
+        PauseAnimation {
+            duration: MD.Token.duration.short4
         }
 
         onStopped: {

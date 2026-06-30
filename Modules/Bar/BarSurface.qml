@@ -58,7 +58,10 @@ Item {
 
     // Best-effort background blur (compositor effect; not animated).
     readonly property real blurSigma: config.blur
-    readonly property bool blurEnabled: blurSigma > 0
+    // Keep blur alive while the surface is still translucent so it doesn't pop
+    // off at frame 0 of a morph to an opaque shape: blur is only visible while
+    // opacity < 1 anyway, so it fades in/out in lockstep with the opacity morph.
+    readonly property bool blurEnabled: blurSigma > 0 || animOpacity < 0.999
 
     Behavior on animMargin {
         NumberAnimation {

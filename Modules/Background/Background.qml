@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import Qcm.Material as MD
 import qs.Commons.Settings
 import qs.Services.Wallpaper
 
@@ -181,7 +182,9 @@ Variants {
                 from: 0.0
                 to: 1.0
                 duration: Settings.options.wallpaper.transitionDuration
-                easing.type: Easing.InOutCubic
+                // MD3 emphasized, not raw InOutCubic: matches the design system's
+                // large/hero transition curve instead of a symmetric cubic.
+                easing: MD.Token.easing.emphasized
                 onFinished: {
                     transitioningToOriginalPath = "";
 
