@@ -40,7 +40,6 @@ Window {
         y: 24
         workspace: root.inactiveWorkspace
         pulseEnabled: false
-        reducedMotion: true
 
         onActivated: function(workspaceId) {
             root.activatedWorkspaceId = workspaceId;

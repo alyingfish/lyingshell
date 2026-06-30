@@ -51,7 +51,6 @@ Window {
         x: 20
         y: 24
         workspaceModel: root.workspaceModel
-        reducedMotion: true
 
         onFocusRequested: function(workspaceId) {
             root.requestedWorkspaceId = workspaceId;

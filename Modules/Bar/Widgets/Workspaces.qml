@@ -7,7 +7,6 @@ Item {
     id: root
 
     required property var workspaceModel
-    property bool reducedMotion: false
 
     signal focusRequested(string workspaceId)
 
@@ -18,9 +17,9 @@ Item {
     readonly property bool hasWorkspaces: workspaceCount > 0
     readonly property bool hovered: pillMouseArea.containsMouse || hasHoveredDot()
     readonly property var renderedWorkspaceValues: normalizedWorkspaces(workspaceModel)
-    readonly property int enterDuration: reducedMotion ? 0 : MD.Token.duration.short4
-    readonly property int exitDuration: reducedMotion ? 0 : MD.Token.duration.short3
-    readonly property int displacedDuration: reducedMotion ? 0 : MD.Token.duration.short4
+    readonly property int enterDuration: MD.Token.duration.short4
+    readonly property int exitDuration: MD.Token.duration.short3
+    readonly property int displacedDuration: MD.Token.duration.short4
 
     visible: hasWorkspaces
     implicitWidth: hasWorkspaces ? workspaceList.contentWidth + horizontalPadding * 2 : 0
@@ -96,7 +95,6 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 workspace: workspaceDelegate.workspace
                 pulseEnabled: Settings.options.bar.workspaces.urgentPulse
-                reducedMotion: root.reducedMotion
 
                 onActivated: function(workspaceId) {
                     root.focusRequested(workspaceId);

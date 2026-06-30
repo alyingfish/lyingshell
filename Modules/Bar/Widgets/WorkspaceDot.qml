@@ -6,7 +6,6 @@ Item {
 
     required property var workspace
     property bool pulseEnabled: true
-    property bool reducedMotion: false
 
     signal activated(string workspaceId)
     signal wheelRequested(real delta)
@@ -15,15 +14,15 @@ Item {
     readonly property int activeWidth: 24
     readonly property int hoverHaloExtension: 8
     readonly property int pressedHaloExtension: 10
-    readonly property int morphDuration: 220
-    readonly property int pulseDuration: 600
+    readonly property int morphDuration: MD.Token.duration.medium1
+    readonly property int pulseDuration: MD.Token.duration.long2
     readonly property bool isActive: workspace && (workspace.active || workspace.focused)
     readonly property bool isFocused: workspace && workspace.focused
     readonly property bool isUrgent: workspace && workspace.urgent && !isFocused
     readonly property bool isBusy: workspace && workspace.hasWindows && !isFocused && !isUrgent
     readonly property bool hovered: dotMouseArea.containsMouse
     readonly property bool pressed: dotMouseArea.pressed
-    readonly property bool shouldPulse: isUrgent && pulseEnabled && !reducedMotion
+    readonly property bool shouldPulse: isUrgent && pulseEnabled
     readonly property color emphasisColor: isFocused ? MD.Token.color.primary
         : isUrgent ? MD.Token.color.error
         : isBusy ? MD.Token.color.secondary
@@ -82,7 +81,9 @@ Item {
     Behavior on width {
         NumberAnimation {
             duration: root.morphDuration
-            easing: MD.Token.easing.standard
+            // Emphasized: the dot<->pill is an expressive shape morph, not a plain
+            // state change, so it gets the container-transform curve.
+            easing: MD.Token.easing.emphasized
         }
     }
 

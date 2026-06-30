@@ -98,8 +98,8 @@ def main() -> None:
     assert "readonly property int activeWidth: 24" in workspace_dot
     assert "readonly property int hoverHaloExtension: 8" in workspace_dot
     assert "readonly property int pressedHaloExtension: 10" in workspace_dot
-    assert "readonly property int morphDuration: 220" in workspace_dot
-    assert "readonly property int pulseDuration: 600" in workspace_dot
+    assert "readonly property int morphDuration: MD.Token.duration.medium1" in workspace_dot
+    assert "readonly property int pulseDuration: MD.Token.duration.long2" in workspace_dot
     assert "loops: 2" in workspace_dot
 
     assert "readonly property int horizontalPadding: 8" in workspaces
