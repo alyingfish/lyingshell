@@ -18,7 +18,11 @@ PanelWindow {
     }
 
     color: "transparent"
-    implicitHeight: barSurface.totalHeight
+    // Size the window off the SETTLED margin, not animMargin: an animated height
+    // resizes the Wayland layer-surface buffer every morph frame, which drops
+    // ~3 frames per morph (visible stutter). The surface still animates inside the
+    // window via surfaceX/surfaceY. Same reasoning as exclusiveZone below.
+    implicitHeight: barSurface.config.margin + barSurface.barHeight + Math.max(barSurface.shadowBuffer, barSurface.reversedTarget + 4)
     // Reserve from the settled target, not animMargin: an animated zone repushes
     // every frame and re-tiles windows on every morph frame.
     exclusiveZone: barSurface.isHidden
@@ -54,18 +58,11 @@ PanelWindow {
     Item {
         id: content
 
-        // ONE animated inset for the whole content rect. Both content edges are
-        // driven by (surface margin + corner clearance); summing the surface's
-        // animMargin Behavior with a separate edgeMargin Behavior lets the two
-        // emphasized curves drift out of phase, and their SUM is what jitters.
-        // Folding them into a single Behavior gives each edge one clean curve.
-        // (Proof: with floating.margin=0 the margin term is constant, leaving a
-        // single curve, and the morph is already smooth.) Inset off the SETTLED
-        // radius, not max(8, animRadius): clamping the eased radius kinks the morph.
-        readonly property real insetTarget: barSurface.config.margin + Math.max(8, barSurface.contentRadiusTarget)
-        property real animInset: insetTarget
+        // Inset off the SETTLED target, not max(8, animRadius): clamping the eased
+        // radius once it drops below 8 kinks the morph.
+        property real edgeMargin: Math.max(8, barSurface.contentRadiusTarget)
 
-        Behavior on animInset {
+        Behavior on edgeMargin {
             NumberAnimation {
                 duration: MD.Token.duration.medium2
                 easing: MD.Token.easing.emphasized
@@ -78,12 +75,10 @@ PanelWindow {
         readonly property bool centerContentVisible: rightContentVisible
             && availableWidth >= leftContent.implicitWidth + rightContent.implicitWidth + centerDateTime.implicitWidth + minimumCenterGap * 2
 
-        // Track the surface rect so content moves with the background. x/width come
-        // off the single animInset curve (NOT surfaceX/surfaceWidth, which fold in
-        // the separate animMargin curve and would reintroduce the two-curve jitter).
-        x: animInset
+        // Track the surface rect so content moves with the background.
+        x: barSurface.surfaceX + edgeMargin
         y: barSurface.surfaceY
-        width: Math.max(0, barSurface.width - animInset * 2)
+        width: Math.max(0, barSurface.surfaceWidth - edgeMargin * 2)
         height: barSurface.surfaceHeight
 
         Row {
