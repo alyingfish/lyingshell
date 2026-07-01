@@ -27,14 +27,30 @@ MD.IconButton {
     // floating's margin → a marginless shape).
     onBarSurfaceRectChanged: if (popup.visible) popup.anchor.updateAnchor()
 
-    // Chevron flips up->down while open. A 180 rotation of keyboard_arrow_up
-    // reads as keyboard_arrow_down; the transparent container means rotating the
-    // whole button == rotating just the glyph.
-    rotation: checked ? 180 : 0
-    Behavior on rotation {
-        NumberAnimation {
-            duration: MD.Token.duration.short4   // 200ms
-            easing: MD.Token.easing.emphasized
+    // Chevron flips up->down while open. Rotate the GLYPH, not the button:
+    // updateAnchor() re-derives the popup anchor from root.boundingRect() mapped
+    // through root's transform, so rotating root would shift that rect on every
+    // shape morph (a morph landing mid-flip shifts it by an arbitrary angle) and
+    // drift the gap below the bar. A 180 rotation of keyboard_arrow_up reads as
+    // keyboard_arrow_down.
+    contentItem: Item {
+        implicitWidth: root.icon.width
+        implicitHeight: root.icon.height
+        opacity: root.mdState.contentOpacity
+        rotation: root.checked ? 180 : 0
+        Behavior on rotation {
+            NumberAnimation {
+                duration: MD.Token.duration.short4   // 200ms
+                easing: MD.Token.easing.emphasized
+            }
+        }
+
+        MD.Icon {
+            anchors.centerIn: parent
+            name: root.icon.name
+            size: Math.min(root.icon.width, root.icon.height)
+            color: root.mdState.textColor
+            fill: root.checked
         }
     }
 
