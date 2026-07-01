@@ -172,7 +172,7 @@ Variants {
                 property real angle: root.stripesAngle
                 property real maxBlockSize: root.pixelateMaxBlockSize
                 property real cellSize: root.honeycombCellSize
-                fragmentShader: Qt.resolvedUrl(Quickshell.shellDir + "/Shaders/qsb/wp_" + (root.transitionType === "none" ? "fade" : root.transitionType) + ".frag.qsb")
+                fragmentShader: Qt.resolvedUrl(Quickshell.shellDir + "/assets/shaders/qsb/wp_" + (root.transitionType === "none" ? "fade" : root.transitionType) + ".frag.qsb")
             }
 
             NumberAnimation {

@@ -2,7 +2,7 @@ import Quickshell
 import qs.Commons.I18n
 import qs.Commons.Settings
 import qs.Commons.Theme
-import qs.Modules.Background
+import qs.Modules.Wallpaper
 import qs.Modules.Bar
 
 Scope {
