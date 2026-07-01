@@ -65,37 +65,37 @@ Item {
 
     Behavior on animMargin {
         NumberAnimation {
-            duration: MD.Token.duration.medium2
+            duration: MD.Token.duration.long2
             easing: MD.Token.easing.emphasized
         }
     }
     Behavior on animTopRadius {
         NumberAnimation {
-            duration: MD.Token.duration.medium2
+            duration: MD.Token.duration.long2
             easing: MD.Token.easing.emphasized
         }
     }
     Behavior on animBottomRadius {
         NumberAnimation {
-            duration: MD.Token.duration.medium2
+            duration: MD.Token.duration.long2
             easing: MD.Token.easing.emphasized
         }
     }
     Behavior on animReversed {
         NumberAnimation {
-            duration: MD.Token.duration.medium2
+            duration: MD.Token.duration.long2
             easing: MD.Token.easing.emphasized
         }
     }
     Behavior on animOpacity {
         NumberAnimation {
-            duration: MD.Token.duration.medium2
+            duration: MD.Token.duration.long2
             easing: MD.Token.easing.emphasized
         }
     }
     Behavior on shadowElevation {
         NumberAnimation {
-            duration: MD.Token.duration.medium2
+            duration: MD.Token.duration.long2
             easing: MD.Token.easing.emphasized
         }
     }
