@@ -25,9 +25,7 @@ PanelWindow {
     implicitHeight: barSurface.config.margin + barSurface.barHeight + Math.max(barSurface.shadowBuffer, barSurface.reversedTarget + 4)
     // Reserve from the settled target, not animMargin: an animated zone repushes
     // every frame and re-tiles windows on every morph frame.
-    exclusiveZone: barSurface.isHidden
-        ? 0
-        : Math.round(barSurface.config.margin + barSurface.barHeight)
+    exclusiveZone: barSurface.isHidden ? 0 : Math.round(barSurface.config.margin + barSurface.barHeight)
 
     // Restrict input to the visible surface; margins/shadow/hidden stay click-through.
     mask: Region {
@@ -72,8 +70,7 @@ PanelWindow {
         readonly property int minimumCenterGap: 24
         readonly property real availableWidth: width
         readonly property bool rightContentVisible: availableWidth >= leftContent.implicitWidth + rightContent.implicitWidth + minimumCenterGap
-        readonly property bool centerContentVisible: rightContentVisible
-            && availableWidth >= leftContent.implicitWidth + rightContent.implicitWidth + centerDateTime.implicitWidth + minimumCenterGap * 2
+        readonly property bool centerContentVisible: rightContentVisible && availableWidth >= leftContent.implicitWidth + rightContent.implicitWidth + centerDateTime.implicitWidth + minimumCenterGap * 2
 
         // Track the surface rect so content moves with the background.
         x: barSurface.surfaceX + edgeMargin
@@ -89,11 +86,9 @@ PanelWindow {
             spacing: content.rowSpacing
 
             Workspaces {
-                workspaceModel: root.screen && root.screen.name
-                    ? Niri.workspacesByOutput[root.screen.name] || []
-                    : []
+                workspaceModel: root.screen && root.screen.name ? Niri.workspacesByOutput[root.screen.name] || [] : []
 
-                onFocusRequested: function(workspaceId) {
+                onFocusRequested: function (workspaceId) {
                     Niri.focusWorkspaceById(workspaceId);
                 }
             }
@@ -107,12 +102,10 @@ PanelWindow {
             spacing: content.rowSpacing
             visible: content.rightContentVisible
 
-            MD.Icon {
+            SystemTray {
                 anchors.verticalCenter: parent.verticalCenter
-                name: "dashboard"
-                size: 16
-                color: MD.Token.color.primary
-                fill: true
+                barHidden: barSurface.isHidden
+                barSurfaceRect: Qt.rect(barSurface.surfaceX, barSurface.surfaceY, barSurface.surfaceWidth, barSurface.surfaceHeight)
             }
 
             MD.Text {
