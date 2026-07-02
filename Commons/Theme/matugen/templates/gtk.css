@@ -79,4 +79,17 @@
   --dialog-fg-color: {{colors.on_surface.default.hex}};
   --overview-bg-color: {{colors.surface_container.default.hex}};
   --overview-fg-color: {{colors.on_surface.default.hex}};
+
+  /* libadwaita-4 semantic colors (GTK3 ignores these). */
+  --error-color: {{colors.error.default.hex}};
+
+  --warning-bg-color: {{colors.tertiary_container.default.hex}};
+  --warning-fg-color: {{colors.on_tertiary_container.default.hex}};
+  --warning-color: {{colors.tertiary.default.hex}};
+
+  --success-color: {{colors.secondary.default.hex}};
+  --success-bg-color: {{colors.secondary_container.default.hex}};
+  --success-fg-color: {{colors.on_secondary_container.default.hex}};
+
+  --shade-color: rgba(0, 0, 0, 0.36);
 }
