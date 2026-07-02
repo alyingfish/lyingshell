@@ -52,7 +52,8 @@ if command -v kitty >/dev/null 2>&1; then
     else note "kitty: ensure $f has -> include current-theme.conf"; fi
 fi
 
-# GTK 3/4: ~/.config/gtk-*/gtk.css is auto-loaded; no wiring needed.
-note "gtk: gtk.css is auto-loaded; nothing to wire"
+# GTK 3/4: the shell writes lyingshell.css and self-heals the gtk.css @import
+# (gtk-import.sh) on each accent/mode change; nothing to wire here.
+note "gtk: shell manages the gtk.css @import; nothing to wire"
 
 echo "Done. Restart apps (or trigger an accent/mode change) to apply colors."

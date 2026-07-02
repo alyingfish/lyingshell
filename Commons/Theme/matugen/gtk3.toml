@@ -2,4 +2,4 @@
 
 [templates.gtk3]
 input_path = './templates/gtk.css'
-output_path = '~/.config/gtk-3.0/gtk.css'
+output_path = '~/.config/gtk-3.0/lyingshell.css'

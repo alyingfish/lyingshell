@@ -50,7 +50,7 @@ Singleton {
     }
 
     // Push mode onto the freedesktop color-scheme + adw-gtk3 theme name so
-    // portal apps and legacy GTK3 follow. light maps to "default".
+    // portal apps and legacy GTK3 follow. light maps to "prefer-light".
     // ponytail: gsettings/dconf only. Qt-non-portal and KDE are later phases.
     function pushSystemMode() {
         systemModePush.run(effectiveMode === "dark");
@@ -60,13 +60,15 @@ Singleton {
         id: systemModePush
 
         function run(dark) {
-            const scheme = dark ? "prefer-dark" : "default";
+            const scheme = dark ? "prefer-dark" : "prefer-light";
             const gtk = dark ? "adw-gtk3-dark" : "adw-gtk3";
-            const iface = "org.gnome.desktop.interface";
             if (running) {
                 running = false;
             }
-            command = ["sh", "-c", "if command -v gsettings >/dev/null 2>&1; then " + "gsettings set " + iface + " color-scheme '" + scheme + "'; " + "gsettings set " + iface + " gtk-theme '" + gtk + "'; " + "elif command -v dconf >/dev/null 2>&1; then " + "dconf write /org/gnome/desktop/interface/color-scheme \"'" + scheme + "'\"; " + "dconf write /org/gnome/desktop/interface/gtk-theme \"'" + gtk + "'\"; fi"];
+            // Only set gtk-theme when it is actually installed, else GTK3 apps
+            // fall back to a broken/missing theme.
+            // ponytail: standard theme dirs only (skip the XDG_DATA_DIRS walk).
+            command = ["sh", "-c", 'SCHEME="$1"; GTK="$2"; IFACE=org.gnome.desktop.interface; ' + 'have_theme() { [ -d "$HOME/.local/share/themes/$1" ] || [ -d "$HOME/.themes/$1" ] || [ -d "/usr/share/themes/$1" ]; }; ' + "if command -v gsettings >/dev/null 2>&1; then " + 'gsettings set "$IFACE" color-scheme "$SCHEME"; ' + 'have_theme "$GTK" && gsettings set "$IFACE" gtk-theme "$GTK"; ' + "elif command -v dconf >/dev/null 2>&1; then " + 'dconf write /org/gnome/desktop/interface/color-scheme "\'$SCHEME\'"; ' + 'have_theme "$GTK" && dconf write /org/gnome/desktop/interface/gtk-theme "\'$GTK\'"; ' + "fi", "sh", scheme, gtk];
             running = true;
         }
     }
@@ -87,7 +89,7 @@ Singleton {
             if (running) {
                 running = false;
             }
-            command = ["sh", "-c", 'ACCENT="$1"; MODE="$2"; DIR="$3"; ' + "command -v matugen >/dev/null 2>&1 || exit 0; " + 'cd "$DIR" 2>/dev/null || exit 0; ' + 'if [ "$MODE" = "dark" ]; then ' + 'ANSI=\'{"red":"#f38ba8","green":"#a6e3a1","yellow":"#f9e2af","blue":"#89b4fa","magenta":"#f5c2e7","cyan":"#94e2d5"}\'; ' + 'else ' + 'ANSI=\'{"red":"#d20f39","green":"#40a02b","yellow":"#df8e1d","blue":"#1e66f5","magenta":"#ea76cb","cyan":"#179299"}\'; ' + 'fi; ' + 'gen() { matugen color hex "$ACCENT" -m "$MODE" -t scheme-tonal-spot -q -c "$1" --import-json-string "$ANSI"; }; ' + "command -v kitty >/dev/null 2>&1 && gen kitty.toml; " + "command -v ghostty >/dev/null 2>&1 && gen ghostty.toml; " + "command -v alacritty >/dev/null 2>&1 && gen alacritty.toml; " + "command -v niri >/dev/null 2>&1 && gen niri.toml; " + '[ -d "$HOME/.config/gtk-3.0" ] && gen gtk3.toml; ' + '[ -d "$HOME/.config/gtk-4.0" ] && gen gtk4.toml; ' + "exit 0", "sh", accent, mode, dir];
+            command = ["sh", "-c", 'ACCENT="$1"; MODE="$2"; DIR="$3"; ' + "command -v matugen >/dev/null 2>&1 || exit 0; " + 'cd "$DIR" 2>/dev/null || exit 0; ' + 'if [ "$MODE" = "dark" ]; then ' + 'ANSI=\'{"red":"#f38ba8","green":"#a6e3a1","yellow":"#f9e2af","blue":"#89b4fa","magenta":"#f5c2e7","cyan":"#94e2d5"}\'; ' + 'else ' + 'ANSI=\'{"red":"#d20f39","green":"#40a02b","yellow":"#df8e1d","blue":"#1e66f5","magenta":"#ea76cb","cyan":"#179299"}\'; ' + 'fi; ' + 'gen() { matugen color hex "$ACCENT" -m "$MODE" -t scheme-tonal-spot -q -c "$1" --import-json-string "$ANSI"; }; ' + "command -v kitty >/dev/null 2>&1 && gen kitty.toml; " + "command -v ghostty >/dev/null 2>&1 && gen ghostty.toml; " + "command -v alacritty >/dev/null 2>&1 && gen alacritty.toml; " + "command -v niri >/dev/null 2>&1 && gen niri.toml; " + '[ -d "$HOME/.config/gtk-3.0" ] && { gen gtk3.toml; sh gtk-import.sh "$HOME/.config/gtk-3.0"; }; ' + '[ -d "$HOME/.config/gtk-4.0" ] && { gen gtk4.toml; sh gtk-import.sh "$HOME/.config/gtk-4.0"; }; ' + "exit 0", "sh", accent, mode, dir];
             running = true;
         }
     }
