@@ -169,6 +169,9 @@ Singleton {
                     // Tray items whose id/title matches any regex stay in the
                     // pinned zone; the rest go to the overflow popover.
                     property var pinnedRegexes: ["syncthing"]
+                    // Item ids in display order for the overflow popover;
+                    // unlisted items follow in service order.
+                    property var overflowOrder: []
                 }
             }
             property JsonObject theme: JsonObject {

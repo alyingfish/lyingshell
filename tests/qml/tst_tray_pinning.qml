@@ -38,6 +38,18 @@ QtObject {
             split = TrayPinning.partition(items, []);
             verifyEqual(split.pinned.length, 0, "no regexes pins nothing");
 
+            // --- overflow order ---
+            split = TrayPinning.partition(items, ["syncthing"], ["nm-applet", "steam"]);
+            verifyEqual(split.overflow.map(i => i.id), ["nm-applet", "steam"], "overflow follows order list");
+            split = TrayPinning.partition(items, ["syncthing"], ["nm-applet", "gone"]);
+            verifyEqual(split.overflow.map(i => i.id), ["nm-applet", "steam"], "unlisted items trail in service order, stale ids ignored");
+
+            // --- orderAfterDrop ---
+            const overflow = [steam, nm];
+            verifyEqual(TrayPinning.orderAfterDrop(overflow, nm, 0), ["nm-applet", "steam"], "reorder to head");
+            verifyEqual(TrayPinning.orderAfterDrop(overflow, steam, 2), ["nm-applet", "steam"], "reorder past self adjusts index");
+            verifyEqual(TrayPinning.orderAfterDrop(overflow, syncthing, 1), ["steam", "syncthing", "nm-applet"], "unpinned item inserts at drop position");
+
             // --- pinAt ---
             let regexes = TrayPinning.pinAt(["syncthing"], items, steam, 0);
             verifyEqual(regexes, ["^steam$", "syncthing"], "pin at head inserts before neighbor regex");
@@ -104,7 +116,7 @@ QtObject {
             verifyEqual(drop.index, 5, "grid insertion clamped to count");
             drop = TrayPinning.classifyDrag(320, 60, geo(false));
             verifyEqual(drop.zone, "overflow", "overflow item over card stays in own zone");
-            verifyEqual(drop.index, -1, "own-zone drop carries no insertion point");
+            verifyEqual(drop.index, 0, "own-zone drop carries a reorder insertion point");
             drop = TrayPinning.classifyDrag(600, 400, geo(true));
             verifyEqual(drop.zone, "blocked", "empty space blocks");
             drop = TrayPinning.classifyDrag(150, 20, geo(true));

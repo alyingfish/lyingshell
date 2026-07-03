@@ -9,8 +9,9 @@ import "TrayPinning.js" as TrayPinning
 
 // System tray: overflow button (left) + pinned zone (right). Unpinned items
 // live in a popover below the overflow button. Items are pinned/unpinned by
-// dragging between the zones; the result persists to
-// Settings.options.bar.tray.pinnedRegexes.
+// dragging between the zones and reordered by dragging within a zone; pin
+// state persists to Settings.options.bar.tray.pinnedRegexes, popover order
+// to Settings.options.bar.tray.overflowOrder.
 //
 // Everything that must escape the bar strip (popover, tooltip, drag avatar)
 // renders in `overlay`, reparented to the window contentItem. Bar.qml expands
@@ -25,7 +26,8 @@ Item {
 
     readonly property var trayItems: SysTray.SystemTray.items.values
     readonly property var pinnedRegexes: Settings.options.bar.tray.pinnedRegexes || []
-    readonly property var traySplit: TrayPinning.partition(trayItems, pinnedRegexes)
+    readonly property var overflowOrder: Settings.options.bar.tray.overflowOrder || []
+    readonly property var traySplit: TrayPinning.partition(trayItems, pinnedRegexes, overflowOrder)
     readonly property var pinnedItems: traySplit.pinned
     readonly property var overflowItems: traySplit.overflow
 
@@ -138,9 +140,20 @@ Item {
         pulseStamp++;
     }
 
-    function unpinItem(item) {
-        console.info("[Tray] unpin " + item.id);
+    // `index` >= 0 places the item at that popover position; -1 (unpinBtn
+    // drop) leaves order to service order.
+    function unpinItem(item, index) {
+        console.info("[Tray] unpin " + item.id + " @" + index);
+        if (index >= 0)
+            Settings.options.bar.tray.overflowOrder = TrayPinning.orderAfterDrop(overflowItems, item, index);
         writeRegexes(TrayPinning.unpin(pinnedRegexes, item));
+        pulseId = item.id;
+        pulseStamp++;
+    }
+
+    function reorderOverflowAt(item, index) {
+        console.info("[Tray] reorder " + item.id + " @" + index);
+        Settings.options.bar.tray.overflowOrder = TrayPinning.orderAfterDrop(overflowItems, item, index);
         pulseId = item.id;
         pulseStamp++;
     }
@@ -201,8 +214,9 @@ Item {
                 index--;
             pinItemAt(item, index);
         } else if ((zone === "overflow" || zone === "unpinBtn") && dragFromPinned) {
-            // Overflow item dropped back into its own popover: position no-op.
-            unpinItem(item);
+            unpinItem(item, index);
+        } else if (zone === "overflow" && index >= 0) {
+            reorderOverflowAt(item, index);
         } else if (zone === "blocked") {
             console.info("[Tray] dragCancel " + item.id);
         }
@@ -269,6 +283,7 @@ Item {
             "overflow": overflowItems.map(i => i.id),
             "popoverOpen": popoverOpen,
             "pinnedRegexes": pinnedRegexes,
+            "overflowOrder": overflowOrder,
             "dragging": dragActive ? dragItem.id : "",
             "dropZone": dropZone,
             "dropIndex": dropIndex,

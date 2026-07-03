@@ -34,8 +34,10 @@ function firstMatchIndex(regexes, item) {
 }
 
 // Split tray items into { pinned, overflow }. Pinned order follows the regex
-// list order (then service order); overflow keeps service order.
-function partition(items, regexes) {
+// list order (then service order); overflow follows `order` (a list of item
+// ids), with unlisted items after in service order.
+function partition(items, regexes, order) {
+    const orderIds = order || [];
     const pinned = [];
     const overflow = [];
     for (let index = 0; index < items.length; index++) {
@@ -44,15 +46,36 @@ function partition(items, regexes) {
         if (match >= 0)
             pinned.push({ item: item, match: match, order: index });
         else
-            overflow.push(item);
+            overflow.push({ item: item, match: orderIds.indexOf(item.id), order: index });
     }
     pinned.sort(function (a, b) {
         return a.match - b.match || a.order - b.order;
     });
+    overflow.sort(function (a, b) {
+        const am = a.match < 0 ? orderIds.length : a.match;
+        const bm = b.match < 0 ? orderIds.length : b.match;
+        return am - bm || a.order - b.order;
+    });
     return {
         pinned: pinned.map(function (entry) { return entry.item; }),
-        overflow: overflow
+        overflow: overflow.map(function (entry) { return entry.item; })
     };
+}
+
+// New overflowOrder after dropping `item` at `index` among the currently
+// displayed overflow `items` (`index` counted with the dragged item still in
+// place, as the caret shows it). Snapshots the full displayed order, so stale
+// ids self-clean on every drop.
+function orderAfterDrop(items, item, index) {
+    const ids = items.map(function (other) { return other.id; });
+    const current = ids.indexOf(item.id);
+    if (current >= 0) {
+        ids.splice(current, 1);
+        if (index > current)
+            index--;
+    }
+    ids.splice(Math.max(0, Math.min(ids.length, index)), 0, item.id);
+    return ids;
 }
 
 // Pin `item` so it lands at `index` among the pinned items of `items`
@@ -117,12 +140,9 @@ function classifyDrag(x, y, geo) {
         };
     }
 
-    // Overflow popover card: unpin target for pinned items; an overflow
-    // item's own zone otherwise (drop = position no-op, index -1).
-    // ponytail: overflow order is service order, no reorder inside it.
+    // Overflow popover card: unpin target for pinned items; a reorder target
+    // for overflow items. Both carry a grid insertion index.
     if (geo.card.visible && x >= geo.card.x && x <= geo.card.x + geo.card.width && y >= geo.card.y && y <= geo.card.y + geo.card.height) {
-        if (!geo.fromPinned)
-            return { zone: "overflow", index: -1 };
         return {
             zone: "overflow",
             index: gridInsertionIndex(x - geo.grid.x, y - geo.grid.y, geo.cellWidth, geo.cellHeight, 0, Math.max(1, Math.min(4, geo.overflowCount)), geo.overflowCount)

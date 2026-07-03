@@ -299,6 +299,23 @@ def main() -> None:
         )
         print("OK drag unpin: state + settings.json persisted")
 
+        # 7b. Drag reorder inside the popover: last overflow item to the grid
+        # head; order persists to bar.tray.overflowOrder.
+        state = shell.state()
+        last = state["overflow"][-1]
+        card = state["geometry"]["card"]
+        target = shell.ipc("dragTo", last, str(int(card["x"] + 10)), str(int(card["y"] + 10)))
+        parsed = json.loads(target)
+        assert parsed["dropZone"] == "overflow" and parsed["dropIndex"] == 0, f"expected overflow head: {target}"
+        shell.ipc("drop")
+        state = shell.state()
+        assert state["overflow"][0] == last, f"reorder did not move {last} to head: {state}"
+        wait_for(
+            lambda: json.loads(SETTINGS.read_text())["bar"]["tray"].get("overflowOrder", [])[:1] == [last],
+            timeout=10, what="overflow order to persist",
+        )
+        print("OK drag reorder: popover order + settings.json persisted")
+
         # 8. Blocked drag is a no-op.
         before = shell.state()["pinnedRegexes"]
         target = shell.ipc("dragTo", "e2e-beta", "500", "500")
@@ -312,7 +329,7 @@ def main() -> None:
         time.sleep(0.6)
         assert not shell.state()["popoverOpen"], "popover did not close"
         log_text = shell.qs_log.read_text()
-        for needle in ("[Tray] popover open", "[Tray] popover closed", "[Tray] activate e2e-alpha", "[Tray] pin e2e-alpha", "[Tray] unpin syncthing"):
+        for needle in ("[Tray] popover open", "[Tray] popover closed", "[Tray] activate e2e-alpha", "[Tray] pin e2e-alpha", "[Tray] unpin syncthing", "[Tray] reorder"):
             assert needle in log_text, f"missing log line: {needle}"
         print("OK logs: lifecycle lines present")
 

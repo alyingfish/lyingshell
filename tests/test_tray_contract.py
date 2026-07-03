@@ -26,9 +26,11 @@ def main() -> None:
     bar = BAR_QML.read_text(encoding="utf-8")
     shell = SHELL_QML.read_text(encoding="utf-8")
 
-    # Settings: bar.tray.pinnedRegexes with the spec default.
+    # Settings: bar.tray.pinnedRegexes with the spec default, plus the
+    # persisted overflow popover order.
     assert "property JsonObject tray" in settings
     assert 'property var pinnedRegexes: ["syncthing"]' in settings
+    assert "property var overflowOrder: []" in settings
 
     # SystemTray: quickshell service + pure pinning logic, no ad-hoc parsing.
     assert "import Quickshell.Services.SystemTray as SysTray" in tray
@@ -38,6 +40,7 @@ def main() -> None:
     assert "TrayPinning.classifyDrag(" in tray
     assert "TrayPinning.pinAt(" in tray
     assert "TrayPinning.unpin(" in tray
+    assert "TrayPinning.orderAfterDrop(" in tray
 
     # Overflow popover: compact grid, max 4 columns, row-major wrap.
     assert "Math.min(4, root.overflowItems.length)" in tray
