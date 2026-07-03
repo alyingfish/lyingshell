@@ -65,6 +65,27 @@ Item {
     onTraySplitChanged: console.info("[Tray] pinned=" + JSON.stringify(traySplit.pinned.map(i => i.id)) + " overflow=" + JSON.stringify(traySplit.overflow.map(i => i.id)))
     onPopoverOpenChanged: console.info("[Tray] popover " + (popoverOpen ? "open" : "closed"))
 
+    // Reactive overlay-space position. mapToItem registers no QML
+    // dependencies, so bindings built on it go stale whenever an ancestor
+    // moves after the fact (startup Row polish, pin/unpin growing the pinned
+    // row, bar shape morphs). Summing x/y up the parent chain reads each
+    // ancestor's position property, so the binding re-fires on any move.
+    // The chain stops at overlay.parent (the window contentItem); overlay
+    // sits at 0,0 inside it, so the sums are already overlay coordinates.
+    function overlayX(item) {
+        let x = 0;
+        for (let it = item; it && it !== overlay.parent; it = it.parent)
+            x += it.x;
+        return x;
+    }
+
+    function overlayY(item) {
+        let y = 0;
+        for (let it = item; it && it !== overlay.parent; it = it.parent)
+            y += it.y;
+        return y;
+    }
+
     function itemLabel(item) {
         return item.tooltipTitle || item.title || item.id;
     }
@@ -451,14 +472,9 @@ Item {
                 }
             }
 
-            // Track the overflow button through bar shape morphs: the
-            // barSurfaceRect/pinnedItems reads retrigger the mapping.
-            readonly property real anchorCenterX: {
-                root.barSurfaceRect;
-                root.pinnedItems;
-                const mapped = overflowButton.mapToItem(overlay, overflowButton.width / 2, 0);
-                return mapped.x;
-            }
+            // Tracks the overflow button live through startup layout, bar
+            // shape morphs, and pinned-row growth (see overlayX).
+            readonly property real anchorCenterX: root.overlayX(overflowButton) + overflowButton.width / 2
 
             // Explicit cell math (positioners own their implicit size); an
             // empty popover keeps one cell as a valid unpin drop target.
@@ -581,16 +597,8 @@ Item {
             height: root.cellHeight - 8
             radius: width / 2
             color: MD.Token.color.primary
-            x: {
-                root.barSurfaceRect;
-                const origin = pinnedRow.mapToItem(overlay, 0, 0);
-                return origin.x + root.dropIndex * root.cellWidth - width / 2;
-            }
-            y: {
-                root.barSurfaceRect;
-                const origin = pinnedRow.mapToItem(overlay, 0, 0);
-                return origin.y + 4;
-            }
+            x: root.overlayX(pinnedRow) + root.dropIndex * root.cellWidth - width / 2
+            y: root.overlayY(pinnedRow) + 4
         }
 
         // Hover tooltip: MD3 plain tooltip below the item, fade + rise.
@@ -605,16 +613,14 @@ Item {
             property real cachedCenterX: 0
             property real cachedBottom: 0
             readonly property real targetCenterX: {
-                root.barSurfaceRect;
                 if (!targetItem)
                     return cachedCenterX;
-                return cachedCenterX = targetItem.mapToItem(overlay, targetItem.width / 2, 0).x;
+                return cachedCenterX = root.overlayX(targetItem) + targetItem.width / 2;
             }
             readonly property real targetBottom: {
-                root.barSurfaceRect;
                 if (!targetItem)
                     return cachedBottom;
-                return cachedBottom = targetItem.mapToItem(overlay, 0, targetItem.height).y;
+                return cachedBottom = root.overlayY(targetItem) + targetItem.height;
             }
 
             width: tooltipLabel.implicitWidth + 16

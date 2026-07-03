@@ -120,6 +120,21 @@ def color_present(image, region, rgb, tolerance=30) -> bool:
     )
 
 
+def assert_popover_under_button(state: dict, when: str) -> None:
+    """The popover card must stay centered under the overflow button."""
+    button = state["geometry"]["button"]
+    card = state["geometry"]["card"]
+    button_center = button["x"] + button["width"] / 2
+    card_center = card["x"] + card["width"] / 2
+    assert abs(button_center - card_center) <= 2, (
+        f"popover not under button {when}: "
+        f"button center {button_center}, card center {card_center}"
+    )
+    assert card["y"] >= state["geometry"]["barBottom"], (
+        f"popover overlaps bar {when}: card {card}"
+    )
+
+
 def wait_for_color(artifacts, name, region, rgb, timeout=8.0):
     """Re-screenshot until rgb shows up in region (icons load async)."""
     last = None
@@ -220,6 +235,7 @@ def main() -> None:
         time.sleep(0.8)
         state = shell.state()
         assert state["popoverOpen"], "popover did not open"
+        assert_popover_under_button(state, "at first open after startup")
         card = state["geometry"]["card"]
         card_region = tuple(int(v * scale) for v in (card["x"], card["y"], card["x"] + card["width"], card["y"] + card["height"]))
         image = wait_for_color(artifacts, "popover-open", card_region, APPS["e2e-alpha"][0])
@@ -249,8 +265,13 @@ def main() -> None:
         assert json.loads(target)["dropZone"] == "pinned", f"expected pinned zone: {target}"
         screenshot(artifacts, "drag-pin")  # ghost + caret + keep badge
         shell.ipc("drop")
+        time.sleep(0.3)  # let the pinned row relayout settle
         state = shell.state()
         assert state["pinned"][0] == "e2e-alpha", f"alpha not pinned first: {state['pinned']}"
+        # The button shifted left (pinned row grew); the popover must follow.
+        assert state["popoverOpen"], "popover closed after pin drag"
+        assert_popover_under_button(state, "after drag pin")
+        screenshot(artifacts, "popover-after-pin")
 
         def saved_regexes():
             return json.loads(SETTINGS.read_text())["bar"]["tray"]["pinnedRegexes"]
@@ -268,8 +289,10 @@ def main() -> None:
         target = shell.ipc("dragTo", "syncthing", str(int(card["x"] + card["width"] / 2)), str(int(card["y"] + card["height"] / 2)))
         assert json.loads(target)["dropZone"] == "overflow", f"expected overflow zone: {target}"
         shell.ipc("drop")
+        time.sleep(0.3)  # let the pinned row relayout settle
         state = shell.state()
         assert "syncthing" in state["overflow"], f"syncthing not unpinned: {state}"
+        assert_popover_under_button(state, "after drag unpin")
         wait_for(
             lambda: "syncthing" not in saved_regexes(),
             timeout=10, what="unpin regex removal to persist",
