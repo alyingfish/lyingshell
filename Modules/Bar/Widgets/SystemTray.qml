@@ -600,17 +600,21 @@ Item {
             property Item targetItem: null
             property string text: ""
             readonly property bool shown: targetItem !== null && !root.dragActive && text.length > 0
+            // Freeze the last position while targetItem is null so the fade-out
+            // stays in place instead of snapping to the bottom-left corner.
+            property real cachedCenterX: 0
+            property real cachedBottom: 0
             readonly property real targetCenterX: {
                 root.barSurfaceRect;
                 if (!targetItem)
-                    return 0;
-                return targetItem.mapToItem(overlay, targetItem.width / 2, 0).x;
+                    return cachedCenterX;
+                return cachedCenterX = targetItem.mapToItem(overlay, targetItem.width / 2, 0).x;
             }
             readonly property real targetBottom: {
                 root.barSurfaceRect;
                 if (!targetItem)
-                    return 0;
-                return targetItem.mapToItem(overlay, 0, targetItem.height).y;
+                    return cachedBottom;
+                return cachedBottom = targetItem.mapToItem(overlay, 0, targetItem.height).y;
             }
 
             width: tooltipLabel.implicitWidth + 16
