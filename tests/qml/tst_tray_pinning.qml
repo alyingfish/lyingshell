@@ -103,7 +103,8 @@ QtObject {
             verifyEqual(drop.zone, "overflow", "second grid row hit");
             verifyEqual(drop.index, 5, "grid insertion clamped to count");
             drop = TrayPinning.classifyDrag(320, 60, geo(false));
-            verifyEqual(drop.zone, "blocked", "overflow item cannot reorder inside card");
+            verifyEqual(drop.zone, "overflow", "overflow item over card stays in own zone");
+            verifyEqual(drop.index, -1, "own-zone drop carries no insertion point");
             drop = TrayPinning.classifyDrag(600, 400, geo(true));
             verifyEqual(drop.zone, "blocked", "empty space blocks");
             drop = TrayPinning.classifyDrag(150, 20, geo(true));

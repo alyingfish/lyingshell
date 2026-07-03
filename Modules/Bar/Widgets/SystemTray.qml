@@ -39,7 +39,16 @@ Item {
     property string dropZone: "blocked"
     property int dropIndex: -1
     readonly property bool dragActive: dragItem !== null
-    readonly property string dropIcon: dropZone === "pinned" ? "keep" : (dropZone === "overflow" || dropZone === "unpinBtn") ? "keep_off" : "block"
+    // Badge: "keep" = pin (overflow -> pinned), "keep_off" = unpin
+    // (pinned -> overflow), "block" = no drop target. Empty = hidden:
+    // same-zone drops merely adjust position, no state change to announce.
+    readonly property string dropIcon: {
+        if (dropZone === "pinned")
+            return dragFromPinned ? "" : "keep";
+        if (dropZone === "overflow" || dropZone === "unpinBtn")
+            return dragFromPinned ? "keep_off" : "";
+        return "block";
+    }
 
     // Insert pulse: the just-dropped icon grows in; the others jump (no move
     // animation on purpose, per spec).
@@ -191,9 +200,10 @@ Item {
             if (currentIndex >= 0 && index > currentIndex)
                 index--;
             pinItemAt(item, index);
-        } else if (zone === "overflow" || zone === "unpinBtn") {
+        } else if ((zone === "overflow" || zone === "unpinBtn") && dragFromPinned) {
+            // Overflow item dropped back into its own popover: position no-op.
             unpinItem(item);
-        } else {
+        } else if (zone === "blocked") {
             console.info("[Tray] dragCancel " + item.id);
         }
         dropZone = "blocked";
@@ -597,7 +607,7 @@ Item {
         }
 
         // Drag avatar: the icon follows the pointer; a badge below shows the
-        // drop outcome (keep = pin, keep_off = unpin, block = return).
+        // drop outcome (see dropIcon), hidden for same-zone position moves.
         Item {
             id: dragAvatar
 
@@ -618,6 +628,7 @@ Item {
             }
 
             Rectangle {
+                visible: root.dropIcon.length > 0
                 x: -width / 2
                 y: avatarIcon.y + avatarIcon.height + 8
                 width: dropBadgeIcon.implicitWidth + 8

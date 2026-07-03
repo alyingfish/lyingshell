@@ -117,11 +117,12 @@ function classifyDrag(x, y, geo) {
         };
     }
 
-    // Overflow popover card: unpin target for pinned items only.
+    // Overflow popover card: unpin target for pinned items; an overflow
+    // item's own zone otherwise (drop = position no-op, index -1).
     // ponytail: overflow order is service order, no reorder inside it.
     if (geo.card.visible && x >= geo.card.x && x <= geo.card.x + geo.card.width && y >= geo.card.y && y <= geo.card.y + geo.card.height) {
         if (!geo.fromPinned)
-            return { zone: "blocked", index: -1 };
+            return { zone: "overflow", index: -1 };
         return {
             zone: "overflow",
             index: gridInsertionIndex(x - geo.grid.x, y - geo.grid.y, geo.cellWidth, geo.cellHeight, 0, Math.max(1, Math.min(4, geo.overflowCount)), geo.overflowCount)
