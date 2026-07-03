@@ -59,7 +59,10 @@ Item {
     // Bar.qml: full-screen window + full input mask while true.
     readonly property bool expanded: popoverOpen || dragActive || popoverCard.openProgress > 0.001
     // Bar.qml: transparent strip below the bar kept for tooltips while collapsed.
-    readonly property real collapsedReserve: 48
+    // Tracks the live tooltip height so multi-line tooltips (media players)
+    // are not clipped; +12 covers the 4px gap + 4px rise + slack. Resizes the
+    // layer surface once per text change, never per frame.
+    readonly property real collapsedReserve: Math.max(48, tooltip.height + 12)
 
     // Bar button metrics per web-UX .tray-icon-button: 32×24 pill, 16px glyph.
     readonly property real barCellWidth: 32
