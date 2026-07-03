@@ -22,13 +22,23 @@ PanelWindow {
     // resizes the Wayland layer-surface buffer every morph frame, which drops
     // ~3 frames per morph (visible stutter). The surface still animates inside the
     // window via surfaceX/surfaceY. Same reasoning as exclusiveZone below.
-    implicitHeight: barSurface.config.margin + barSurface.barHeight + Math.max(barSurface.shadowBuffer, barSurface.reversedTarget + 4)
+    // Tray-expanded (popover/drag) jumps to full screen height in one step —
+    // never animated — so the tray popover, tooltip, and drag visuals stay in
+    // this window's scene. The collapsed reserve keeps room for tray tooltips.
+    implicitHeight: systemTray.expanded && root.screen ? root.screen.height : barSurface.config.margin + barSurface.barHeight + Math.max(barSurface.shadowBuffer, barSurface.reversedTarget + 4, systemTray.collapsedReserve)
     // Reserve from the settled target, not animMargin: an animated zone repushes
     // every frame and re-tiles windows on every morph frame.
     exclusiveZone: barSurface.isHidden ? 0 : Math.round(barSurface.config.margin + barSurface.barHeight)
 
-    // Restrict input to the visible surface; margins/shadow/hidden stay click-through.
-    mask: Region {
+    // Restrict input to the visible surface; margins/shadow/hidden stay
+    // click-through. While the tray popover/drag is active the whole window
+    // takes input (null mask = full window) so the tray click-catcher sees
+    // outside presses.
+    mask: systemTray.expanded ? null : barMask
+
+    Region {
+        id: barMask
+
         item: maskItem
     }
 
@@ -103,6 +113,8 @@ PanelWindow {
             visible: content.rightContentVisible
 
             SystemTray {
+                id: systemTray
+
                 anchors.verticalCenter: parent.verticalCenter
                 barHidden: barSurface.isHidden
                 barSurfaceRect: Qt.rect(barSurface.surfaceX, barSurface.surfaceY, barSurface.surfaceWidth, barSurface.surfaceHeight)

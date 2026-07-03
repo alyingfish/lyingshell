@@ -54,7 +54,7 @@ def main() -> None:
     assert "0 0 1 " in surface
     # hidden keeps the last visible shape's geometry while sliding away.
     assert "property string lastVisibleShape" in surface
-    assert "if (shape !== \"hidden\") lastVisibleShape = shape" in surface
+    assert "if (shape !== \"hidden\") lastVisibleShape = shape" in " ".join(surface.split())
 
     # --- BarSurface: MD3 tokens + directional drop shadow -----------------
     assert "MD.Token.duration." in surface
@@ -98,12 +98,15 @@ def main() -> None:
     # --- Bar.qml: window wiring -------------------------------------------
     assert "import Quickshell.Wayland" in bar
     assert 'color: "transparent"' in bar
-    assert "implicitHeight: barSurface.totalHeight" in bar
+    # Settled-size window, full-screen while the tray popover/drag is active.
+    assert "barSurface.config.margin + barSurface.barHeight" in bar
+    assert "systemTray.expanded && root.screen ? root.screen.height" in bar
+    assert "systemTray.collapsedReserve" in bar
     # Hidden collapses the exclusive zone; otherwise reserves margin + height.
     assert "barSurface.isHidden" in bar
     assert "? 0" in bar
-    # Input mask + best-effort blur region track the visible surface.
-    assert "mask: Region {" in bar
+    # Input mask tracks the visible surface; tray-expanded takes the window.
+    assert "mask: systemTray.expanded ? null : barMask" in bar
     assert "BackgroundEffect.blurRegion: barSurface.blurEnabled ? blurRegion : null" in bar
     assert "Region {" in bar
     assert "BarSurface {" in bar

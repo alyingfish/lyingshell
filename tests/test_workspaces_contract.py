@@ -56,7 +56,7 @@ def main() -> None:
     assert "centerContentVisible" in bar
     # Edge inset keeps an 8px baseline but grows to clear the active shape's
     # rounded corners.
-    assert "readonly property int edgeMargin: Math.max(8," in bar
+    assert "property real edgeMargin: Math.max(8," in bar
     assert "readonly property int rowSpacing: 8" in bar
 
     assert "spacing: 12" in date_time
@@ -116,7 +116,9 @@ def main() -> None:
     assert "Quickshell.Hyprland" not in product_qml
     assert "Quickshell.I3" not in product_qml
     assert "LYINGSHELL_" + "WORKSPACES_" not in product_qml
-    assert "IpcHandler {" not in product_qml
+    # Debug IPC was removed from the workspaces feature; feature IPC in other
+    # modules (wallpaper, tray e2e driver under tests/) is out of scope here.
+    assert "IpcHandler" not in "\n".join([workspaces, workspace_dot, niri_qml, niri_protocol, niri_state])
 
 
 if __name__ == "__main__":

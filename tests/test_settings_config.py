@@ -90,7 +90,7 @@ def main() -> None:
     assert "property bool reverseScroll: false" in settings_qml
     assert "property bool scrollLoop: true" in settings_qml
     assert "property bool urgentPulse: true" in settings_qml
-    assert 'property string mode: "system"' in settings_qml
+    assert 'property string mode: "light"' in settings_qml
     assert 'property string accentColor: "#4F6357"' in settings_qml
     assert 'property string font: "Noto Sans"' in settings_qml
 

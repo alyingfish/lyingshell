@@ -4,6 +4,9 @@
   },
   "bar": {
     "windowTitle": "Lying Shell Bar",
+    "tray": {
+      "showHidden": "显示隐藏的图标"
+    },
     "dateFormat": "M月d日",
     "timeFormat": "hh:mm",
     "temperatureCelsius": "{temperature}°",

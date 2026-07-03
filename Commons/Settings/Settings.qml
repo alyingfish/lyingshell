@@ -165,6 +165,11 @@ Singleton {
                     property bool scrollLoop: true
                     property bool urgentPulse: true
                 }
+                property JsonObject tray: JsonObject {
+                    // Tray items whose id/title matches any regex stay in the
+                    // pinned zone; the rest go to the overflow popover.
+                    property var pinnedRegexes: ["syncthing"]
+                }
             }
             property JsonObject theme: JsonObject {
                 property string mode: "light"
