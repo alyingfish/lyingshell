@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 
@@ -14,8 +13,6 @@ TRAY_BUTTON = ROOT / "Modules" / "Bar" / "Widgets" / "TrayItemButton.qml"
 TRAY_PINNING = ROOT / "Modules" / "Bar" / "Widgets" / "TrayPinning.js"
 BAR_QML = ROOT / "Modules" / "Bar" / "Bar.qml"
 SHELL_QML = ROOT / "shell.qml"
-EN_JSON = ROOT / "Commons" / "I18n" / "locales" / "en.json"
-ZH_JSON = ROOT / "Commons" / "I18n" / "locales" / "zh-CN.json"
 
 
 def main() -> None:
@@ -81,12 +78,6 @@ def main() -> None:
     # Pure logic library.
     assert pinning.startswith("// Pure pin/partition logic")
     assert ".pragma library" in pinning
-
-    # I18n: tokens used by the tray exist in every locale bundle.
-    for bundle_path in (EN_JSON, ZH_JSON):
-        bundle = json.loads(bundle_path.read_text(encoding="utf-8"))
-        assert bundle["bar"]["tray"]["showHidden"], f"missing token in {bundle_path.name}"
-    assert 'I18n.t("bar.tray.showHidden")' in tray
 
     print("OK: tray contract holds")
 

@@ -2,7 +2,6 @@ import QtQuick
 import Quickshell
 import Quickshell.Services.SystemTray as SysTray
 import Qcm.Material as MD
-import qs.Commons.I18n
 import qs.Commons.Settings
 import qs.Commons.Theme
 import "TrayPinning.js" as TrayPinning
@@ -70,9 +69,11 @@ Item {
     implicitWidth: trayRow.implicitWidth
     implicitHeight: trayRow.implicitHeight
 
-    onBarHiddenChanged: if (barHidden) popoverOpen = false
+    onBarHiddenChanged: if (barHidden)
+        popoverOpen = false
     // Last overflow item pinned away: nothing left to show.
-    onOverflowItemsChanged: if (overflowItems.length === 0 && !dragActive) popoverOpen = false
+    onOverflowItemsChanged: if (overflowItems.length === 0 && !dragActive)
+        popoverOpen = false
     onTraySplitChanged: console.info("[Tray] pinned=" + JSON.stringify(traySplit.pinned.map(i => i.id)) + " overflow=" + JSON.stringify(traySplit.overflow.map(i => i.id)))
     onPopoverOpenChanged: console.info("[Tray] popover " + (popoverOpen ? "open" : "closed"))
 
@@ -188,12 +189,28 @@ Item {
         const target = TrayPinning.classifyDrag(dragPoint.x, dragPoint.y, {
             "fromPinned": dragFromPinned,
             "barBottom": root.barBottom,
-            "button": { "x": btnOrigin.x, "width": overflowButton.width, "visible": overflowButton.visible },
-            "row": { "x": rowOrigin.x, "width": pinnedRow.width },
+            "button": {
+                "x": btnOrigin.x,
+                "width": overflowButton.width,
+                "visible": overflowButton.visible
+            },
+            "row": {
+                "x": rowOrigin.x,
+                "width": pinnedRow.width
+            },
             "pinnedCount": pinnedItems.length,
             "overflowCount": overflowItems.length,
-            "card": { "x": popoverCard.x, "y": popoverCard.y, "width": popoverCard.width, "height": popoverCard.height, "visible": popoverCard.visible },
-            "grid": { "x": popoverCard.x + overflowGrid.x, "y": popoverCard.y + overflowGrid.y },
+            "card": {
+                "x": popoverCard.x,
+                "y": popoverCard.y,
+                "width": popoverCard.width,
+                "height": popoverCard.height,
+                "visible": popoverCard.visible
+            },
+            "grid": {
+                "x": popoverCard.x + overflowGrid.x,
+                "y": popoverCard.y + overflowGrid.y
+            },
             "cellWidth": root.cellWidth,
             "cellHeight": root.cellHeight
         });
@@ -305,7 +322,10 @@ Item {
         if (!dragActive || dragItem !== item)
             beginDrag(item, pinnedItems.indexOf(item) >= 0);
         updateDragAt(Qt.point(x, y));
-        return JSON.stringify({ "dropZone": dropZone, "dropIndex": dropIndex });
+        return JSON.stringify({
+            "dropZone": dropZone,
+            "dropIndex": dropIndex
+        });
     }
 
     function dropDraggedItem() {
@@ -369,8 +389,6 @@ Item {
 
             checked: root.popoverOpen
             onClicked: root.popoverOpen = !root.popoverOpen
-
-            onHoveredChanged: hovered ? root.requestTooltip(overflowButton, I18n.t("bar.tray.showHidden")) : root.releaseTooltip(overflowButton)
 
             // Chevron flips while open. Rotate the GLYPH, not the button, so
             // the button's layout box stays stable during bar shape morphs.

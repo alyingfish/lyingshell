@@ -4,9 +4,6 @@
   },
   "bar": {
     "windowTitle": "Lying Shell Bar",
-    "tray": {
-      "showHidden": "Show hidden icons"
-    },
     "dateFormat": "M/d",
     "timeFormat": "hh:mm",
     "temperatureCelsius": "{temperature}°",
