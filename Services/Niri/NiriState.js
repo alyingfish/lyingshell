@@ -2,13 +2,10 @@
 
 function initialState() {
     return derive({
-        outputs: [],
         workspaces: [],
         focusedOutputName: "",
         windows: [],
-        overviewOpen: false,
-        keyboardLayoutNames: [],
-        currentKeyboardLayoutIndex: -1
+        overviewOpen: false
     });
 }
 
@@ -56,20 +53,12 @@ function applyEvent(state, event) {
         return applyWindowOpenedOrChanged(state, payload);
     case "WindowClosed":
         return applyWindowClosed(state, payload);
-    case "WindowFocusChanged":
-        return applyWindowFocusChanged(state, payload);
     case "WindowLayoutsChanged":
         return applyWindowLayoutsChanged(state, payload);
     case "WindowUrgencyChanged":
         return applyWindowUrgencyChanged(state, payload);
-    case "OutputsChanged":
-        return applyOutputs(state, payload ? payload.outputs : null);
     case "OverviewOpenedOrClosed":
         return applyOverview(state, payload);
-    case "KeyboardLayoutsChanged":
-        return applyKeyboardLayoutsChanged(state, payload);
-    case "KeyboardLayoutSwitched":
-        return applyKeyboardLayoutSwitched(state, payload);
     default:
         return result(state, false, "");
     }
@@ -99,7 +88,7 @@ function applyWorkspaceActivated(state, payload) {
     var next = copyState(state);
     var workspaces = [];
     for (var i = 0; i < next.workspaces.length; i += 1) {
-        var workspace = copyObject(next.workspaces[i]);
+        var workspace = Object.assign({}, next.workspaces[i]);
         if (workspace.outputName === activated.outputName) {
             workspace.active = workspace.id === idKey;
         }
@@ -174,17 +163,13 @@ function applyWindowOpenedOrChanged(state, payload) {
             windows.push(window);
             found = true;
         } else {
-            var copied = copyObject(current);
-            if (window.focused) {
-                copied.focused = false;
-            }
-            windows.push(copied);
+            windows.push(current);
         }
     }
     if (!found) {
         windows.push(window);
     }
-    next.windows = sortWindows(windows, state.workspacesById);
+    next.windows = windows;
     return result(derive(next), true, "");
 }
 
@@ -197,21 +182,6 @@ function applyWindowClosed(state, payload) {
     var next = copyState(state);
     next.windows = next.windows.filter(function(window) {
         return window.id !== idKey;
-    });
-    return result(derive(next), true, "");
-}
-
-function applyWindowFocusChanged(state, payload) {
-    if (!payload || (!Object.prototype.hasOwnProperty.call(payload, "id"))) {
-        return result(state, false, "Invalid WindowFocusChanged event");
-    }
-
-    var idKey = idText(payload.id);
-    var next = copyState(state);
-    next.windows = next.windows.map(function(window) {
-        var copy = copyObject(window);
-        copy.focused = idKey.length > 0 && copy.id === idKey;
-        return copy;
     });
     return result(derive(next), true, "");
 }
@@ -254,22 +224,6 @@ function applyWindowUrgencyChanged(state, payload) {
     return result(derive(next), true, "");
 }
 
-function applyOutputs(state, payload) {
-    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
-        return result(state, false, "Invalid Niri outputs payload");
-    }
-
-    var outputs = [];
-    var keys = Object.keys(payload);
-    for (var i = 0; i < keys.length; i += 1) {
-        outputs.push(normalizeOutput(payload[keys[i]], keys[i]));
-    }
-
-    var next = copyState(state);
-    next.outputs = outputs;
-    return result(derive(next), true, "");
-}
-
 function applyOverview(state, payload) {
     if (!payload || typeof payload.is_open !== "boolean") {
         return result(state, false, "Invalid OverviewOpenedOrClosed event");
@@ -280,38 +234,12 @@ function applyOverview(state, payload) {
     return result(derive(next), true, "");
 }
 
-function applyKeyboardLayoutsChanged(state, payload) {
-    if (!payload || !payload.keyboard_layouts || !Array.isArray(payload.keyboard_layouts.names)) {
-        return result(state, false, "Invalid KeyboardLayoutsChanged event");
-    }
-
-    var next = copyState(state);
-    next.keyboardLayoutNames = payload.keyboard_layouts.names.slice();
-    next.currentKeyboardLayoutIndex = safeInteger(payload.keyboard_layouts.current_idx, -1);
-    return result(derive(next), true, "");
-}
-
-function applyKeyboardLayoutSwitched(state, payload) {
-    if (!payload || !Number.isSafeInteger(payload.idx)) {
-        return result(state, false, "Invalid KeyboardLayoutSwitched event");
-    }
-
-    var next = copyState(state);
-    next.currentKeyboardLayoutIndex = payload.idx;
-    return result(derive(next), true, "");
-}
-
 function derive(state) {
     var next = copyState(state);
-    next.outputsByName = {};
-    for (var i = 0; i < next.outputs.length; i += 1) {
-        next.outputsByName[next.outputs[i].name] = next.outputs[i];
-    }
 
     next.workspacesById = {};
     next.workspacesByOutput = {};
-    next.focusedWorkspaceId = "";
-    next.focusedWorkspace = null;
+    var focusedWorkspace = null;
     for (var j = 0; j < next.workspaces.length; j += 1) {
         var workspace = next.workspaces[j];
         next.workspacesById[workspace.id] = workspace;
@@ -321,8 +249,7 @@ function derive(state) {
         }
         next.workspacesByOutput[outputName].push(workspace);
         if (workspace.focused) {
-            next.focusedWorkspaceId = workspace.id;
-            next.focusedWorkspace = workspace;
+            focusedWorkspace = workspace;
         }
     }
 
@@ -331,27 +258,15 @@ function derive(state) {
         next.workspacesByOutput[outputKeys[k]].sort(compareWorkspace);
     }
 
-    next.focusedOutputName = next.focusedWorkspace ? next.focusedWorkspace.outputName : next.focusedOutputName;
-    next.currentOutputWorkspaces = next.workspacesByOutput[next.focusedOutputName] || [];
+    next.focusedOutputName = focusedWorkspace ? focusedWorkspace.outputName : next.focusedOutputName;
 
     next.windowsById = {};
-    next.focusedWindowId = "";
-    next.focusedWindow = null;
     for (var w = 0; w < next.windows.length; w += 1) {
-        var windowItem = copyObject(next.windows[w]);
+        var windowItem = Object.assign({}, next.windows[w]);
         var owningWorkspace = next.workspacesById[windowItem.workspaceId];
         windowItem.outputName = owningWorkspace ? owningWorkspace.outputName : windowItem.outputName;
         next.windows[w] = windowItem;
         next.windowsById[windowItem.id] = windowItem;
-        if (windowItem.focused) {
-            next.focusedWindowId = windowItem.id;
-            next.focusedWindow = windowItem;
-        }
-    }
-
-    next.currentKeyboardLayoutName = "";
-    if (next.currentKeyboardLayoutIndex >= 0 && next.currentKeyboardLayoutIndex < next.keyboardLayoutNames.length) {
-        next.currentKeyboardLayoutName = next.keyboardLayoutNames[next.currentKeyboardLayoutIndex];
     }
 
     return next;
@@ -380,9 +295,9 @@ function normalizeWorkspace(workspace) {
 }
 
 function normalizeWindowList(windows, workspacesById) {
-    return sortWindows(windows.map(function(window) {
+    return windows.map(function(window) {
         return normalizeWindow(window, workspacesById);
-    }), workspacesById);
+    });
 }
 
 function normalizeWindow(window, workspacesById) {
@@ -399,47 +314,10 @@ function normalizeWindow(window, workspacesById) {
         appId: optionalString(window.app_id),
         workspaceId: workspaceId,
         outputName: workspace ? workspace.outputName : "",
-        focused: window.is_focused === true,
         urgent: window.is_urgent === true,
         isFloating: window.is_floating === true,
         layout: window.layout || null
     };
-}
-
-function normalizeOutput(output, fallbackName) {
-    var source = output || {};
-    var name = source.name ? String(source.name) : String(fallbackName || "");
-    if (name.length === 0) {
-        throw new Error("output name is required");
-    }
-
-    return {
-        name: name,
-        make: optionalString(source.make),
-        model: optionalString(source.model),
-        serial: optionalString(source.serial),
-        logical: source.logical || null,
-        currentModeIndex: source.current_mode === null || source.current_mode === undefined ? -1 : safeInteger(source.current_mode, -1),
-        vrrSupported: source.vrr_supported === true,
-        vrrEnabled: source.vrr_enabled === true
-    };
-}
-
-function sortWindows(windows, workspacesById) {
-    return windows.slice().sort(function(a, b) {
-        var aWorkspace = workspacesById[a.workspaceId];
-        var bWorkspace = workspacesById[b.workspaceId];
-        var outputCompare = compareString(a.outputName, b.outputName);
-        if (outputCompare !== 0) {
-            return outputCompare;
-        }
-        var aIndex = aWorkspace ? aWorkspace.index : 999999;
-        var bIndex = bWorkspace ? bWorkspace.index : 999999;
-        if (aIndex !== bIndex) {
-            return aIndex - bIndex;
-        }
-        return numericId(a.id) - numericId(b.id);
-    });
 }
 
 function compareWorkspace(a, b) {
@@ -459,33 +337,17 @@ function mapReplace(items, id, replacer) {
             return item;
         }
 
-        return replacer(copyObject(item));
+        return replacer(Object.assign({}, item));
     });
 }
 
 function copyState(state) {
     return {
-        outputs: state.outputs ? state.outputs.slice() : [],
         workspaces: state.workspaces ? state.workspaces.slice() : [],
         focusedOutputName: optionalString(state.focusedOutputName),
         windows: state.windows ? state.windows.slice() : [],
-        overviewOpen: state.overviewOpen === true,
-        keyboardLayoutNames: state.keyboardLayoutNames ? state.keyboardLayoutNames.slice() : [],
-        currentKeyboardLayoutIndex: safeInteger(state.currentKeyboardLayoutIndex, -1)
+        overviewOpen: state.overviewOpen === true
     };
-}
-
-function copyObject(source) {
-    var copy = {};
-    if (!source || typeof source !== "object") {
-        return copy;
-    }
-
-    var keys = Object.keys(source);
-    for (var i = 0; i < keys.length; i += 1) {
-        copy[keys[i]] = source[keys[i]];
-    }
-    return copy;
 }
 
 function result(state, changed, error) {

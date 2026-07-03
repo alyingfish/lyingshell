@@ -390,6 +390,8 @@ Item {
                     trayItemId: modelData.id
                     iconSource: modelData.icon
                     ghosted: root.dragActive && root.dragItem === modelData
+                    pulseId: root.pulseId
+                    pulseStamp: root.pulseStamp
 
                     onActivated: root.activateItem(modelData, pinnedButton)
                     onSecondaryActivated: root.secondaryActivateItem(modelData)
@@ -400,35 +402,6 @@ Item {
                     onDragStarted: root.beginDrag(modelData, true)
                     onDragMoved: (dragX, dragY) => root.updateDrag(pinnedButton, dragX, dragY)
                     onDragFinished: root.endDrag()
-
-                    Connections {
-                        target: root
-
-                        function onPulseStampChanged() {
-                            if (root.pulseId === pinnedButton.trayItemId)
-                                insertPulse.restart();
-                        }
-                    }
-
-                    SequentialAnimation {
-                        id: insertPulse
-
-                        NumberAnimation {
-                            target: pinnedButton
-                            property: "scale"
-                            from: 0.5
-                            to: 1.1
-                            duration: MD.Token.duration.short4
-                            easing: MD.Token.easing.emphasized_decelerate
-                        }
-                        NumberAnimation {
-                            target: pinnedButton
-                            property: "scale"
-                            to: 1.0
-                            duration: MD.Token.duration.short2
-                            easing: MD.Token.easing.standard
-                        }
-                    }
                 }
             }
         }
@@ -521,6 +494,8 @@ Item {
                             trayItemId: modelData.id
                             iconSource: modelData.icon
                             ghosted: root.dragActive && root.dragItem === modelData
+                            pulseId: root.pulseId
+                            pulseStamp: root.pulseStamp
 
                             onActivated: root.activateItem(modelData, overflowItemButton)
                             onSecondaryActivated: root.secondaryActivateItem(modelData)
@@ -531,35 +506,6 @@ Item {
                             onDragStarted: root.beginDrag(modelData, false)
                             onDragMoved: (dragX, dragY) => root.updateDrag(overflowItemButton, dragX, dragY)
                             onDragFinished: root.endDrag()
-
-                            Connections {
-                                target: root
-
-                                function onPulseStampChanged() {
-                                    if (root.pulseId === overflowItemButton.trayItemId)
-                                        overflowPulse.restart();
-                                }
-                            }
-
-                            SequentialAnimation {
-                                id: overflowPulse
-
-                                NumberAnimation {
-                                    target: overflowItemButton
-                                    property: "scale"
-                                    from: 0.5
-                                    to: 1.1
-                                    duration: MD.Token.duration.short4
-                                    easing: MD.Token.easing.emphasized_decelerate
-                                }
-                                NumberAnimation {
-                                    target: overflowItemButton
-                                    property: "scale"
-                                    to: 1.0
-                                    duration: MD.Token.duration.short2
-                                    easing: MD.Token.easing.standard
-                                }
-                            }
                         }
                     }
                 }

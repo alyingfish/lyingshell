@@ -12,6 +12,18 @@ MD.IconButton {
     property url iconSource
     // Drag origin placeholder: keep layout, fade the icon.
     property bool ghosted: false
+    // Insert pulse: bound to SystemTray's pulse state; the just-dropped item
+    // grows in when the stamp bumps. Guarded past creation because repeater
+    // rebuilds re-evaluate the bindings with the stale last pulse.
+    property string pulseId
+    property int pulseStamp: 0
+    property bool _created: false
+
+    Component.onCompleted: _created = true
+    onPulseStampChanged: {
+        if (_created && pulseId === trayItemId)
+            insertPulse.restart();
+    }
 
     signal activated()
     signal secondaryActivated()
@@ -85,6 +97,26 @@ MD.IconButton {
     WheelHandler {
         onWheel: function (event) {
             root.scrolled(event.angleDelta.y);
+        }
+    }
+
+    SequentialAnimation {
+        id: insertPulse
+
+        NumberAnimation {
+            target: root
+            property: "scale"
+            from: 0.5
+            to: 1.1
+            duration: MD.Token.duration.short4
+            easing: MD.Token.easing.emphasized_decelerate
+        }
+        NumberAnimation {
+            target: root
+            property: "scale"
+            to: 1.0
+            duration: MD.Token.duration.short2
+            easing: MD.Token.easing.standard
         }
     }
 }

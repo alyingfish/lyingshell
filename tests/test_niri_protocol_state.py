@@ -60,73 +60,17 @@ function same(actual, expected, message) {
 }
 
 same(protocol.eventStreamRequest(), "EventStream", "event stream request");
-same(JSON.parse(protocol.encodeRequest(protocol.focusWorkspaceByIndexRequest(2))), {
-    Action: { FocusWorkspace: { reference: { Index: 2 } } }
-}, "focus workspace by index action");
 same(JSON.parse(protocol.encodeRequest(protocol.focusWorkspaceByIdRequest("5"))), {
     Action: { FocusWorkspace: { reference: { Id: 5 } } }
 }, "focus workspace by id action");
-same(JSON.parse(protocol.encodeRequest(protocol.focusWorkspaceByNameRequest("chat"))), {
-    Action: { FocusWorkspace: { reference: { Name: "chat" } } }
-}, "focus workspace by name action");
-same(JSON.parse(protocol.encodeRequest(protocol.focusWindowRequest("42"))), {
-    Action: { FocusWindow: { id: 42 } }
-}, "focus window action");
-same(JSON.parse(protocol.encodeRequest(protocol.focusColumnLeftRequest())), {
-    Action: { FocusColumnLeft: {} }
-}, "focus column left action");
-same(JSON.parse(protocol.encodeRequest(protocol.focusColumnRightRequest())), {
-    Action: { FocusColumnRight: {} }
-}, "focus column right action");
-same(JSON.parse(protocol.encodeRequest(protocol.focusWorkspaceUpRequest())), {
-    Action: { FocusWorkspaceUp: {} }
-}, "focus workspace up action");
-same(JSON.parse(protocol.encodeRequest(protocol.focusWorkspaceDownRequest())), {
-    Action: { FocusWorkspaceDown: {} }
-}, "focus workspace down action");
-same(JSON.parse(protocol.encodeRequest(protocol.toggleOverviewRequest())), {
-    Action: { ToggleOverview: {} }
-}, "toggle overview action");
-same(JSON.parse(protocol.encodeRequest(protocol.setFocusedWorkspaceNameRequest("ops"))), {
-    Action: { SetWorkspaceName: { name: "ops", workspace: null } }
-}, "set focused workspace name action");
-same(JSON.parse(protocol.encodeRequest(protocol.unsetFocusedWorkspaceNameRequest())), {
-    Action: { UnsetWorkspaceName: { reference: null } }
-}, "unset focused workspace name action");
 
-let reply = protocol.parseReplyLine('{"Ok":{"Outputs":{}}}');
-assert(reply.ok && reply.payload.Outputs, "Ok reply parses");
+let reply = protocol.parseReplyLine('{"Ok":"Handled"}');
+assert(reply.ok && reply.payload === "Handled", "Ok reply parses");
 reply = protocol.parseReplyLine('{"Err":"nope"}');
 assert(!reply.ok && reply.error === "nope", "Err reply parses");
 
 let current = state.initialState();
 let reduced = state.applyEventLine(current, JSON.stringify({
-    OutputsChanged: {
-        outputs: {
-            "HDMI-A-1": {
-                name: "HDMI-A-1",
-                make: "Test",
-                model: "Wide",
-                logical: { x: 1920, y: 0 },
-                vrr_supported: true,
-                vrr_enabled: false
-            },
-            "eDP-1": {
-                name: "eDP-1",
-                make: "Test",
-                model: "Panel",
-                logical: { x: 0, y: 0 },
-                vrr_supported: false,
-                vrr_enabled: false
-            }
-        }
-    }
-}));
-assert(reduced.changed && reduced.error === "", "outputs event applies");
-current = reduced.state;
-same(current.outputs.map(output => output.name), ["HDMI-A-1", "eDP-1"], "outputs preserve Niri order");
-
-reduced = state.applyEventLine(current, JSON.stringify({
     WorkspacesChanged: {
         workspaces: [
             {
@@ -164,9 +108,8 @@ reduced = state.applyEventLine(current, JSON.stringify({
 }));
 assert(reduced.changed && reduced.error === "", "workspaces event applies");
 current = reduced.state;
-assert(current.focusedWorkspaceId === "5", "focused workspace id derives");
 assert(current.focusedOutputName === "eDP-1", "focused output derives");
-same(current.currentOutputWorkspaces.map(workspace => workspace.id), ["5", "7"], "current output workspaces derive");
+same(current.workspacesByOutput["eDP-1"].map(workspace => workspace.id), ["5", "7"], "per-output workspaces sort by index");
 
 reduced = state.applyEventLine(current, JSON.stringify({
     WindowsChanged: {
@@ -178,16 +121,7 @@ reduced = state.applyEventLine(current, JSON.stringify({
 }));
 assert(reduced.changed && reduced.error === "", "windows event applies");
 current = reduced.state;
-assert(current.focusedWindowId === "42", "focused window derives");
 assert(current.windowsById["43"].outputName === "HDMI-A-1", "window output derives through workspace");
-
-reduced = state.applyEventLine(current, JSON.stringify({
-    KeyboardLayoutsChanged: {
-        keyboard_layouts: { names: ["us", "de"], current_idx: 1 }
-    }
-}));
-current = reduced.state;
-assert(current.currentKeyboardLayoutName === "de", "keyboard layout derives");
 
 reduced = state.applyEventLine(current, JSON.stringify({ FutureEvent: { value: true } }));
 assert(!reduced.changed && reduced.error === "", "unknown events are ignored");

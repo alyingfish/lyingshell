@@ -10,34 +10,15 @@ Singleton {
     id: root
 
     property string errorMessage: ""
-    property bool stale: available
     property int lastEventVersion: 0
 
     readonly property string socketPath: String(Quickshell.env("NIRI_SOCKET") || "")
     readonly property bool available: socketPath.length > 0
-    readonly property bool connected: eventSocket.connected
-    readonly property bool ready: connected && _eventStreamReady && !stale
-    readonly property bool hasError: errorMessage.length > 0
 
-    readonly property var workspaces: _state.workspaces
-    readonly property var workspacesById: _state.workspacesById
     readonly property var workspacesByOutput: _state.workspacesByOutput
     readonly property string focusedOutputName: _state.focusedOutputName
-    readonly property string focusedWorkspaceId: _state.focusedWorkspaceId
-    readonly property var focusedWorkspace: _state.focusedWorkspace
-    readonly property var currentOutputWorkspaces: _state.currentOutputWorkspaces
-
-    readonly property var windows: _state.windows
     readonly property var windowsById: _state.windowsById
-    readonly property string focusedWindowId: _state.focusedWindowId
-    readonly property var focusedWindow: _state.focusedWindow
-
-    readonly property var outputsByName: _state.outputsByName
-    readonly property var outputs: _state.outputs
     readonly property bool overviewOpen: _state.overviewOpen
-    readonly property var keyboardLayoutNames: _state.keyboardLayoutNames
-    readonly property int currentKeyboardLayoutIndex: _state.currentKeyboardLayoutIndex
-    readonly property string currentKeyboardLayoutName: _state.currentKeyboardLayoutName
 
     property var _state: NiriState.initialState()
     property bool _requestPending: false
@@ -99,62 +80,8 @@ Singleton {
     }
 
     function focusWorkspaceById(id: string): bool {
-        return _sendBuiltAction(function() {
-            return NiriProtocol.focusWorkspaceByIdRequest(id);
-        });
-    }
-
-    function focusWorkspaceByName(name: string): bool {
-        return _sendBuiltAction(function() {
-            return NiriProtocol.focusWorkspaceByNameRequest(name);
-        });
-    }
-
-    function focusWorkspaceByIndex(index: int): bool {
-        return _sendBuiltAction(function() {
-            return NiriProtocol.focusWorkspaceByIndexRequest(index);
-        });
-    }
-
-    function focusWindow(id: string): bool {
-        return _sendBuiltAction(function() {
-            return NiriProtocol.focusWindowRequest(id);
-        });
-    }
-
-    function focusColumnLeft(): bool {
-        return _sendNiriRequest(NiriProtocol.focusColumnLeftRequest());
-    }
-
-    function focusColumnRight(): bool {
-        return _sendNiriRequest(NiriProtocol.focusColumnRightRequest());
-    }
-
-    function focusWorkspaceUp(): bool {
-        return _sendNiriRequest(NiriProtocol.focusWorkspaceUpRequest());
-    }
-
-    function focusWorkspaceDown(): bool {
-        return _sendNiriRequest(NiriProtocol.focusWorkspaceDownRequest());
-    }
-
-    function toggleOverview(): bool {
-        return _sendNiriRequest(NiriProtocol.toggleOverviewRequest());
-    }
-
-    function setFocusedWorkspaceName(name: string): bool {
-        return _sendBuiltAction(function() {
-            return NiriProtocol.setFocusedWorkspaceNameRequest(name);
-        });
-    }
-
-    function unsetFocusedWorkspaceName(): bool {
-        return _sendNiriRequest(NiriProtocol.unsetFocusedWorkspaceNameRequest());
-    }
-
-    function _sendBuiltAction(buildRequest) {
         try {
-            return _sendNiriRequest(buildRequest());
+            return _sendNiriRequest(NiriProtocol.focusWorkspaceByIdRequest(id));
         } catch (error) {
             _setError(NiriProtocol.errorMessageText(error));
             return false;
@@ -163,7 +90,6 @@ Singleton {
 
     function _handleEventSocketConnected() {
         _eventStreamReady = false;
-        stale = true;
         errorMessage = "";
         eventSocket.write(NiriProtocol.encodeRequest(NiriProtocol.eventStreamRequest()));
         eventSocket.flush();
@@ -171,7 +97,6 @@ Singleton {
 
     function _handleEventSocketDisconnected() {
         _eventStreamReady = false;
-        stale = available;
     }
 
     function _handleEventLine(line) {
@@ -184,7 +109,7 @@ Singleton {
             return;
         }
 
-        _applyReducerResult(NiriState.applyEventLine(_state, line), true);
+        _applyReducerResult(NiriState.applyEventLine(_state, line));
     }
 
     function _handleEventStreamReply(reply) {
@@ -236,25 +161,18 @@ Singleton {
         return true;
     }
 
-    function _applyReducerResult(result, eventResult) {
+    function _applyReducerResult(result) {
         if (result.error.length > 0) {
             _setError(result.error);
             return;
         }
 
         _state = result.state;
-        if (eventResult) {
-            lastEventVersion += 1;
-            if (result.changed) {
-                stale = false;
-            }
-        }
-
+        lastEventVersion += 1;
         errorMessage = "";
     }
 
     function _handleSocketError(socketName, socketError) {
-        stale = true;
         _setError("Niri " + socketName + " socket error: " + String(socketError));
     }
 

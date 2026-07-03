@@ -27,12 +27,8 @@ Singleton {
     // Single source directory → one scanned list shared across outputs.
     property var wallpaperList: []
 
-    // screenName -> path. Background listens; Overview mirrors via the
-    // processing-complete signal Background re-emits.
+    // screenName -> path. Background and Overview both listen.
     signal wallpaperChanged(string screenName, string path)
-    // cachedPath is always "" here (no resize cache); Overview just needs path.
-    signal wallpaperProcessingComplete(string screenName, string path, string cachedPath)
-    signal wallpaperListUpdated(int count)
 
     Component.onCompleted: {
         if (Settings.isLoaded) {
@@ -169,7 +165,6 @@ Singleton {
                 });
             }
             root.wallpaperList = files;
-            root.wallpaperListUpdated(files.length);
         }
     }
 

@@ -64,17 +64,10 @@ Variants {
             }
 
             Connections {
-                target: Settings.options.wallpaper
-                function onFillModeChanged() {
-                    root.fillMode = Wallpaper.getFillModeUniform();
-                }
-            }
-
-            Connections {
                 target: Wallpaper
                 function onWallpaperChanged(screenName, path) {
                     if (screenName === modelData.name) {
-                        root.requestPreprocessedWallpaper(path);
+                        root.queueWallpaperChange(path);
                     }
                 }
             }
@@ -222,10 +215,9 @@ Variants {
                     currentWallpaper.source = futureWallpaper;
                     Qt.callLater(() => currentWallpaper.asynchronous = true);
                 }
-                Wallpaper.wallpaperProcessingComplete(modelData.name, futureWallpaper, "");
             }
 
-            function requestPreprocessedWallpaper(originalPath) {
+            function queueWallpaperChange(originalPath) {
                 if (transitioning && originalPath === transitioningToOriginalPath) {
                     return;
                 }
@@ -234,12 +226,10 @@ Variants {
 
                 if (_pathStr(futureWallpaper) === _pathStr(currentWallpaper.source)) {
                     transitioningToOriginalPath = "";
-                    Wallpaper.wallpaperProcessingComplete(modelData.name, originalPath, "");
                     return;
                 }
 
                 debounceTimer.restart();
-                Wallpaper.wallpaperProcessingComplete(modelData.name, originalPath, "");
             }
 
             function setWallpaperImmediate(source) {

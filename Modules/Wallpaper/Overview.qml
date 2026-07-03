@@ -12,7 +12,8 @@ import qs.Services.Wallpaper
 // Background's cached texture. Needs a niri layer-rule with
 // place-within-backdrop on namespace "lyingshell-overview".
 Loader {
-    active: Niri.available && Settings.options.wallpaper.enabled && Settings.options.wallpaper.overviewEnabled
+    // Gated on isInitialized so the onCompleted seed below reads loaded settings.
+    active: Niri.available && Wallpaper.isInitialized && Settings.options.wallpaper.enabled && Settings.options.wallpaper.overviewEnabled
 
     sourceComponent: Variants {
         model: Quickshell.screens
@@ -26,15 +27,14 @@ Loader {
 
             visible: wallpaper !== ""
 
-            // Seed now: Background may emit before this delegate's Connections exist.
+            // Seed now: wallpaperChanged only fires on changes, not at startup.
             Component.onCompleted: wallpaper = Wallpaper.getWallpaper(modelData.name)
 
             Component.onDestruction: bgImage.source = ""
 
-            // Reuse Background's already-resolved path/texture.
             Connections {
                 target: Wallpaper
-                function onWallpaperProcessingComplete(screenName, path, cachedPath) {
+                function onWallpaperChanged(screenName, path) {
                     if (screenName === modelData.name) {
                         panelWindow.wallpaper = path;
                     }
