@@ -16,7 +16,13 @@ Item {
     readonly property int workspaceCount: workspaceModel && workspaceModel.length !== undefined ? workspaceModel.length : 0
     readonly property bool hasWorkspaces: workspaceCount > 0
     readonly property bool hovered: pillMouseArea.containsMouse || hasHoveredDot()
-    readonly property var renderedWorkspaceValues: normalizedWorkspaces(workspaceModel)
+    // Updated by syncRenderedWorkspaces, not bound: Niri replaces workspace
+    // array identities on every compositor event (including per-frame window
+    // layout storms), and a plain binding would push fresh objects into the
+    // ScriptModel and re-bind every dot each time. The signature guard drops
+    // updates whose rendered content is unchanged.
+    property var renderedWorkspaceValues: []
+    property string _renderedSignature: ""
     readonly property int enterDuration: MD.Token.duration.short4
     readonly property int exitDuration: MD.Token.duration.short3
     readonly property int displacedDuration: MD.Token.duration.short4
@@ -26,6 +32,21 @@ Item {
     implicitHeight: controlHeight
     width: implicitWidth
     height: implicitHeight
+
+    // Required properties are assigned before completion without firing the
+    // change signal, so seed once here.
+    Component.onCompleted: syncRenderedWorkspaces()
+    onWorkspaceModelChanged: syncRenderedWorkspaces()
+
+    function syncRenderedWorkspaces() {
+        var next = normalizedWorkspaces(workspaceModel);
+        var signature = JSON.stringify(next);
+        if (signature === _renderedSignature) {
+            return;
+        }
+        _renderedSignature = signature;
+        renderedWorkspaceValues = next;
+    }
 
     ScriptModel {
         id: renderedWorkspaces
