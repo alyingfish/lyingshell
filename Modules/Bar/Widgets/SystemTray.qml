@@ -603,15 +603,16 @@ Item {
             }
         }
 
-        // Insertion caret in the pinned zone.
+        // Insertion caret in the pinned zone. Caret height = pill height
+        // (same rule as the popover caret), centered on the tray row.
         Rectangle {
             visible: root.dragActive && root.dropZone === "pinned" && root.dropIndex >= 0
             width: 2
-            height: root.barCellHeight - 8
+            height: root.barCellHeight
             radius: width / 2
             color: MD.Token.color.primary
             x: root.pinnedZoneLeft + root.dropIndex * root.barCellWidth - width / 2
-            y: root.overlayY(trayRow) + 4
+            y: root.overlayY(trayRow) + (trayRow.height - root.barCellHeight) / 2
         }
 
         // Hover tooltip: MD3 plain tooltip below the item, fade + rise.
