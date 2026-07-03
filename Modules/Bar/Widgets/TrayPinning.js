@@ -120,7 +120,8 @@ function unpin(regexes, item) {
 //   pinnedCount, overflowCount: int
 //   card:       { x, y, width, height, visible } overflow popover card
 //   grid:       { x, y }                         grid origin inside overlay
-//   cellWidth, cellHeight: real
+//   rowCellWidth: real                           pinned-row cell width
+//   cellWidth, cellHeight: real                  popover grid cell size
 // Returns { zone: "pinned"|"unpinBtn"|"overflow"|"blocked", index: int }.
 function classifyDrag(x, y, geo) {
     const inBarStrip = y >= 0 && y <= geo.barBottom;
@@ -132,11 +133,11 @@ function classifyDrag(x, y, geo) {
     }
 
     // Pinned zone: the bar strip around the pinned row, with slop.
-    const rowWidth = Math.max(geo.row.width + 32, geo.cellWidth + 16);
+    const rowWidth = Math.max(geo.row.width + 32, geo.rowCellWidth + 16);
     if (inBarStrip && x >= geo.row.x - 16 && x <= geo.row.x - 16 + rowWidth) {
         return {
             zone: "pinned",
-            index: rowInsertionIndex(x - geo.row.x, geo.cellWidth, 0, geo.pinnedCount)
+            index: rowInsertionIndex(x - geo.row.x, geo.rowCellWidth, 0, geo.pinnedCount)
         };
     }
 

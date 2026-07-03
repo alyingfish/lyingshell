@@ -72,8 +72,8 @@ def main() -> None:
     assert "acceptedButtons: Qt.RightButton" in button
     assert "acceptedButtons: Qt.MiddleButton" in button
     assert "WheelHandler" in button
-    # Bar icon size rule.
-    assert "icon.width: 16" in button
+    # Bar icon size rule: 14px full-bleed bitmap ~= web-UX 16px symbol ink.
+    assert "icon.width: 14" in button
 
     # Pure logic library.
     assert pinning.startswith("// Pure pin/partition logic")

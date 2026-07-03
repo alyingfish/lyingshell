@@ -35,8 +35,10 @@ MD.IconButton {
 
     mdState.type: MD.Enum.IBtStandard
     mdState.size: MD.Enum.XS
-    icon.width: 16
-    icon.height: 16
+    // 14, not the nominal 16: app icons are full-bleed bitmaps while the
+    // web-UX reference renders 16px Material Symbols (~13px of glyph ink).
+    icon.width: 14
+    icon.height: 14
 
     onClicked: activated()
 

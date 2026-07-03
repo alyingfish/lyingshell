@@ -95,6 +95,7 @@ QtObject {
                     "overflowCount": 5,
                     "card": { "x": 300, "y": 48, "width": 152, "height": 80, "visible": true },
                     "grid": { "x": 308, "y": 56 },
+                    "rowCellWidth": 36,
                     "cellWidth": 36,
                     "cellHeight": 36
                 };

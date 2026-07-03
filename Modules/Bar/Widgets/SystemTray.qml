@@ -61,7 +61,10 @@ Item {
     // Bar.qml: transparent strip below the bar kept for tooltips while collapsed.
     readonly property real collapsedReserve: 48
 
-    // Uniform tray cell metrics (button implicit size = token container + insets).
+    // Bar button metrics per web-UX .tray-icon-button: 32×24 pill, 16px glyph.
+    readonly property real barCellWidth: 32
+    readonly property real barCellHeight: 24
+    // Popover grid cell metrics (button implicit size = token container + insets).
     readonly property real cellWidth: MD.Token.icon_button.xsmall.default_width + 8
     readonly property real cellHeight: MD.Token.icon_button.xsmall.container_height + 8
     readonly property real barBottom: barSurfaceRect.y + barSurfaceRect.height
@@ -217,6 +220,7 @@ Item {
                 "x": popoverCard.x + overflowGrid.x,
                 "y": popoverCard.y + overflowGrid.y
             },
+            "rowCellWidth": root.barCellWidth,
             "cellWidth": root.cellWidth,
             "cellHeight": root.cellHeight
         });
@@ -388,10 +392,15 @@ Item {
             visible: root.overflowItems.length > 0
             mdState.type: MD.Enum.IBtStandard
             mdState.size: MD.Enum.XS
-            mdState.widthMode: MD.Enum.NarrowWidth
             icon.name: "expand_more"
             icon.width: 16
             icon.height: 16
+            implicitWidth: root.barCellWidth
+            implicitHeight: root.barCellHeight
+            topInset: 0
+            bottomInset: 0
+            leftInset: 0
+            rightInset: 0
 
             checked: root.popoverOpen
             onClicked: root.popoverOpen = !root.popoverOpen
@@ -441,6 +450,12 @@ Item {
                     ghosted: root.dragActive && root.dragItem === modelData
                     pulseId: root.pulseId
                     pulseStamp: root.pulseStamp
+                    implicitWidth: root.barCellWidth
+                    implicitHeight: root.barCellHeight
+                    topInset: 0
+                    bottomInset: 0
+                    leftInset: 0
+                    rightInset: 0
 
                     onActivated: root.activateItem(modelData, pinnedButton)
                     onSecondaryActivated: root.secondaryActivateItem(modelData)
@@ -589,10 +604,10 @@ Item {
         Rectangle {
             visible: root.dragActive && root.dropZone === "pinned" && root.dropIndex >= 0
             width: 2
-            height: root.cellHeight - 8
+            height: root.barCellHeight - 8
             radius: width / 2
             color: MD.Token.color.primary
-            x: root.pinnedZoneLeft + root.dropIndex * root.cellWidth - width / 2
+            x: root.pinnedZoneLeft + root.dropIndex * root.barCellWidth - width / 2
             y: root.overlayY(trayRow) + 4
         }
 
@@ -659,8 +674,8 @@ Item {
 
                 x: -width / 2
                 y: -height / 2
-                width: 16
-                height: 16
+                width: 14
+                height: 14
                 source: root.dragItem ? root.dragItem.icon : ""
                 sourceSize: Qt.size(width * 2, height * 2)
                 fillMode: Image.PreserveAspectFit
