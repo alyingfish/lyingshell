@@ -98,6 +98,13 @@ Item {
         return y;
     }
 
+    // Left edge of the pinned zone in overlay coordinates. Row positioners
+    // skip 0x0 children, so while pinnedRow is empty its x is whatever it
+    // last was (0 on a fresh launch — left of the overflow button). Anchor
+    // the empty zone to the button's right edge instead; a drag into an
+    // empty pinned zone implies overflow items exist, so the button is there.
+    readonly property real pinnedZoneLeft: pinnedItems.length > 0 ? overlayX(pinnedRow) : overlayX(overflowButton) + overflowButton.width
+
     function itemLabel(item) {
         return item.tooltipTitle || item.title || item.id;
     }
@@ -185,7 +192,6 @@ Item {
         dragPoint = point;
 
         const btnOrigin = overflowButton.mapToItem(overlay, 0, 0);
-        const rowOrigin = pinnedRow.mapToItem(overlay, 0, 0);
         const target = TrayPinning.classifyDrag(dragPoint.x, dragPoint.y, {
             "fromPinned": dragFromPinned,
             "barBottom": root.barBottom,
@@ -195,7 +201,7 @@ Item {
                 "visible": overflowButton.visible
             },
             "row": {
-                "x": rowOrigin.x,
+                "x": root.pinnedZoneLeft,
                 "width": pinnedRow.width
             },
             "pinnedCount": pinnedItems.length,
@@ -307,7 +313,7 @@ Item {
             "geometry": {
                 "barBottom": barBottom,
                 "button": overlay.mapFromItem(overflowButton, 0, 0, overflowButton.width, overflowButton.height),
-                "row": overlay.mapFromItem(pinnedRow, 0, 0, Math.max(pinnedRow.width, 1), Math.max(pinnedRow.height, 1)),
+                "row": Qt.rect(pinnedZoneLeft, overlayY(trayRow), Math.max(pinnedRow.width, 1), Math.max(trayRow.height, 1)),
                 "card": Qt.rect(popoverCard.x, popoverCard.y, popoverCard.width, popoverCard.height)
             }
         });
@@ -586,8 +592,8 @@ Item {
             height: root.cellHeight - 8
             radius: width / 2
             color: MD.Token.color.primary
-            x: root.overlayX(pinnedRow) + root.dropIndex * root.cellWidth - width / 2
-            y: root.overlayY(pinnedRow) + 4
+            x: root.pinnedZoneLeft + root.dropIndex * root.cellWidth - width / 2
+            y: root.overlayY(trayRow) + 4
         }
 
         // Hover tooltip: MD3 plain tooltip below the item, fade + rise.

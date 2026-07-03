@@ -198,7 +198,7 @@ def main() -> None:
         os.environ["LYINGSHELL_TRAY_E2E_DRIVER"] = str(
             ROOT / "tests" / "e2e" / "TrayIpcDriver.qml"
         )
-        shell.spawn([str(ROOT / "scripts" / "run.sh")], shell.qs_log)
+        qs_proc = shell.spawn([str(ROOT / "scripts" / "run.sh")], shell.qs_log)
 
         # 1. Partition: default regex pins syncthing, the rest overflow.
         def try_state():
@@ -332,6 +332,36 @@ def main() -> None:
         for needle in ("[Tray] popover open", "[Tray] popover closed", "[Tray] activate e2e-alpha", "[Tray] pin e2e-alpha", "[Tray] unpin syncthing", "[Tray] reorder"):
             assert needle in log_text, f"missing log line: {needle}"
         print("OK logs: lifecycle lines present")
+
+        # 10. Fresh launch with an empty pinned zone: the pinned drop target
+        # must sit right of the overflow button (regression: Row positioners
+        # skip the 0x0 empty pinnedRow, leaving its stale x at the bar left
+        # on first launch, so the caret showed left of the button).
+        qs_proc.terminate()
+        qs_proc.wait(timeout=5)
+        shell.procs.remove(qs_proc)
+        data = json.loads(SETTINGS.read_text())
+        data["bar"]["tray"]["pinnedRegexes"] = []
+        SETTINGS.write_text(json.dumps(data))
+        shell.spawn([str(ROOT / "scripts" / "run.sh")], artifacts / "quickshell-restart.log")
+
+        def empty_pinned_state():
+            parsed = try_state()
+            return parsed if parsed and not parsed["pinned"] else None
+
+        state = wait_for(empty_pinned_state, timeout=30, what="restart with empty pinned zone")
+        row = state["geometry"]["row"]
+        button = state["geometry"]["button"]
+        assert row["x"] >= button["x"] + button["width"] - 2, (
+            f"empty pinned zone left of button: row {row}, button {button}"
+        )
+        target = shell.ipc("dragTo", "e2e-alpha", str(int(row["x"] + 2)), str(int(state["geometry"]["barBottom"] / 2)))
+        assert json.loads(target)["dropZone"] == "pinned", f"expected pinned zone on empty row: {target}"
+        screenshot(artifacts, "drag-pin-empty")  # caret right of the overflow button
+        shell.ipc("drop")
+        state = shell.state()
+        assert state["pinned"] == ["e2e-alpha"], f"pin into empty zone failed: {state['pinned']}"
+        print("OK empty pinned zone: drop target anchored right of button")
 
         print("PASS: tray e2e")
     finally:
