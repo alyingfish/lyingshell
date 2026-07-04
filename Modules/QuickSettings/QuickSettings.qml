@@ -196,8 +196,8 @@ Item {
         rightInset: 0
 
         mdState.size: MD.Enum.XS
-        mdState.type: root.panelOpen ? MD.Enum.BtFilledTonal : MD.Enum.BtText
-        mdState.textColor: root.panelOpen ? mdState.ctx.color.on_secondary_container : mdState.ctx.color.on_surface
+        mdState.type: MD.Enum.BtText
+        mdState.textColor: mdState.ctx.color.on_surface
 
         onClicked: root.panelOpen = !root.panelOpen
 

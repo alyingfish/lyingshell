@@ -181,18 +181,9 @@ Item {
                 MD.IconButton {
                     id: powerButton
 
-                    // Filled tonal: the session/power entry is the one
-                    // consequential control in the row, so it is visually
-                    // separated from the standard icon buttons around it.
-                    mdState.type: MD.Enum.IBtFilledTonal
+                    mdState.type: MD.Enum.IBtStandard
                     mdState.size: MD.Enum.XS
                     icon.name: "power_settings_new"
-
-                    // MD3 icon buttons are flat (elevation level0) in every
-                    // state; QmlMaterial defaults tonal buttons to level1, so
-                    // drop the shadow. flat only gates elevationVisible, the
-                    // tonal fill and state layers stay.
-                    flat: true
 
                     onClicked: sessionMenu.open()
 
