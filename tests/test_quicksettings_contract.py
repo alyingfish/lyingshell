@@ -144,8 +144,8 @@ def main() -> None:
     assert "MD.ToolTip" in slider and "iconTooltipKey" in slider
 
     handle = read(ROOT / "Modules" / "Material" / "SliderHandle.qml")
-    assert "handlePressed || root.handleHovered" in handle, (
-        "value indicator shows on hover as well as drag"
+    assert "handlePressed || root.handleHasFocus" in handle, (
+        "MD3 spec-strict: value indicator shows on press/drag and keyboard focus, not hover"
     )
     assert "handleHeight" in handle
 

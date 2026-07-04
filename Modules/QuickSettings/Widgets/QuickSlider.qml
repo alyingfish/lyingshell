@@ -84,8 +84,8 @@ Item {
 
         onMoved: control.moved(value / 100)
 
-        // Compact handle with a percent value indicator on hover/drag
-        // (upstream handle hardcodes 44dp and press-only 0..1 labels).
+        // Compact handle with a percent value indicator on press/drag and
+        // keyboard focus (upstream handle hardcodes 44dp and 0..1 labels).
         handle: SliderHandle {
             x: slider.leftPadding + slider.visualPosition * (slider.availableWidth - width)
             y: slider.topPadding + (slider.availableHeight - height) / 2
@@ -95,7 +95,6 @@ Item {
             })
             handleHasFocus: slider.visualFocus
             handlePressed: slider.pressed
-            handleHovered: slider.hovered
             horizontal: slider.horizontal
             handleWidth: slider.mdState.handleWidth
             handleHeight: slider.mdState.handleHeight

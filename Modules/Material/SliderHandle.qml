@@ -2,11 +2,11 @@ import QtQuick
 import Qcm.Material as MD
 
 // Desktop-compact MD3 slider handle. Upstream QmlMaterial SliderHandle
-// hardcodes the 44dp expressive handle line and shows the value indicator
-// only while pressed; this wrapper sizes the line from `handleHeight` and
-// also shows the indicator on hover (M3 sliders may show the value label on
-// hover), with caller-provided indicator text. Drop it when upstream honors
-// handleHeight and exposes hover/label control.
+// hardcodes the 44dp expressive handle line; this wrapper sizes the line from
+// `handleHeight` and takes caller-provided indicator text. Value indicator is
+// spec-strict: shown while pressed/dragged (MD3 LABEL_FLOATING) plus keyboard
+// focus so arrow-key adjustment is visible. Drop it when upstream honors
+// handleHeight and exposes label text.
 Item {
     id: root
 
@@ -31,7 +31,7 @@ Item {
         y: root.horizontal ? -height - 4 : (parent.height - height) / 2
         x: root.horizontal ? (parent.width - width) / 2 : -width - 4
 
-        visible: root.handlePressed || root.handleHovered
+        visible: root.handlePressed || root.handleHasFocus
         opacity: visible ? 1 : 0
         scale: visible ? 1 : 0
         Behavior on opacity {
