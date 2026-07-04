@@ -165,6 +165,12 @@ Item {
                     mdState.size: MD.Enum.XS
                     icon.name: "power_settings_new"
 
+                    // MD3 icon buttons are flat (elevation level0) in every
+                    // state; QmlMaterial defaults tonal buttons to level1, so
+                    // drop the shadow. flat only gates elevationVisible, the
+                    // tonal fill and state layers stay.
+                    flat: true
+
                     onClicked: sessionMenu.open()
 
                     MD.ToolTip {
