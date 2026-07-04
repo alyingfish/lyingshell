@@ -17,16 +17,17 @@ function volumeIcon(volume, muted) {
 // Single source of truth for the battery_alert / error-color / show-percent
 // threshold used by the pill.
 function batteryCritical(percent, charging) {
-    return !charging && percent <= 10;
+    return !charging && percent <= 5;
 }
 
 // GNOME-style level+mode icon (GNOME uses 10% steps; Material Symbols only
-// ships these charging steps, so snap to the closest one below).
-function batteryIcon(percent, charging) {
+// ships these charging steps, so snap to the closest one below). `charged` is
+// the FULLY_CHARGED state; charging_full is reserved for it and for 100%.
+function batteryIcon(percent, charging, charged) {
+    if (charged || (charging && percent >= 100)) {
+        return "battery_charging_full";
+    }
     if (charging) {
-        if (percent >= 95) {
-            return "battery_charging_full";
-        }
         var steps = [90, 80, 60, 50, 30, 20];
         for (var i = 0; i < steps.length; i++) {
             if (percent >= steps[i]) {
@@ -38,10 +39,12 @@ function batteryIcon(percent, charging) {
     if (batteryCritical(percent, charging)) {
         return "battery_alert";
     }
-    var bars = Math.round(percent / 100 * 6);
-    if (bars >= 6) {
+    // Like GNOME: the solid full icon is reserved for exactly 100%; 92-99 uses
+    // battery_6_bar (a hair below full) so "nearly full" reads distinct from full.
+    if (percent >= 100) {
         return "battery_full";
     }
+    var bars = Math.min(6, Math.round(percent / 100 * 6));
     return "battery_" + Math.max(0, bars) + "_bar";
 }
 

@@ -43,6 +43,7 @@ Item {
     readonly property bool hasBattery: battery !== null && battery.ready && battery.isLaptopBattery
     readonly property int batteryPercent: hasBattery ? Math.round(battery.percentage * 100) : 0
     readonly property bool batteryCharging: hasBattery && (battery.state === UPowerDeviceState.Charging || battery.state === UPowerDeviceState.PendingCharge || battery.state === UPowerDeviceState.FullyCharged)
+    readonly property bool batteryFull: hasBattery && battery.state === UPowerDeviceState.FullyCharged
 
     // Refresh process-backed state whenever the panel becomes visible.
     onVisibleChanged: {
@@ -84,7 +85,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 visible: root.hasBattery
                 spacing: 4
-                icon.name: root.hasBattery ? QSIcons.batteryIcon(root.batteryPercent, root.batteryCharging) : "battery_unknown"
+                icon.name: root.hasBattery ? QSIcons.batteryIcon(root.batteryPercent, root.batteryCharging, root.batteryFull) : "battery_unknown"
                 icon.size: 18
                 color: MD.Token.color.on_surface_variant
                 text: I18n.t("quickSettings.batteryPercent", {
