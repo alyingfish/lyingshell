@@ -53,7 +53,7 @@ Item {
         mdState.size: MD.Enum.XS
         mdState.type: control.checked ? MD.Enum.BtFilled : MD.Enum.BtFilledTonal
         mdState.backgroundColor: control.checked ? mdState.ctx.color.primary : mdState.ctx.color.surface_container_highest
-        mdState.textColor: control.checked ? mdState.ctx.color.on_primary : mdState.ctx.color.on_surface_variant
+        mdState.textColor: control.checked ? mdState.ctx.color.on_primary : mdState.ctx.color.on_surface
 
         onClicked: control.expandRequested()
     }

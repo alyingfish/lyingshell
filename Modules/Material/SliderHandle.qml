@@ -90,6 +90,9 @@ Item {
 
         radius: 2
         color: root.control ? root.control.mdState.backgroundColor : "transparent"
+        // Dim with the track group so a disabled/muted slider reads uniformly
+        // (the track background applies the same backgroundOpacity).
+        opacity: root.control ? root.control.mdState.backgroundOpacity : 1
     }
 
     // The "pill" outline shown on keyboard focus, mirrors upstream.

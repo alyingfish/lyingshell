@@ -25,7 +25,7 @@ MD.Button {
     mdState.size: MD.Enum.XS
     mdState.type: checked ? MD.Enum.BtFilled : MD.Enum.BtFilledTonal
     mdState.backgroundColor: checked ? mdState.ctx.color.primary : mdState.ctx.color.surface_container_highest
-    mdState.textColor: checked ? mdState.ctx.color.on_primary : mdState.ctx.color.on_surface_variant
+    mdState.textColor: checked ? mdState.ctx.color.on_primary : mdState.ctx.color.on_surface
 
     // MD3 expressive toggle shape morph: stadium unselected, rounded-rect
     // selected; pressed still wins with the StateButton pressed corner.

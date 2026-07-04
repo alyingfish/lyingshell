@@ -203,6 +203,12 @@ Item {
                         // power-menu y-offset).
                         y: powerButton.height + 4
 
+                        // One level above the surface_container panel so the
+                        // popup reads as elevated over it (MD3 popup over an
+                        // already-elevated surface): level3 tone + shadow.
+                        mdState.backgroundColor: MD.Token.color.surface_container_high
+                        mdState.elevation: MD.Token.elevation.level3
+
                         // Leading icons are color-coded by consequence so the
                         // options scan apart: neutral lock, calm suspend/restart,
                         // error-red power off, neutral log out.
@@ -548,10 +554,12 @@ Item {
             width: parent.width
             spacing: root.cellSpacing
 
-            // Prototype quick-detail-header: a fixed 48px row.
+            // Quick-detail-header: a fixed 36px row matching the main-page
+            // header height, so the leading control and title hold the same
+            // position across navigation.
             Item {
                 width: parent.width
-                implicitHeight: 48
+                implicitHeight: 36
 
                 Row {
                     anchors.left: parent.left
@@ -594,24 +602,18 @@ Item {
                 }
             }
 
-            // Prototype quick-detail-list: a surface-container-highest card
-            // (8px padding, 6px row gap) that fills the locked main-view
-            // height exactly; the detail page never resizes the panel, and
-            // longer lists scroll inside (MD scrollbar appears as needed).
-            Rectangle {
+            // Prototype quick-detail-list: rows sit directly on the panel
+            // surface (no filled card — MD3 menu-style list), and this region
+            // holds the locked main-view height so the detail page never
+            // resizes the panel; longer lists scroll inside. Rows align to the
+            // panel gutter like the main view; DetailRow carries its own 10px
+            // side padding.
+            Item {
                 width: parent.width
-                height: root.mainViewHeight - root.pad * 2 - 48 - root.cellSpacing
-                radius: MD.Token.shape.corner.large
-                color: MD.Token.color.surface_container_highest
-
-                MD.MProp.backgroundColor: MD.Token.color.surface_container_highest
+                height: root.mainViewHeight - root.pad * 2 - 36 - root.cellSpacing
 
                 MD.VerticalFlickable {
                     anchors.fill: parent
-                    topMargin: 8
-                    bottomMargin: 8
-                    leftMargin: 8
-                    rightMargin: 8
 
                     Loader {
                         id: detailLoader

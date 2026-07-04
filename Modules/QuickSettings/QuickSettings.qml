@@ -349,19 +349,18 @@ Item {
 
             MD.ElevationRectangle {
                 anchors.fill: parent
-                // Prototype floating-panel: 16px radius, surface-container-high
-                // fill, hairline outline-variant border at 62%.
+                // Floating panel: 16px radius, surface-container fill (MD3 menu
+                // tone), level2 shadow only — MD3 elevated surfaces carry no
+                // border.
                 corners: MD.Util.corners(MD.Token.shape.corner.large)
-                color: MD.Token.color.surface_container_high
-                border.width: 1
-                border.color: Qt.alpha(MD.Token.color.outline_variant, 0.62)
+                color: MD.Token.color.surface_container
                 elevation: MD.Token.elevation.level2
                 elevationVisible: true
 
                 // Context colors for descendants (ListItem, Menu, TextField
                 // defaults resolve MProp.textColor/backgroundColor).
                 MD.MProp.textColor: MD.Token.color.on_surface
-                MD.MProp.backgroundColor: MD.Token.color.surface_container_high
+                MD.MProp.backgroundColor: MD.Token.color.surface_container
 
                 // Swallow presses so the catcher below does not dismiss.
                 MouseArea {

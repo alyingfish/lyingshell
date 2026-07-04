@@ -21,8 +21,9 @@ Item {
     // I18n token for the leading icon-button hover tooltip.
     property string iconTooltipKey: ""
     property bool hasDetail: false
-    // Muted/inactive: the track fades to disabled opacity so the state
-    // reads at a glance (the icon alone is too subtle).
+    // Muted/inactive: disables the slider so it renders MD3's real disabled
+    // state (the icon alone is too subtle); the leading icon button stays live
+    // as the unmute affordance.
     property bool dimmed: false
 
     signal moved(real newValue)
@@ -90,8 +91,10 @@ Item {
         implicitHeight: 16
         mdState.handleHeight: 24
 
-        // MD3 disabled-content opacity while muted.
-        opacity: control.dimmed ? 0.38 : 1
+        // Muted → genuinely disabled: the library paints the MD3 disabled
+        // slider (on-surface @ 0.38), so the dim is a real state, not a reused
+        // opacity token. Unmute via the leading icon button to re-enable.
+        enabled: !control.dimmed
 
         from: 0
         to: 100
@@ -149,6 +152,8 @@ Item {
     MouseArea {
         anchors.fill: parent
         acceptedButtons: Qt.NoButton
+        // Wheel is dead while muted, matching the disabled slider.
+        enabled: !control.dimmed
 
         property real acc: 0
 
