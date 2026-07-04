@@ -64,9 +64,9 @@ Item {
     // layer surface once per text change, never per frame.
     readonly property real collapsedReserve: Math.max(48, tooltip.height + 12)
 
-    // Bar button metrics per web-UX .tray-icon-button: 32×24 pill, 16px glyph.
+    // Bar button metrics per web-UX .tray-icon-button: 32×28 pill, 16px glyph.
     readonly property real barCellWidth: 32
-    readonly property real barCellHeight: 24
+    readonly property real barCellHeight: 28
     // Popover grid cell metrics (button implicit size = token container + insets).
     readonly property real cellWidth: MD.Token.icon_button.xsmall.default_width + 8
     readonly property real cellHeight: MD.Token.icon_button.xsmall.container_height + 8
