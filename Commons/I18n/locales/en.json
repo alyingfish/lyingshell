@@ -19,7 +19,7 @@
   },
   "quickSettings": {
     "batteryPercent": "{percent}%",
-    "percentValue": "{percent}%",
+    "percentValue": "{percent}",
     "mute": "Mute",
     "unmute": "Unmute",
     "screenshot": "Screenshot",

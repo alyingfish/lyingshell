@@ -19,7 +19,7 @@
   },
   "quickSettings": {
     "batteryPercent": "{percent}%",
-    "percentValue": "{percent}%",
+    "percentValue": "{percent}",
     "mute": "静音",
     "unmute": "取消静音",
     "screenshot": "截图",
