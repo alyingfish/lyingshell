@@ -103,7 +103,7 @@ def main() -> None:
     assert "loops: 2" in workspace_dot
 
     assert "readonly property int horizontalPadding: 8" in workspaces
-    assert "readonly property int controlHeight: 24" in workspaces
+    assert "readonly property int controlHeight: 28" in workspaces
     assert "readonly property int dotGap: 6" in workspaces
     assert "Settings.options.bar.workspaces.reverseScroll" in workspaces
     assert "Settings.options.bar.workspaces.scrollLoop" in workspaces

@@ -98,15 +98,17 @@ def main() -> None:
     # --- Bar.qml: window wiring -------------------------------------------
     assert "import Quickshell.Wayland" in bar
     assert 'color: "transparent"' in bar
-    # Settled-size window, full-screen while the tray popover/drag is active.
+    # Settled-size window, full-screen while a bar overlay (tray popover/drag
+    # or quick-settings panel) is active.
     assert "barSurface.config.margin + barSurface.barHeight" in bar
-    assert "systemTray.expanded && root.screen ? root.screen.height" in bar
+    assert "readonly property bool overlayExpanded: systemTray.expanded || quickSettings.expanded" in bar
+    assert "overlayExpanded && root.screen ? root.screen.height" in bar
     assert "systemTray.collapsedReserve" in bar
     # Hidden collapses the exclusive zone; otherwise reserves margin + height.
     assert "barSurface.isHidden" in bar
     assert "? 0" in bar
-    # Input mask tracks the visible surface; tray-expanded takes the window.
-    assert "mask: systemTray.expanded ? null : barMask" in bar
+    # Input mask tracks the visible surface; overlay-expanded takes the window.
+    assert "mask: overlayExpanded ? null : barMask" in bar
     assert "BackgroundEffect.blurRegion: barSurface.blurEnabled ? blurRegion : null" in bar
     assert "Region {" in bar
     assert "BarSurface {" in bar
