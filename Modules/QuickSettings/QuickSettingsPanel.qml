@@ -173,6 +173,8 @@ Item {
                     }
 
                     MD.ToolTip {
+                        // Below the button, like bar-tray tooltips (library default is above).
+                        y: parent.height + 4
                         text: I18n.t("quickSettings.settings")
                         visible: settingsButton.hovered
                     }
@@ -188,6 +190,8 @@ Item {
                     onClicked: sessionMenu.open()
 
                     MD.ToolTip {
+                        // Below the button, like bar-tray tooltips (library default is above).
+                        y: parent.height + 4
                         text: I18n.t("quickSettings.power")
                         visible: powerButton.hovered && !sessionMenu.visible
                     }

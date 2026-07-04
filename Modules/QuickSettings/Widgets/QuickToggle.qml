@@ -73,6 +73,8 @@ MD.Button {
 
     // Full text on hover when the compact cell truncates it (long SSIDs).
     MD.ToolTip {
+        // Below the button, like bar-tray tooltips (library default is above).
+        y: parent.height + 4
         text: titleText.text
         visible: control.hovered && titleText.truncated
     }

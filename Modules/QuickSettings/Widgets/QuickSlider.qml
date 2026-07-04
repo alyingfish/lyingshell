@@ -58,6 +58,8 @@ Item {
             onClicked: control.iconClicked()
 
             MD.ToolTip {
+                // Below the button, like bar-tray tooltips (library default is above).
+                y: parent.height + 4
                 text: control.iconTooltipKey.length > 0 ? I18n.t(control.iconTooltipKey) : ""
                 visible: iconButton.hovered && text.length > 0
             }
