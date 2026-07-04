@@ -85,6 +85,8 @@ Item {
             "panelOpen": panelOpen,
             "expanded": expanded,
             "detail": panel.detail,
+            "page": panel.page,
+            "pageCount": panel.pageCount,
             "audio": {
                 "hasSink": Audio.hasSink,
                 "volume": Audio.volume,
@@ -142,6 +144,15 @@ Item {
     function setDetail(name: string) {
         panel.detail = name;
     }
+
+    function e2eSetPage(page: int) {
+        panel.setPage(page);
+    }
+
+    // Wheel-probe targets for the driver's synthetic QWheelEvents.
+    readonly property Item e2eTileArea: panel.tileArea
+    readonly property Item e2eVolumeRow: panel.volumeRow
+    readonly property Item e2ePanel: panel
 
     function e2eSetVolume(value: real) {
         Audio.setVolume(value);
@@ -338,15 +349,19 @@ Item {
 
             MD.ElevationRectangle {
                 anchors.fill: parent
-                corners: MD.Util.corners(MD.Token.shape.corner.extra_large)
-                color: MD.Token.color.surface_container
+                // Prototype floating-panel: 16px radius, surface-container-high
+                // fill, hairline outline-variant border at 62%.
+                corners: MD.Util.corners(MD.Token.shape.corner.large)
+                color: MD.Token.color.surface_container_high
+                border.width: 1
+                border.color: Qt.alpha(MD.Token.color.outline_variant, 0.62)
                 elevation: MD.Token.elevation.level2
                 elevationVisible: true
 
                 // Context colors for descendants (ListItem, Menu, TextField
                 // defaults resolve MProp.textColor/backgroundColor).
                 MD.MProp.textColor: MD.Token.color.on_surface
-                MD.MProp.backgroundColor: MD.Token.color.surface_container
+                MD.MProp.backgroundColor: MD.Token.color.surface_container_high
 
                 // Swallow presses so the catcher below does not dismiss.
                 MouseArea {

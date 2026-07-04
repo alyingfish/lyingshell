@@ -20,8 +20,8 @@ MD.Button {
 
     checkable: false
 
-    // Desktop-compact: XS tokens in a 40px cell; touch-size MD3 metrics read
-    // oversized on a pointer-driven desktop shell.
+    // Desktop-compact: XS tokens in the web-prototype's 44px tile; touch-size
+    // MD3 metrics read oversized on a pointer-driven desktop shell.
     mdState.size: MD.Enum.XS
     mdState.type: checked ? MD.Enum.BtFilled : MD.Enum.BtFilledTonal
     mdState.backgroundColor: checked ? mdState.ctx.color.primary : mdState.ctx.color.surface_container_highest
@@ -32,7 +32,7 @@ MD.Button {
     readonly property real stateCorner: checked && !down ? MD.Token.shape.corner.medium : mdState.corner
     mdState.corners: splitCorners ? MD.Util.corners(stateCorner, MD.Token.split_button.xsmall.inner_corner_size, stateCorner, MD.Token.split_button.xsmall.inner_corner_size) : MD.Util.corners(stateCorner)
 
-    implicitHeight: 40
+    implicitHeight: 44
     icon.width: MD.Token.button.xsmall.icon_size
     icon.height: MD.Token.button.xsmall.icon_size
     leftPadding: MD.Token.button.xsmall.leading_space
@@ -69,5 +69,11 @@ MD.Button {
             maximumLineCount: 1
             wrapMode: Text.NoWrap
         }
+    }
+
+    // Full text on hover when the compact cell truncates it (long SSIDs).
+    MD.ToolTip {
+        text: titleText.text
+        visible: control.hovered && titleText.truncated
     }
 }

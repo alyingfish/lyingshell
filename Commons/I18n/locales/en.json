@@ -19,16 +19,18 @@
   },
   "quickSettings": {
     "batteryPercent": "{percent}%",
+    "acPower": "AC",
     "percentValue": "{percent}",
     "mute": "Mute",
     "unmute": "Unmute",
-    "screenshot": "Screenshot",
     "settings": "Settings",
     "lock": "Lock Screen",
     "power": "Power",
     "wifi": "Wi-Fi",
+    "wifiNetworks": "Wi-Fi networks",
     "wired": "Wired",
     "bluetooth": "Bluetooth",
+    "bluetoothDevices": "Bluetooth devices",
     "bluetoothConnectedCount": "{count} connected",
     "powerMode": "Power Mode",
     "powerProfile": {
@@ -54,6 +56,7 @@
     },
     "outputDevice": "Sound Output",
     "wifiPassword": "Password",
-    "connect": "Connect"
+    "connect": "Connect",
+    "current": "Current"
   }
 }

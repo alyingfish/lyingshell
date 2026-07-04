@@ -79,6 +79,23 @@ assert(context.wifiSignalIcon(40) === "network_wifi_2_bar", "fair signal");
 assert(context.wifiSignalIcon(10) === "network_wifi_1_bar", "weak signal");
 assert(context.wifiSignalIcon(0) === "signal_wifi_0_bar", "no signal");
 
+// Wheel accumulator: one step per 120 angle units (a mouse notch), pixel
+// deltas scaled by Qt's ~8x convention, direction reversal resets.
+let w = context.wheelNotches(0, 120, 0);
+assert(w.steps === 1 && w.acc === 0, "mouse notch up = one step");
+w = context.wheelNotches(0, -120, 0);
+assert(w.steps === -1 && w.acc === 0, "mouse notch down = one step down");
+w = context.wheelNotches(0, 40, 0);
+assert(w.steps === 0 && w.acc === 40, "small deltas accumulate");
+w = context.wheelNotches(80, 40, 0);
+assert(w.steps === 1 && w.acc === 0, "accumulated notch fires");
+w = context.wheelNotches(80, -40, 0);
+assert(w.steps === 0 && w.acc === -40, "direction reversal resets the accumulator");
+w = context.wheelNotches(0, 0, 15);
+assert(w.steps === 1 && w.acc === 0, "touchpad pixels scale to notches");
+w = context.wheelNotches(0, 240, 0);
+assert(w.steps === 2, "fast scrolls step more than once");
+
 process.stdout.write("ok");
 """
 
@@ -124,15 +141,20 @@ def main() -> None:
     assert 'I18n.t(control.labelKey)' in toggle
     # MD3 expressive selected-state cues beyond color alone.
     assert "MD.Token.shape.corner.medium" in toggle, "selected toggles morph to rounded-rect"
-    assert '"check"' in toggle and "checkIcon" in toggle, "selected icon swap to check"
+    assert "implicitHeight: 44" in toggle, "tiles use the web-prototype 44px height"
     assert "statusText.length > 0 ? control.statusText" in toggle, (
         "runtime status (SSID, ...) replaces the static label, not a second line"
+    )
+    assert "titleText.truncated" in toggle, (
+        "truncated labels (long SSIDs) show the full text in a hover tooltip"
     )
 
     menu_toggle = read(QS_DIR / "Widgets" / "QuickMenuToggle.qml")
     assert "SplitButtonIndicator" in menu_toggle
     assert "signal expandRequested" in menu_toggle
-    assert "checkIcon" in menu_toggle
+    assert '"chevron_right"' in menu_toggle, (
+        "arrow segments navigate to detail pages, not dropdowns"
+    )
 
     slider = read(QS_DIR / "Widgets" / "QuickSlider.qml")
     assert "MD.Slider {" in slider
@@ -142,6 +164,16 @@ def main() -> None:
     assert "SliderHandle {" in slider, "QuickSlider uses the qs.Modules.Material handle"
     assert "quickSettings.percentValue" in slider, "value indicator must read as a percentage"
     assert "MD.ToolTip" in slider and "iconTooltipKey" in slider
+    assert "dimmed" in slider, "muted sliders fade the track"
+    assert "detailArrow.visible ? detailArrow.left : parent.right" in slider, (
+        "tracks run to the prototype row inset unless a detail chevron exists"
+    )
+    # MouseArea.onWheel, not WheelHandler: WheelHandler gets no wheel events
+    # on the live compositor (Workspaces proves the MouseArea pattern).
+    assert "wheelNotches" in slider and "onWheel" in slider, (
+        "hover + wheel adjusts the slider value"
+    )
+    assert "WheelHandler {" not in slider, "WheelHandler is dead on the live compositor"
 
     handle = read(ROOT / "Modules" / "Material" / "SliderHandle.qml")
     assert "handlePressed || root.handleHasFocus || root._hoverRevealed" in handle, (
@@ -179,20 +211,33 @@ def main() -> None:
         "quickSettings.session.restart",
         "quickSettings.session.powerOff",
         "quickSettings.session.logOut",
-        # Tooltips on the icon-only system row.
-        "quickSettings.screenshot",
+        # Tooltips on the icon-only header actions (prototype: settings + power).
         "quickSettings.settings",
         "quickSettings.lock",
         "quickSettings.power",
+        # Battery-less readout (prototype: power glyph + "AC").
+        "quickSettings.acPower",
         # Slider icon-button tooltips.
         "quickSettings.mute",
         "quickSettings.unmute",
     ]:
         assert token in panel, f"panel missing function for {token}"
-    for feature in ["Session.takeScreenshot", "Session.lock", "Session.openSettings"]:
+    for feature in ["Session.lock", "Session.openSettings"]:
         assert feature in panel, f"panel missing {feature}"
-    for detail in ['"wifi"', '"bluetooth"', '"output"']:
+    for detail in ['"wifi"', '"bluetooth"', '"output"', '"power"', '"kbd"']:
         assert detail in panel, f"panel missing detail page {detail}"
+    # Detail pages replace the whole panel (header included) and keep at
+    # least the measured main-view height; the paged tile grid keeps the
+    # panel height stable and is switched via page dots or wheel/touchpad.
+    assert 'visible: root.detail === ""' in panel, "system row hides on detail pages"
+    assert "pageCount" in panel and "pager.page" in panel, "tile grid is paged with dots"
+    assert "wheelNotches" in panel and "onWheel" in panel, (
+        "wheel/touchpad over the tile area flips pages"
+    )
+    assert "WheelHandler {" not in panel, "WheelHandler is dead on the live compositor"
+    assert "mainViewHeight" in panel, "detail pages keep the measured main height"
+    assert "VerticalFlickable" in panel, "overlong detail lists scroll inside the card"
+    assert "quickSettings.current" in panel, "the active detail row shows a Current badge"
 
     # Night light lives on the brightness slider icon; the do-not-disturb tile
     # moved out (future notification panel owns it). Neither is a grid tile.
@@ -207,12 +252,10 @@ def main() -> None:
     assert 'Session.openSettings("power")' not in panel, "battery chip must not be clickable"
     assert "MD.IconLabel" in panel
     assert "MD.Enum.IBtFilledTonal" in panel, "power button is visually separated"
-    assert panel.count("MD.ToolTip") >= 4, "all system-row icon buttons need tooltips"
+    # Settings, power: every icon-only header action button.
+    assert panel.count("MD.ToolTip") >= 2, "all header icon buttons need tooltips"
     assert "leadingIconColor" in panel, "session menu items are color-coded"
     assert "MD.Token.color.error" in panel, "power off must use the error color"
-
-    # Wifi/bluetooth tiles swap their leading icon to a check while on.
-    assert panel.count("checkIcon: true") == 2
 
     # --- service boundaries --------------------------------------------------
     audio = read(ROOT / "Services" / "Audio.qml")

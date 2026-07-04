@@ -19,16 +19,18 @@
   },
   "quickSettings": {
     "batteryPercent": "{percent}%",
+    "acPower": "交流电",
     "percentValue": "{percent}",
     "mute": "静音",
     "unmute": "取消静音",
-    "screenshot": "截图",
     "settings": "设置",
     "lock": "锁屏",
     "power": "电源",
     "wifi": "Wi-Fi",
+    "wifiNetworks": "Wi-Fi 网络",
     "wired": "有线网络",
     "bluetooth": "蓝牙",
+    "bluetoothDevices": "蓝牙设备",
     "bluetoothConnectedCount": "已连接 {count} 台设备",
     "powerMode": "电源模式",
     "powerProfile": {
@@ -54,6 +56,7 @@
     },
     "outputDevice": "声音输出",
     "wifiPassword": "密码",
-    "connect": "连接"
+    "connect": "连接",
+    "current": "当前"
   }
 }

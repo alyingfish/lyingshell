@@ -103,6 +103,12 @@ Window {
                 root.verify(root.expandRequests === 1, "arrow click should request expand");
                 root.verify(root.menuToggleClicks === 1, "arrow click must not toggle");
 
+                // QuickSlider: wheel over the row nudges the value by the
+                // prototype's coarse step of 5 (0.25 -> 0.30).
+                tester.mouseWheel(slider, slider.width / 2, slider.height / 2, 0, 120, Qt.NoButton);
+                tester.wait(20);
+                root.verify(Math.abs(root.movedValue - 0.3) < 0.001, "wheel up should step +5, got " + root.movedValue);
+
                 // QuickSlider: press on the track emits moved with the new value.
                 tester.mousePress(slider, slider.width * 0.8, slider.height / 2, Qt.LeftButton);
                 tester.wait(20);

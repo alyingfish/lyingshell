@@ -177,6 +177,16 @@ def main() -> None:
         if open_shot.getpixel((cx, cy)) == closed_shot.getpixel((cx, cy)):
             fail("panel card not visible in screenshot (probe pixel unchanged)")
 
+        # --- hover-wheel page flip over tiles and the gap between them --------
+        if state["pageCount"] > 1:
+            assert state["page"] == 0, f"panel must open on page 0, got {state['page']}"
+            shell.ipc("wheelTiles", "-120")  # wheel down over a tile = next page
+            wait_for(lambda: shell.state()["page"] == 1, 5, "wheel over tile flips forward")
+            time.sleep(0.5)
+            screenshot(artifacts, "panel-page2")
+            shell.ipc("wheelTileGap", "120")  # wheel up over the empty gap = back
+            wait_for(lambda: shell.state()["page"] == 0, 5, "wheel over gap flips back")
+
         # --- volume + mute (wpctl round-trip) ---------------------------------
         if state["audio"]["hasSink"]:
             volume0, muted0 = wpctl_volume()
@@ -186,6 +196,14 @@ def main() -> None:
             wait_for(lambda: wpctl_volume()[1] is not muted0, 5, "mute toggled")
             shell.ipc("toggleMuted")
             wait_for(lambda: wpctl_volume()[1] is muted0, 5, "mute restored")
+
+            # Hover-wheel on the volume row: one notch = a 5% step.
+            shell.ipc("setVolume", "0.50")
+            wait_for(lambda: abs(wpctl_volume()[0] - 0.50) < 0.02, 5, "volume 0.5")
+            shell.ipc("wheelVolume", "120")  # wheel up = +5%
+            wait_for(lambda: abs(wpctl_volume()[0] - 0.55) < 0.02, 5, "wheel volume +5%")
+            shell.ipc("wheelVolume", "-120")  # wheel down = -5%
+            wait_for(lambda: abs(wpctl_volume()[0] - 0.50) < 0.02, 5, "wheel volume -5%")
 
         # --- brightness (hardware round-trip) ---------------------------------
         if state["brightness"]["available"] and shutil.which("brightnessctl"):
@@ -247,11 +265,26 @@ def main() -> None:
                 5, "mako mode restore",
             )
 
-        # --- detail pages ----------------------------------------------------------
-        for detail in ("wifi", "bluetooth", "output", ""):
+        # --- detail pages keep the main-view dimensions ------------------------
+        main_height = shell.state()["geometry"]["card"]["height"]
+        for detail in ("wifi", "bluetooth", "output"):
             shell.ipc("setDetail", detail)
             wait_for(lambda d=detail: shell.state()["detail"] == d, 5, f"detail {detail!r}")
-        screenshot(artifacts, "panel-detail-roundtrip")
+            time.sleep(0.6)  # settle any height animation before measuring
+            card = shell.state()["geometry"]["card"]
+            assert abs(card["height"] - main_height) < 2, (
+                f"{detail} detail resized the panel: {card['height']} vs main {main_height}"
+            )
+            screenshot(artifacts, f"panel-detail-{detail}")
+            if detail == "wifi":
+                # Overlong list scrolls inside the fixed-height card; catch
+                # the MD scrollbar while the flick is still settling.
+                for _ in range(3):
+                    shell.ipc("wheelDetail", "-120")
+                time.sleep(0.15)
+                screenshot(artifacts, "panel-detail-wifi-scrolled")
+        shell.ipc("setDetail", "")
+        wait_for(lambda: shell.state()["detail"] == "", 5, "back to main view")
 
         # --- close -------------------------------------------------------------------
         shell.ipc("closePanel")

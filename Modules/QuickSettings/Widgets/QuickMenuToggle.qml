@@ -2,9 +2,9 @@ import QtQuick
 import Qcm.Material as MD
 
 // MD3 split button pairing a QuickToggle with a trailing arrow segment
-// (GNOME QuickMenuToggle). The toggle half emits `clicked`, the arrow half
-// emits `expandRequested`; the panel decides whether that opens a menu or a
-// detail page and drives `expanded` for the chevron.
+// (GNOME QuickMenuToggle). The toggle half emits `clicked`; the arrow half
+// emits `expandRequested` and always navigates to an in-panel detail page,
+// so it shows a static chevron_right, never an expand chevron.
 Item {
     id: control
 
@@ -12,7 +12,6 @@ Item {
     property alias iconName: toggleButton.icon.name
     property alias statusText: toggleButton.statusText
     property bool checked: false
-    property bool expanded: false
 
     signal clicked
     signal expandRequested
@@ -45,11 +44,11 @@ Item {
         height: toggleButton.height
         icon.width: 16
         icon.height: 16
+        // Navigation into a detail page, not a dropdown below.
+        icon.name: "chevron_right"
 
-        // Display-only check state: the chevron mirrors `expanded`, clicks
-        // must not self-toggle.
+        // Clicks must not self-toggle a check state.
         checkable: false
-        checked: control.expanded
 
         mdState.size: MD.Enum.XS
         mdState.type: control.checked ? MD.Enum.BtFilled : MD.Enum.BtFilledTonal
