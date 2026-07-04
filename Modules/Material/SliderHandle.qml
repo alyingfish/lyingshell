@@ -3,10 +3,10 @@ import Qcm.Material as MD
 
 // Desktop-compact MD3 slider handle. Upstream QmlMaterial SliderHandle
 // hardcodes the 44dp expressive handle line; this wrapper sizes the line from
-// `handleHeight` and takes caller-provided indicator text. Value indicator is
-// spec-strict: shown while pressed/dragged (MD3 LABEL_FLOATING) plus keyboard
-// focus so arrow-key adjustment is visible. Drop it when upstream honors
-// handleHeight and exposes label text.
+// `handleHeight` and takes caller-provided indicator text. Value indicator
+// shows immediately while pressed/dragged (MD3 LABEL_FLOATING) or keyboard
+// focused, and after a `hoverDelay` dwell hovering the handle itself (desktop
+// tooltip feel). Drop it when upstream honors handleHeight + label text.
 Item {
     id: root
 
@@ -18,20 +18,34 @@ Item {
     property string text: Math.round(root.value).toString()
     property bool handleHasFocus: false
     property bool handlePressed: false
-    property bool handleHovered: false
     property int handleWidth: 12
     property int handleHeight: 24
     property bool horizontal: true
     property int handleLineWidth: 4
+    // Dwell before hovering the handle reveals the indicator (ms).
+    property int hoverDelay: 500
 
     readonly property var control: parent
+
+    // Hover the handle itself (not the whole track); reveal after hoverDelay.
+    property bool _hoverRevealed: false
+    HoverHandler {
+        id: handleHover
+        onHoveredChanged: if (!hovered)
+            root._hoverRevealed = false
+    }
+    Timer {
+        interval: root.hoverDelay
+        running: handleHover.hovered && !root._hoverRevealed
+        onTriggered: root._hoverRevealed = true
+    }
 
     // The value indicator (bubble); constants mirror upstream SliderHandle.
     MD.Control {
         y: root.horizontal ? -height - 4 : (parent.height - height) / 2
         x: root.horizontal ? (parent.width - width) / 2 : -width - 4
 
-        visible: root.handlePressed || root.handleHasFocus
+        visible: root.handlePressed || root.handleHasFocus || root._hoverRevealed
         opacity: visible ? 1 : 0
         scale: visible ? 1 : 0
         Behavior on opacity {
