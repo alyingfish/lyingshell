@@ -40,6 +40,7 @@ Item {
             visible: control.iconReactive
 
             mdState.type: MD.Enum.IBtStandard
+            mdState.size: MD.Enum.XS
             icon.name: control.iconName
             checked: control.iconChecked
 
@@ -61,6 +62,11 @@ Item {
         anchors.left: iconSlot.right
         anchors.right: detailArrow.visible ? detailArrow.left : parent.right
         anchors.verticalCenter: parent.verticalCenter
+
+        // Desktop-compact: 16dp XS track + short handle instead of the
+        // default 44dp expressive slider.
+        implicitHeight: 16
+        mdState.handleHeight: 24
 
         from: 0
         to: 1
@@ -84,6 +90,7 @@ Item {
         visible: control.hasDetail
 
         mdState.type: MD.Enum.IBtStandard
+        mdState.size: MD.Enum.XS
         icon.name: control.expanded ? "expand_less" : "expand_more"
 
         onClicked: control.detailRequested()

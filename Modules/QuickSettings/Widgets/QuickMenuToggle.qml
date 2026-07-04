@@ -18,14 +18,14 @@ Item {
     signal expandRequested
 
     implicitHeight: toggleButton.implicitHeight
-    implicitWidth: toggleButton.implicitWidth + arrow.width + MD.Token.split_button.small.between_space
+    implicitWidth: toggleButton.implicitWidth + arrow.width + MD.Token.split_button.xsmall.between_space
 
     QuickToggle {
         id: toggleButton
 
         anchors.left: parent.left
         anchors.right: arrow.left
-        anchors.rightMargin: MD.Token.split_button.small.between_space
+        anchors.rightMargin: MD.Token.split_button.xsmall.between_space
         anchors.verticalCenter: parent.verticalCenter
 
         labelKey: control.labelKey
@@ -40,17 +40,18 @@ Item {
 
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
-        width: MD.Token.split_button.small.trailing_button_leading_space + MD.Token.split_button.small.trailing_button_icon_size + MD.Token.split_button.small.trailing_button_trailing_space
+        // Compact arrow: xsmall spaces around a 16px chevron.
+        width: MD.Token.split_button.xsmall.trailing_button_leading_space + 16 + MD.Token.split_button.xsmall.trailing_button_trailing_space
         height: toggleButton.height
-        icon.width: MD.Token.split_button.small.trailing_button_icon_size
-        icon.height: MD.Token.split_button.small.trailing_button_icon_size
+        icon.width: 16
+        icon.height: 16
 
         // Display-only check state: the chevron mirrors `expanded`, clicks
         // must not self-toggle.
         checkable: false
         checked: control.expanded
 
-        mdState.size: MD.Enum.S
+        mdState.size: MD.Enum.XS
         mdState.type: control.checked ? MD.Enum.BtFilled : MD.Enum.BtFilledTonal
         mdState.backgroundColor: control.checked ? mdState.ctx.color.primary : mdState.ctx.color.surface_container_highest
         mdState.textColor: control.checked ? mdState.ctx.color.on_primary : mdState.ctx.color.on_surface_variant

@@ -19,16 +19,17 @@ MD.Button {
 
     checkable: false
 
-    // Desktop-compact: S-size tokens with a 48px two-line cell (GNOME QS
-    // rhythm); M-size touch metrics are too tall for a pointer-driven shell.
-    mdState.size: MD.Enum.S
+    // Desktop-compact: XS tokens in a 40px two-line cell; touch-size MD3
+    // metrics read oversized on a pointer-driven desktop shell.
+    mdState.size: MD.Enum.XS
     mdState.type: checked ? MD.Enum.BtFilled : MD.Enum.BtFilledTonal
     mdState.backgroundColor: checked ? mdState.ctx.color.primary : mdState.ctx.color.surface_container_highest
     mdState.textColor: checked ? mdState.ctx.color.on_primary : mdState.ctx.color.on_surface_variant
-    mdState.corners: splitCorners ? MD.Util.corners(mdState.corner, MD.Token.split_button.small.inner_corner_size, mdState.corner, MD.Token.split_button.small.inner_corner_size) : MD.Util.corners(mdState.corner)
+    mdState.corners: splitCorners ? MD.Util.corners(mdState.corner, MD.Token.split_button.xsmall.inner_corner_size, mdState.corner, MD.Token.split_button.xsmall.inner_corner_size) : MD.Util.corners(mdState.corner)
 
-    implicitHeight: 48
-    // xsmall spaces: the small-size 24px paddings starve fixed grid cells.
+    implicitHeight: 40
+    icon.width: MD.Token.button.xsmall.icon_size
+    icon.height: MD.Token.button.xsmall.icon_size
     leftPadding: MD.Token.button.xsmall.leading_space
     rightPadding: MD.Token.button.xsmall.trailing_space
 
@@ -62,7 +63,7 @@ MD.Button {
                 width: parent.width
                 text: I18n.t(control.labelKey)
                 color: control.mdState.textColor
-                typescale: MD.Token.typescale.label_large
+                typescale: MD.Token.typescale.label_medium
                 font.family: Theme.textTypeface
                 elide: Text.ElideRight
                 maximumLineCount: 1
@@ -76,7 +77,7 @@ MD.Button {
                 visible: control.statusText.length > 0
                 text: control.statusText
                 color: control.mdState.textColor
-                typescale: MD.Token.typescale.body_small
+                typescale: MD.Token.typescale.label_small
                 font.family: Theme.textTypeface
                 elide: Text.ElideRight
                 maximumLineCount: 1

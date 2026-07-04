@@ -25,7 +25,7 @@ Item {
     // Layout metrics (structural; desktop-compact density).
     readonly property real pad: 12
     readonly property real cellSpacing: 8
-    readonly property real cellWidth: 188
+    readonly property real cellWidth: 168
     readonly property real contentWidth: cellWidth * 2 + cellSpacing
 
     // --- derived network state -------------------------------------------
@@ -72,7 +72,7 @@ Item {
         x: root.pad
         y: root.pad
         width: root.contentWidth
-        spacing: root.cellSpacing * 2
+        spacing: 12
 
         // --- system row (GNOME system.js) --------------------------------
         Item {
@@ -86,6 +86,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 visible: root.hasBattery
                 mdState.type: MD.Enum.BtFilledTonal
+                mdState.size: MD.Enum.XS
                 icon.name: root.hasBattery ? QSIcons.batteryIcon(root.batteryPercent, root.batteryCharging) : "battery_unknown"
                 text: I18n.t("quickSettings.batteryPercent", {
                     "percent": root.batteryPercent
@@ -105,6 +106,7 @@ Item {
 
                 MD.IconButton {
                     mdState.type: MD.Enum.IBtStandard
+                    mdState.size: MD.Enum.XS
                     icon.name: "screenshot_region"
 
                     onClicked: {
@@ -115,6 +117,7 @@ Item {
 
                 MD.IconButton {
                     mdState.type: MD.Enum.IBtStandard
+                    mdState.size: MD.Enum.XS
                     icon.name: "settings"
 
                     onClicked: {
@@ -125,6 +128,7 @@ Item {
 
                 MD.IconButton {
                     mdState.type: MD.Enum.IBtStandard
+                    mdState.size: MD.Enum.XS
                     icon.name: "lock"
 
                     onClicked: {
@@ -137,6 +141,7 @@ Item {
                     id: powerButton
 
                     mdState.type: MD.Enum.IBtStandard
+                    mdState.size: MD.Enum.XS
                     icon.name: "power_settings_new"
 
                     onClicked: sessionMenu.open()
@@ -437,6 +442,7 @@ Item {
                 MD.IconButton {
                     anchors.verticalCenter: parent.verticalCenter
                     mdState.type: MD.Enum.IBtStandard
+                    mdState.size: MD.Enum.XS
                     icon.name: "arrow_back"
 
                     onClicked: root.detail = ""
@@ -507,6 +513,9 @@ Item {
                         width: parent.width
                         index: wifiRow.index
                         model: wifiRow.modelData
+                    implicitHeight: 40
+                    icon.width: 18
+                    icon.height: 18
                         text: wifiRow.modelData.name
                         icon.name: QSIcons.wifiSignalIcon(wifiRow.modelData.signalStrength)
                         font.family: Theme.textTypeface
@@ -583,6 +592,9 @@ Item {
 
                     width: parent.width
                     model: btRow.modelData
+                    implicitHeight: 40
+                    icon.width: 18
+                    icon.height: 18
                     text: btRow.modelData.name.length > 0 ? btRow.modelData.name : btRow.modelData.address
                     icon.name: "bluetooth"
                     font.family: Theme.textTypeface
@@ -624,6 +636,9 @@ Item {
 
                     width: parent.width
                     model: sinkRow.modelData
+                    implicitHeight: 40
+                    icon.width: 18
+                    icon.height: 18
                     text: sinkRow.modelData.description.length > 0 ? sinkRow.modelData.description : sinkRow.modelData.name
                     icon.name: "speaker"
                     font.family: Theme.textTypeface

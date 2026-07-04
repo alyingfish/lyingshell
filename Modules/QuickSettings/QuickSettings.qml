@@ -335,7 +335,6 @@ Item {
                 color: MD.Token.color.surface_container
                 elevation: MD.Token.elevation.level2
                 elevationVisible: true
-                clip: true
 
                 // Context colors for descendants (ListItem, Menu, TextField
                 // defaults resolve MProp.textColor/backgroundColor).
@@ -348,13 +347,20 @@ Item {
                     acceptedButtons: Qt.AllButtons
                 }
 
-                QuickSettingsPanel {
-                    id: panel
+                // Clip only the content during height animation; clipping the
+                // ElevationRectangle itself cuts its shadow into a hard rim.
+                Item {
+                    anchors.fill: parent
+                    clip: true
 
-                    width: parent.width
-                    visible: root.expanded
+                    QuickSettingsPanel {
+                        id: panel
 
-                    onCloseRequested: root.panelOpen = false
+                        width: parent.width
+                        visible: root.expanded
+
+                        onCloseRequested: root.panelOpen = false
+                    }
                 }
             }
         }
