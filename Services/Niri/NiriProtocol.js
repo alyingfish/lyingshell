@@ -56,6 +56,20 @@ function focusWorkspaceByIdRequest(id) {
     });
 }
 
+function takeScreenshotRequest() {
+    // niri-ipc serde has no field defaults: send the full payload.
+    return actionRequest("Screenshot", {
+        show_pointer: true,
+        path: null
+    });
+}
+
+function quitSessionRequest() {
+    return actionRequest("Quit", {
+        skip_confirmation: true
+    });
+}
+
 function actionRequest(actionName, payload) {
     var action = {};
     action[actionName] = payload;

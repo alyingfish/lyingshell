@@ -16,5 +16,37 @@
       "5": "Fri",
       "6": "Sat"
     }
+  },
+  "quickSettings": {
+    "batteryPercent": "{percent}%",
+    "wifi": "Wi-Fi",
+    "wired": "Wired",
+    "bluetooth": "Bluetooth",
+    "bluetoothConnectedCount": "{count} connected",
+    "powerMode": "Power Mode",
+    "powerProfile": {
+      "performance": "Performance",
+      "balanced": "Balanced",
+      "powerSaver": "Power Saver"
+    },
+    "nightLight": "Night Light",
+    "darkStyle": "Dark Style",
+    "airplaneMode": "Airplane Mode",
+    "keyboardBacklight": "Keyboard",
+    "kbdBacklight": {
+      "off": "Off",
+      "low": "Low",
+      "high": "High"
+    },
+    "doNotDisturb": "Do Not Disturb",
+    "session": {
+      "suspend": "Suspend",
+      "restart": "Restart",
+      "powerOff": "Power Off",
+      "logOut": "Log Out"
+    },
+    "outputDevice": "Sound Output",
+    "wifiPassword": "Password",
+    "connect": "Connect"
   }
 }

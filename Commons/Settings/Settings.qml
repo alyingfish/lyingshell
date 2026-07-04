@@ -181,6 +181,12 @@ Singleton {
                 // Re-derive accentColor from the wallpaper via matugen on each change.
                 property bool useWallpaperColor: false
             }
+            property JsonObject nightLight: JsonObject {
+                // Manual quick-settings toggle; Services/NightLight.qml owns
+                // the wlsunset process bound to it.
+                property bool enabled: false
+                property int temperature: 4000
+            }
             property JsonObject wallpaper: JsonObject {
                 property bool enabled: true
                 // Source folder scanned for the picker/IPC; "" → ~/Pictures/Wallpapers.

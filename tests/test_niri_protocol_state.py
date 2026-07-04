@@ -64,6 +64,13 @@ same(JSON.parse(protocol.encodeRequest(protocol.focusWorkspaceByIdRequest("5")))
     Action: { FocusWorkspace: { reference: { Id: 5 } } }
 }, "focus workspace by id action");
 
+same(JSON.parse(protocol.encodeRequest(protocol.takeScreenshotRequest())), {
+    Action: { Screenshot: { show_pointer: true, path: null } }
+}, "screenshot action");
+same(JSON.parse(protocol.encodeRequest(protocol.quitSessionRequest())), {
+    Action: { Quit: { skip_confirmation: true } }
+}, "quit session action");
+
 let reply = protocol.parseReplyLine('{"Ok":"Handled"}');
 assert(reply.ok && reply.payload === "Handled", "Ok reply parses");
 reply = protocol.parseReplyLine('{"Err":"nope"}');
@@ -156,6 +163,8 @@ def main() -> None:
     assert "if (!requestSocket.connected)" in niri_qml
     assert '"Niri IPC request socket is not connected"' in niri_qml
     assert "focusWorkspaceByIdRequest" in niri_qml
+    assert "takeScreenshotRequest" in niri_qml
+    assert "quitSessionRequest" in niri_qml
     assert "workspaceReferenceForId" not in state_js
     assert run_node() == {"ok": True}
 

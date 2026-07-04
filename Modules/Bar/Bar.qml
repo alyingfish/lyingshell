@@ -2,10 +2,9 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 import Qcm.Material as MD
-import qs.Commons.I18n
 import qs.Commons.Settings
-import qs.Commons.Theme
 import qs.Modules.Bar.Widgets
+import qs.Modules.QuickSettings
 import qs.Services.Niri
 
 PanelWindow {
@@ -25,7 +24,9 @@ PanelWindow {
     // Tray-expanded (popover/drag) jumps to full screen height in one step —
     // never animated — so the tray popover, tooltip, and drag visuals stay in
     // this window's scene. The collapsed reserve keeps room for tray tooltips.
-    implicitHeight: systemTray.expanded && root.screen ? root.screen.height : barSurface.config.margin + barSurface.barHeight + Math.max(barSurface.shadowBuffer, barSurface.reversedTarget + 4, systemTray.collapsedReserve)
+    // Quick-settings panel expansion reuses the same full-height jump.
+    readonly property bool overlayExpanded: systemTray.expanded || quickSettings.expanded
+    implicitHeight: overlayExpanded && root.screen ? root.screen.height : barSurface.config.margin + barSurface.barHeight + Math.max(barSurface.shadowBuffer, barSurface.reversedTarget + 4, systemTray.collapsedReserve)
     // Reserve from the settled target, not animMargin: an animated zone repushes
     // every frame and re-tiles windows on every morph frame.
     exclusiveZone: barSurface.isHidden ? 0 : Math.round(barSurface.config.margin + barSurface.barHeight)
@@ -34,7 +35,7 @@ PanelWindow {
     // click-through. While the tray popover/drag is active the whole window
     // takes input (null mask = full window) so the tray click-catcher sees
     // outside presses.
-    mask: systemTray.expanded ? null : barMask
+    mask: overlayExpanded ? null : barMask
 
     Region {
         id: barMask
@@ -120,13 +121,12 @@ PanelWindow {
                 barSurfaceRect: Qt.rect(barSurface.surfaceX, barSurface.surfaceY, barSurface.surfaceWidth, barSurface.surfaceHeight)
             }
 
-            MD.Text {
+            QuickSettings {
+                id: quickSettings
+
                 anchors.verticalCenter: parent.verticalCenter
-                text: I18n.t("app.name")
-                color: MD.Token.color.on_surface
-                typescale: MD.Token.typescale.title_small
-                font.family: Theme.textTypeface
-                verticalAlignment: Text.AlignVCenter
+                barHidden: barSurface.isHidden
+                barSurfaceRect: Qt.rect(barSurface.surfaceX, barSurface.surfaceY, barSurface.surfaceWidth, barSurface.surfaceHeight)
             }
         }
 

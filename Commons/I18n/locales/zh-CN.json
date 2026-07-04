@@ -16,5 +16,37 @@
       "5": "周五",
       "6": "周六"
     }
+  },
+  "quickSettings": {
+    "batteryPercent": "{percent}%",
+    "wifi": "Wi-Fi",
+    "wired": "有线网络",
+    "bluetooth": "蓝牙",
+    "bluetoothConnectedCount": "已连接 {count} 台设备",
+    "powerMode": "电源模式",
+    "powerProfile": {
+      "performance": "性能",
+      "balanced": "均衡",
+      "powerSaver": "省电"
+    },
+    "nightLight": "夜灯",
+    "darkStyle": "深色样式",
+    "airplaneMode": "飞行模式",
+    "keyboardBacklight": "键盘",
+    "kbdBacklight": {
+      "off": "关",
+      "low": "低",
+      "high": "高"
+    },
+    "doNotDisturb": "勿扰模式",
+    "session": {
+      "suspend": "挂起",
+      "restart": "重启",
+      "powerOff": "关机",
+      "logOut": "注销"
+    },
+    "outputDevice": "声音输出",
+    "wifiPassword": "密码",
+    "connect": "连接"
   }
 }

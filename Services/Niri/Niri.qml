@@ -88,6 +88,26 @@ Singleton {
         }
     }
 
+    // Opens niri's built-in screenshot UI.
+    function takeScreenshot(): bool {
+        try {
+            return _sendNiriRequest(NiriProtocol.takeScreenshotRequest());
+        } catch (error) {
+            _setError(NiriProtocol.errorMessageText(error));
+            return false;
+        }
+    }
+
+    // Ends the niri session (quick settings "Log Out").
+    function quitSession(): bool {
+        try {
+            return _sendNiriRequest(NiriProtocol.quitSessionRequest());
+        } catch (error) {
+            _setError(NiriProtocol.errorMessageText(error));
+            return false;
+        }
+    }
+
     function _handleEventSocketConnected() {
         _eventStreamReady = false;
         errorMessage = "";
