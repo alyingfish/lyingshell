@@ -18,6 +18,8 @@ Item {
     property string text: Math.round(root.value).toString()
     property bool handleHasFocus: false
     property bool handlePressed: false
+    // Caller-driven reveal (e.g. wheel adjust has no press/focus/hover).
+    property bool revealValue: false
     property int handleWidth: 12
     property int handleHeight: 24
     property bool horizontal: true
@@ -45,7 +47,7 @@ Item {
         y: root.horizontal ? -height - 4 : (parent.height - height) / 2
         x: root.horizontal ? (parent.width - width) / 2 : -width - 4
 
-        visible: root.handlePressed || root.handleHasFocus || root._hoverRevealed
+        visible: root.handlePressed || root.handleHasFocus || root._hoverRevealed || root.revealValue
         opacity: visible ? 1 : 0
         scale: visible ? 1 : 0
         Behavior on opacity {

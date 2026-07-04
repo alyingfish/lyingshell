@@ -107,6 +107,7 @@ Item {
             })
             handleHasFocus: slider.visualFocus
             handlePressed: slider.pressed
+            revealValue: wheelRevealTimer.running
             horizontal: slider.horizontal
             handleWidth: slider.mdState.handleWidth
             handleHeight: slider.mdState.handleHeight
@@ -153,6 +154,9 @@ Item {
             const result = QSIcons.wheelNotches(acc, wheel.angleDelta.y, wheel.pixelDelta.y);
             acc = result.acc;
             if (result.steps !== 0) {
+                // Wheel has no press/focus, so reveal the value indicator for a
+                // beat after each notch (SliderHandle.revealValue).
+                wheelRevealTimer.restart();
                 const next = Math.max(0, Math.min(100, slider.value + result.steps * 5));
                 if (next !== slider.value) {
                     control.moved(next / 100);
@@ -160,5 +164,10 @@ Item {
             }
             wheel.accepted = true;
         }
+    }
+
+    Timer {
+        id: wheelRevealTimer
+        interval: 800
     }
 }
