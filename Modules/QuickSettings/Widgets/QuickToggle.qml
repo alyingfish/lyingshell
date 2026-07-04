@@ -35,8 +35,11 @@ MD.Button {
     implicitHeight: 44
     icon.width: MD.Token.button.xsmall.icon_size
     icon.height: MD.Token.button.xsmall.icon_size
-    leftPadding: MD.Token.button.xsmall.leading_space
-    rightPadding: MD.Token.button.xsmall.trailing_space
+    // As a split-button leading half MD3 tightens the padding (12/10) toward
+    // the divider vs a standalone XS button (16/16); the wider standalone
+    // padding truncated long labels like "Bluetooth".
+    leftPadding: splitCorners ? MD.Token.split_button.xsmall.leading_button_leading_space : MD.Token.button.xsmall.leading_space
+    rightPadding: splitCorners ? MD.Token.split_button.xsmall.leading_button_trailing_space : MD.Token.button.xsmall.trailing_space
 
     contentItem: Item {
         implicitWidth: toggleIcon.width + control.mdState.spacing + titleText.implicitWidth
