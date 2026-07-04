@@ -165,6 +165,10 @@ Singleton {
                     property bool scrollLoop: true
                     property bool urgentPulse: true
                 }
+                property JsonObject quickSettings: JsonObject {
+                    // Bar pill battery percent text: always | never | whenLow.
+                    property string showBatteryValue: "whenLow"
+                }
                 property JsonObject tray: JsonObject {
                     // Tray items whose id/title matches any regex stay in the
                     // pinned zone; the rest go to the overflow popover.

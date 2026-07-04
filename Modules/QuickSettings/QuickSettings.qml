@@ -49,6 +49,12 @@ Item {
     readonly property bool hasBattery: battery !== null && battery.ready && battery.isLaptopBattery
     readonly property int batteryPercent: hasBattery ? Math.round(battery.percentage * 100) : 0
     readonly property bool batteryCharging: hasBattery && (battery.state === UPowerDeviceState.Charging || battery.state === UPowerDeviceState.PendingCharge || battery.state === UPowerDeviceState.FullyCharged)
+    // Low == the battery_alert icon threshold (QSIcons.batteryCritical).
+    readonly property bool batteryLow: hasBattery && QSIcons.batteryCritical(batteryPercent, batteryCharging)
+    readonly property color batteryColor: batteryLow ? MD.Token.color.error : batteryCharging ? MD.Token.color.tertiary : pillButton.mdState.textColor
+    // always | never | whenLow (unknown values fall back to whenLow).
+    readonly property string showBatteryValue: Settings.options.bar.quickSettings.showBatteryValue
+    readonly property bool showBatteryText: hasBattery && (showBatteryValue === "always" || (showBatteryValue !== "never" && batteryLow))
 
     implicitWidth: pillButton.implicitWidth
     implicitHeight: pillButton.implicitHeight
@@ -263,16 +269,16 @@ Item {
                     visible: root.hasBattery
                     name: QSIcons.batteryIcon(root.batteryPercent, root.batteryCharging)
                     size: 16
-                    color: pillButton.mdState.textColor
+                    color: root.batteryColor
                 }
 
                 MD.Text {
                     anchors.verticalCenter: parent.verticalCenter
-                    visible: root.hasBattery
+                    visible: root.showBatteryText
                     text: I18n.t("quickSettings.batteryPercent", {
                         "percent": root.batteryPercent
                     })
-                    color: pillButton.mdState.textColor
+                    color: root.batteryColor
                     typescale: MD.Token.typescale.label_large
                     font.family: Theme.textTypeface
                 }

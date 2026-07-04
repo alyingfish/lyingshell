@@ -57,8 +57,16 @@ assert(context.volumeIcon(0.9, false) === "volume_up", "high volume icon");
 
 assert(context.batteryIcon(100, false) === "battery_full", "full battery");
 assert(context.batteryIcon(50, false) === "battery_3_bar", "half battery");
-assert(context.batteryIcon(2, false) === "battery_0_bar", "empty battery");
-assert(context.batteryIcon(10, true) === "battery_charging_full", "charging battery");
+assert(context.batteryIcon(11, false) === "battery_1_bar", "low battery keeps level");
+assert(context.batteryCritical(10, false) && !context.batteryCritical(11, false), "critical threshold");
+assert(!context.batteryCritical(5, true), "charging is never critical");
+assert(context.batteryIcon(10, false) === "battery_alert", "critical battery alerts");
+assert(context.batteryIcon(2, false) === "battery_alert", "empty battery alerts");
+assert(context.batteryIcon(100, true) === "battery_charging_full", "charging full");
+assert(context.batteryIcon(95, true) === "battery_charging_full", "charging near-full");
+assert(context.batteryIcon(90, true) === "battery_charging_90", "charging 90 step");
+assert(context.batteryIcon(55, true) === "battery_charging_50", "charging snaps down");
+assert(context.batteryIcon(10, true) === "battery_charging_20", "charging floor step");
 
 assert(context.wifiSignalIcon(90) === "signal_wifi_4_bar", "strong signal 0-100");
 assert(context.wifiSignalIcon(0.9) === "signal_wifi_4_bar", "strong signal 0-1");
@@ -144,6 +152,10 @@ def main() -> None:
         f"pill icons must all be size 16, got {pill_sizes}"
     )
     assert "readonly property bool expanded" in qs_root
+    # Battery percent text obeys bar.quickSettings.showBatteryValue.
+    assert "visible: root.showBatteryText" in qs_root
+    assert 'showBatteryValue === "always"' in qs_root
+    assert "batteryLow" in qs_root
 
     # --- panel covers the GNOME quick-settings functions --------------------
     panel = read(QS_DIR / "QuickSettingsPanel.qml")
@@ -231,6 +243,7 @@ def main() -> None:
     assert "property JsonObject nightLight" in settings
     assert "property bool enabled: false" in settings
     assert "property int temperature: 4000" in settings
+    assert 'property string showBatteryValue: "whenLow"' in settings
 
     # --- i18n parity -----------------------------------------------------------
     en = json.loads(read(LOCALES / "en.json"))

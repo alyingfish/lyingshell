@@ -14,9 +14,29 @@ function volumeIcon(volume, muted) {
     return "volume_up";
 }
 
+// Single source of truth for the battery_alert / error-color / show-percent
+// threshold used by the pill.
+function batteryCritical(percent, charging) {
+    return !charging && percent <= 10;
+}
+
+// GNOME-style level+mode icon (GNOME uses 10% steps; Material Symbols only
+// ships these charging steps, so snap to the closest one below).
 function batteryIcon(percent, charging) {
     if (charging) {
-        return "battery_charging_full";
+        if (percent >= 95) {
+            return "battery_charging_full";
+        }
+        var steps = [90, 80, 60, 50, 30, 20];
+        for (var i = 0; i < steps.length; i++) {
+            if (percent >= steps[i]) {
+                return "battery_charging_" + steps[i];
+            }
+        }
+        return "battery_charging_20";
+    }
+    if (batteryCritical(percent, charging)) {
+        return "battery_alert";
     }
     var bars = Math.round(percent / 100 * 6);
     if (bars >= 6) {
