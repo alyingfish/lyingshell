@@ -450,6 +450,7 @@ Item {
 
                     trayItemId: modelData.id
                     iconSource: modelData.icon
+                    recolorIcons: Settings.options.bar.tray.recolorIcons
                     ghosted: root.dragActive && root.dragItem === modelData
                     pulseId: root.pulseId
                     pulseStamp: root.pulseStamp
@@ -560,6 +561,7 @@ Item {
 
                             trayItemId: modelData.id
                             iconSource: modelData.icon
+                            recolorIcons: Settings.options.bar.tray.recolorIcons
                             ghosted: root.dragActive && root.dragItem === modelData
                             pulseId: root.pulseId
                             pulseStamp: root.pulseStamp

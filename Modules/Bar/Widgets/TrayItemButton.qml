@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Window
+import QtQuick.Effects
 import Qcm.Material as MD
 
 // One tray item: a single hit-test target rendering the app icon.
@@ -10,6 +11,9 @@ MD.IconButton {
 
     property string trayItemId
     property url iconSource
+    // Recolor the icon to the theme foreground so dark/monochrome app icons
+    // stay legible on the dark bar. Off = render the raw icon (keeps colors).
+    property bool recolorIcons: false
     // Drag origin placeholder: keep layout, fade the icon.
     property bool ghosted: false
     // Insert pulse: bound to SystemTray's pulse state; the just-dropped item
@@ -61,6 +65,18 @@ MD.IconButton {
             sourceSize: Qt.size(root.icon.width * Screen.devicePixelRatio, root.icon.height * Screen.devicePixelRatio)
             fillMode: Image.PreserveAspectFit
             asynchronous: true
+
+            // Flatten the icon to a solid on_surface silhouette: brightness lifts
+            // near-black ink so colorization (luma-weighted) reaches full target
+            // instead of staying dark. ponytail: pure-MultiEffect, no per-icon
+            // dominant-color sampling; add a ColorQuantizer lift only if colored
+            // logos need to keep internal shading.
+            layer.enabled: root.recolorIcons
+            layer.effect: MultiEffect {
+                brightness: 1
+                colorization: 1
+                colorizationColor: MD.Token.color.on_surface
+            }
         }
     }
 

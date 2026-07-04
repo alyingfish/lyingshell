@@ -176,6 +176,11 @@ Singleton {
                     // Item ids in display order for the overflow popover;
                     // unlisted items follow in service order.
                     property var overflowOrder: []
+                    // Recolor tray icons to the theme foreground (on_surface) so
+                    // dark/monochrome app icons stay legible on the dark bar.
+                    // Flattens colored logos to silhouettes; turn off to keep
+                    // original icon colors.
+                    property bool recolorIcons: true
                 }
             }
             property JsonObject theme: JsonObject {
