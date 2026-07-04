@@ -11,7 +11,6 @@ Item {
     required property string labelKey
     property alias iconName: toggleButton.icon.name
     property alias statusText: toggleButton.statusText
-    property alias checkIcon: toggleButton.checkIcon
     property bool checked: false
     property bool expanded: false
 

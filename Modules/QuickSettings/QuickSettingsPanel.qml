@@ -299,7 +299,6 @@ Item {
                     labelKey: "quickSettings.wifi"
                     iconName: Networking.wifiEnabled ? (root.activeWifiNetwork ? QSIcons.wifiSignalIcon(root.activeWifiNetwork.signalStrength) : "wifi") : "signal_wifi_off"
                     statusText: root.activeWifiNetwork ? root.activeWifiNetwork.name : ""
-                    checkIcon: true
                     checked: Networking.wifiEnabled
                     expanded: root.detail === "wifi"
                     visible: root.wifiDevice !== null
@@ -315,7 +314,6 @@ Item {
                     statusText: root.btConnectedDevices.length > 0 ? I18n.t("quickSettings.bluetoothConnectedCount", {
                         "count": root.btConnectedDevices.length
                     }) : ""
-                    checkIcon: true
                     checked: root.btEnabled
                     expanded: root.detail === "bluetooth"
                     visible: root.btAdapter !== null

@@ -17,8 +17,6 @@ MD.Button {
     property string statusText: ""
     // Squared trailing edge when an arrow segment sits to the right.
     property bool splitCorners: false
-    // MD3 expressive selected-icon swap: show a check while checked.
-    property bool checkIcon: false
 
     checkable: false
 
@@ -50,7 +48,7 @@ MD.Button {
 
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
-            name: control.checkIcon && control.checked ? "check" : control.icon.name
+            name: control.icon.name
             size: control.icon.width
             color: control.mdState.textColor
             fill: control.checked
