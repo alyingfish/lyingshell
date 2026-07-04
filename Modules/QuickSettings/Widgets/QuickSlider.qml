@@ -1,10 +1,14 @@
 import QtQuick
 import Qcm.Material as MD
+import qs.Commons.I18n
+import qs.Modules.Material
 
 // MD3 slider row for the quick-settings panel (GNOME QuickSlider): leading
-// icon (optionally a real button, e.g. mute), MD.Slider, optional trailing
-// chevron opening a detail page. Value is service-owned: bound in via
-// `value`, user drags emit `moved` and the service loops the state back.
+// icon (optionally a real button, e.g. mute or night light), MD.Slider,
+// optional trailing chevron opening a detail page. Value is service-owned:
+// bound in via `value` (0..1), user drags emit `moved` and the service loops
+// the state back. The slider runs 0..100 internally so the MD3 value
+// indicator reads as a percentage.
 Item {
     id: control
 
@@ -12,6 +16,8 @@ Item {
     property real value: 0
     property bool iconReactive: false
     property bool iconChecked: false
+    // I18n token for the leading icon-button hover tooltip.
+    property string iconTooltipKey: ""
     property bool hasDetail: false
     property bool expanded: false
 
@@ -45,6 +51,11 @@ Item {
             checked: control.iconChecked
 
             onClicked: control.iconClicked()
+
+            MD.ToolTip {
+                text: control.iconTooltipKey.length > 0 ? I18n.t(control.iconTooltipKey) : ""
+                visible: iconButton.hovered && text.length > 0
+            }
         }
 
         MD.Icon {
@@ -69,9 +80,27 @@ Item {
         mdState.handleHeight: 24
 
         from: 0
-        to: 1
+        to: 100
 
-        onMoved: control.moved(value)
+        onMoved: control.moved(value / 100)
+
+        // Compact handle with a percent value indicator on hover/drag
+        // (upstream handle hardcodes 44dp and press-only 0..1 labels).
+        handle: SliderHandle {
+            x: slider.leftPadding + slider.visualPosition * (slider.availableWidth - width)
+            y: slider.topPadding + (slider.availableHeight - height) / 2
+            value: slider.value
+            text: I18n.t("quickSettings.percentValue", {
+                "percent": Math.round(slider.value)
+            })
+            handleHasFocus: slider.visualFocus
+            handlePressed: slider.pressed
+            handleHovered: slider.hovered
+            horizontal: slider.horizontal
+            handleWidth: slider.mdState.handleWidth
+            handleHeight: slider.mdState.handleHeight
+            handleLineWidth: slider.mdState.handleLineWidth
+        }
     }
 
     // A Binding object re-asserts service state even after user drags have
@@ -79,7 +108,7 @@ Item {
     Binding {
         target: slider
         property: "value"
-        value: control.value
+        value: control.value * 100
     }
 
     MD.IconButton {

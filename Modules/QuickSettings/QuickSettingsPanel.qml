@@ -49,7 +49,6 @@ Item {
         if (visible) {
             Brightness.refresh();
             Airplane.refresh();
-            DoNotDisturb.refresh();
         } else {
             detail = "";
         }
@@ -79,24 +78,21 @@ Item {
             width: parent.width
             implicitHeight: powerButton.implicitHeight
 
-            MD.Button {
-                id: batteryButton
-
+            // Plain status readout, not a button: it triggers nothing.
+            MD.IconLabel {
                 anchors.left: parent.left
                 anchors.verticalCenter: parent.verticalCenter
                 visible: root.hasBattery
-                mdState.type: MD.Enum.BtFilledTonal
-                mdState.size: MD.Enum.XS
+                spacing: 4
                 icon.name: root.hasBattery ? QSIcons.batteryIcon(root.batteryPercent, root.batteryCharging) : "battery_unknown"
+                icon.size: 18
+                color: MD.Token.color.on_surface_variant
                 text: I18n.t("quickSettings.batteryPercent", {
                     "percent": root.batteryPercent
                 })
-                font.family: Theme.textTypeface
-
-                onClicked: {
-                    Session.openSettings("power");
-                    root.closeRequested();
-                }
+                label.typescale: MD.Token.typescale.label_large
+                label.useTypescale: true
+                label.font.family: Theme.textTypeface
             }
 
             Row {
@@ -105,6 +101,8 @@ Item {
                 spacing: 0
 
                 MD.IconButton {
+                    id: screenshotButton
+
                     mdState.type: MD.Enum.IBtStandard
                     mdState.size: MD.Enum.XS
                     icon.name: "screenshot_region"
@@ -113,9 +111,16 @@ Item {
                         root.closeRequested();
                         Session.takeScreenshot();
                     }
+
+                    MD.ToolTip {
+                        text: I18n.t("quickSettings.screenshot")
+                        visible: screenshotButton.hovered
+                    }
                 }
 
                 MD.IconButton {
+                    id: settingsButton
+
                     mdState.type: MD.Enum.IBtStandard
                     mdState.size: MD.Enum.XS
                     icon.name: "settings"
@@ -124,9 +129,16 @@ Item {
                         Session.openSettings("");
                         root.closeRequested();
                     }
+
+                    MD.ToolTip {
+                        text: I18n.t("quickSettings.settings")
+                        visible: settingsButton.hovered
+                    }
                 }
 
                 MD.IconButton {
+                    id: lockButton
+
                     mdState.type: MD.Enum.IBtStandard
                     mdState.size: MD.Enum.XS
                     icon.name: "lock"
@@ -135,26 +147,43 @@ Item {
                         root.closeRequested();
                         Session.lock();
                     }
+
+                    MD.ToolTip {
+                        text: I18n.t("quickSettings.lock")
+                        visible: lockButton.hovered
+                    }
                 }
 
                 MD.IconButton {
                     id: powerButton
 
-                    mdState.type: MD.Enum.IBtStandard
+                    // Filled tonal: the session/power entry is the one
+                    // consequential control in the row, so it is visually
+                    // separated from the standard icon buttons around it.
+                    mdState.type: MD.Enum.IBtFilledTonal
                     mdState.size: MD.Enum.XS
                     icon.name: "power_settings_new"
 
                     onClicked: sessionMenu.open()
+
+                    MD.ToolTip {
+                        text: I18n.t("quickSettings.power")
+                        visible: powerButton.hovered && !sessionMenu.visible
+                    }
 
                     MD.Menu {
                         id: sessionMenu
 
                         y: powerButton.height
 
+                        // Leading icons are color-coded by consequence so the
+                        // options scan apart: calm suspend/restart, error-red
+                        // power off, neutral log out.
                         MD.MenuItem {
                             text: I18n.t("quickSettings.session.suspend")
                             icon.name: "mode_standby"
                             font.family: Theme.textTypeface
+                            leadingIconColor: MD.Token.color.tertiary
 
                             onTriggered: {
                                 root.closeRequested();
@@ -166,6 +195,7 @@ Item {
                             text: I18n.t("quickSettings.session.restart")
                             icon.name: "restart_alt"
                             font.family: Theme.textTypeface
+                            leadingIconColor: MD.Token.color.primary
 
                             onTriggered: {
                                 root.closeRequested();
@@ -177,6 +207,7 @@ Item {
                             text: I18n.t("quickSettings.session.powerOff")
                             icon.name: "power_settings_new"
                             font.family: Theme.textTypeface
+                            leadingIconColor: MD.Token.color.error
 
                             onTriggered: {
                                 root.closeRequested();
@@ -188,6 +219,7 @@ Item {
                             text: I18n.t("quickSettings.session.logOut")
                             icon.name: "logout"
                             font.family: Theme.textTypeface
+                            leadingIconColor: MD.Token.color.secondary
 
                             onTriggered: {
                                 root.closeRequested();
@@ -210,6 +242,7 @@ Item {
                 iconName: QSIcons.volumeIcon(Audio.volume, Audio.muted)
                 iconReactive: true
                 iconChecked: Audio.muted
+                iconTooltipKey: Audio.muted ? "quickSettings.unmute" : "quickSettings.mute"
                 value: Audio.volume
                 hasDetail: Audio.sinkDevices.length > 1
                 expanded: false
@@ -225,6 +258,7 @@ Item {
                 iconName: Audio.inputMuted ? "mic_off" : "mic"
                 iconReactive: true
                 iconChecked: Audio.inputMuted
+                iconTooltipKey: Audio.inputMuted ? "quickSettings.unmute" : "quickSettings.mute"
                 value: Audio.inputVolume
                 visible: Audio.hasSource && Audio.microphoneInUse
 
@@ -232,30 +266,55 @@ Item {
                 onIconClicked: Audio.toggleInputMuted()
             }
 
+            // The brightness icon doubles as the night-light toggle (mirrors
+            // the volume icon's mute affordance); the grid has no separate
+            // Night Light tile.
             QuickSlider {
                 width: parent.width
-                iconName: "brightness_6"
+                iconName: NightLight.enabled ? "wb_twilight" : "brightness_6"
+                iconReactive: true
+                iconChecked: NightLight.enabled
+                iconTooltipKey: "quickSettings.nightLight"
                 value: Brightness.percent
                 visible: Brightness.available
 
                 onMoved: newValue => Brightness.setPercent(newValue)
+                onIconClicked: NightLight.toggle()
             }
 
             Grid {
                 columns: 2
                 spacing: root.cellSpacing
 
+                // Connectivity cluster first: wifi | bluetooth, wired | airplane.
                 QuickMenuToggle {
                     width: root.cellWidth
                     labelKey: "quickSettings.wifi"
                     iconName: Networking.wifiEnabled ? (root.activeWifiNetwork ? QSIcons.wifiSignalIcon(root.activeWifiNetwork.signalStrength) : "wifi") : "signal_wifi_off"
                     statusText: root.activeWifiNetwork ? root.activeWifiNetwork.name : ""
+                    checkIcon: true
                     checked: Networking.wifiEnabled
                     expanded: root.detail === "wifi"
                     visible: root.wifiDevice !== null
 
                     onClicked: Networking.wifiEnabled = !Networking.wifiEnabled
                     onExpandRequested: root.detail = root.detail === "wifi" ? "" : "wifi"
+                }
+
+                QuickMenuToggle {
+                    width: root.cellWidth
+                    labelKey: "quickSettings.bluetooth"
+                    iconName: root.btEnabled ? (root.btConnectedDevices.length > 0 ? "bluetooth_connected" : "bluetooth") : "bluetooth_disabled"
+                    statusText: root.btConnectedDevices.length > 0 ? I18n.t("quickSettings.bluetoothConnectedCount", {
+                        "count": root.btConnectedDevices.length
+                    }) : ""
+                    checkIcon: true
+                    checked: root.btEnabled
+                    expanded: root.detail === "bluetooth"
+                    visible: root.btAdapter !== null
+
+                    onClicked: root.btAdapter.enabled = !root.btAdapter.enabled
+                    onExpandRequested: root.detail = root.detail === "bluetooth" ? "" : "bluetooth"
                 }
 
                 QuickToggle {
@@ -277,19 +336,14 @@ Item {
                     }
                 }
 
-                QuickMenuToggle {
+                QuickToggle {
                     width: root.cellWidth
-                    labelKey: "quickSettings.bluetooth"
-                    iconName: root.btEnabled ? (root.btConnectedDevices.length > 0 ? "bluetooth_connected" : "bluetooth") : "bluetooth_disabled"
-                    statusText: root.btConnectedDevices.length > 0 ? I18n.t("quickSettings.bluetoothConnectedCount", {
-                        "count": root.btConnectedDevices.length
-                    }) : ""
-                    checked: root.btEnabled
-                    expanded: root.detail === "bluetooth"
-                    visible: root.btAdapter !== null
+                    labelKey: "quickSettings.airplaneMode"
+                    icon.name: "airplanemode_active"
+                    checked: Airplane.enabled
+                    visible: Airplane.available
 
-                    onClicked: root.btAdapter.enabled = !root.btAdapter.enabled
-                    onExpandRequested: root.detail = root.detail === "bluetooth" ? "" : "bluetooth"
+                    onClicked: Airplane.toggle()
                 }
 
                 QuickMenuToggle {
@@ -348,30 +402,11 @@ Item {
 
                 QuickToggle {
                     width: root.cellWidth
-                    labelKey: "quickSettings.nightLight"
-                    icon.name: "nightlight"
-                    checked: NightLight.enabled
-
-                    onClicked: NightLight.toggle()
-                }
-
-                QuickToggle {
-                    width: root.cellWidth
                     labelKey: "quickSettings.darkStyle"
                     icon.name: "dark_mode"
                     checked: Settings.options.theme.mode === "dark"
 
                     onClicked: Settings.options.theme.mode = checked ? "light" : "dark"
-                }
-
-                QuickToggle {
-                    width: root.cellWidth
-                    labelKey: "quickSettings.airplaneMode"
-                    icon.name: "airplanemode_active"
-                    checked: Airplane.enabled
-                    visible: Airplane.available
-
-                    onClicked: Airplane.toggle()
                 }
 
                 QuickMenuToggle {
@@ -416,16 +451,6 @@ Item {
                             onTriggered: Brightness.setKbdLevel(Brightness.kbdMax)
                         }
                     }
-                }
-
-                QuickToggle {
-                    width: root.cellWidth
-                    labelKey: "quickSettings.doNotDisturb"
-                    icon.name: "do_not_disturb_on"
-                    checked: DoNotDisturb.enabled
-                    visible: DoNotDisturb.available
-
-                    onClicked: DoNotDisturb.toggle()
                 }
             }
         }

@@ -19,6 +19,13 @@
   },
   "quickSettings": {
     "batteryPercent": "{percent}%",
+    "percentValue": "{percent}%",
+    "mute": "静音",
+    "unmute": "取消静音",
+    "screenshot": "截图",
+    "settings": "设置",
+    "lock": "锁屏",
+    "power": "电源",
     "wifi": "Wi-Fi",
     "wired": "有线网络",
     "bluetooth": "蓝牙",

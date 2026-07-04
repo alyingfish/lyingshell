@@ -19,6 +19,13 @@
   },
   "quickSettings": {
     "batteryPercent": "{percent}%",
+    "percentValue": "{percent}%",
+    "mute": "Mute",
+    "unmute": "Unmute",
+    "screenshot": "Screenshot",
+    "settings": "Settings",
+    "lock": "Lock Screen",
+    "power": "Power",
     "wifi": "Wi-Fi",
     "wired": "Wired",
     "bluetooth": "Bluetooth",

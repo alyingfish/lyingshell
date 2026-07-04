@@ -32,6 +32,7 @@ QS_FILES = [
     QS_DIR / "Widgets" / "QuickToggle.qml",
     QS_DIR / "Widgets" / "QuickMenuToggle.qml",
     QS_DIR / "Widgets" / "QuickSlider.qml",
+    ROOT / "Modules" / "Material" / "SliderHandle.qml",
 ]
 
 NODE_SCRIPT = r"""
@@ -109,14 +110,32 @@ def main() -> None:
     assert "checkable: false" in toggle, "toggle display state is service-owned"
     assert "MD.Enum.BtFilled :" in toggle and "BtFilledTonal" in toggle
     assert 'I18n.t(control.labelKey)' in toggle
+    # MD3 expressive selected-state cues beyond color alone.
+    assert "MD.Token.shape.corner.medium" in toggle, "selected toggles morph to rounded-rect"
+    assert '"check"' in toggle and "checkIcon" in toggle, "selected icon swap to check"
+    assert "statusText.length > 0 ? control.statusText" in toggle, (
+        "runtime status (SSID, ...) replaces the static label, not a second line"
+    )
 
     menu_toggle = read(QS_DIR / "Widgets" / "QuickMenuToggle.qml")
     assert "SplitButtonIndicator" in menu_toggle
     assert "signal expandRequested" in menu_toggle
+    assert "checkIcon" in menu_toggle
 
     slider = read(QS_DIR / "Widgets" / "QuickSlider.qml")
     assert "MD.Slider {" in slider
     assert "signal moved(" in slider
+    # Compact handle wrapper with a percent value indicator, plus an icon
+    # tooltip (the icon button is a toggle: mute / night light).
+    assert "SliderHandle {" in slider, "QuickSlider uses the qs.Modules.Material handle"
+    assert "quickSettings.percentValue" in slider, "value indicator must read as a percentage"
+    assert "MD.ToolTip" in slider and "iconTooltipKey" in slider
+
+    handle = read(ROOT / "Modules" / "Material" / "SliderHandle.qml")
+    assert "handlePressed || root.handleHovered" in handle, (
+        "value indicator shows on hover as well as drag"
+    )
+    assert "handleHeight" in handle
 
     # --- pill: Bar icon rule (16) -------------------------------------------
     qs_root = read(QS_DIR / "QuickSettings.qml")
@@ -137,17 +156,44 @@ def main() -> None:
         "quickSettings.darkStyle",
         "quickSettings.airplaneMode",
         "quickSettings.keyboardBacklight",
-        "quickSettings.doNotDisturb",
         "quickSettings.session.suspend",
         "quickSettings.session.restart",
         "quickSettings.session.powerOff",
         "quickSettings.session.logOut",
+        # Tooltips on the icon-only system row.
+        "quickSettings.screenshot",
+        "quickSettings.settings",
+        "quickSettings.lock",
+        "quickSettings.power",
+        # Slider icon-button tooltips.
+        "quickSettings.mute",
+        "quickSettings.unmute",
     ]:
         assert token in panel, f"panel missing function for {token}"
     for feature in ["Session.takeScreenshot", "Session.lock", "Session.openSettings"]:
         assert feature in panel, f"panel missing {feature}"
     for detail in ['"wifi"', '"bluetooth"', '"output"']:
         assert detail in panel, f"panel missing detail page {detail}"
+
+    # Night light lives on the brightness slider icon; the do-not-disturb tile
+    # moved out (future notification panel owns it). Neither is a grid tile.
+    assert "NightLight.toggle" in panel, "brightness icon must toggle night light"
+    assert '"wb_twilight"' in panel, "night-light-on icon must not be a second moon"
+    assert 'labelKey: "quickSettings.nightLight"' not in panel, "no Night Light tile"
+    assert "quickSettings.doNotDisturb" not in panel, "no Do Not Disturb tile"
+    assert "DoNotDisturb." not in panel, "panel no longer drives DoNotDisturb"
+
+    # Battery is a plain readout, not a button; power is the one emphasized
+    # icon button and its menu color-codes the session actions.
+    assert 'Session.openSettings("power")' not in panel, "battery chip must not be clickable"
+    assert "MD.IconLabel" in panel
+    assert "MD.Enum.IBtFilledTonal" in panel, "power button is visually separated"
+    assert panel.count("MD.ToolTip") >= 4, "all system-row icon buttons need tooltips"
+    assert "leadingIconColor" in panel, "session menu items are color-coded"
+    assert "MD.Token.color.error" in panel, "power off must use the error color"
+
+    # Wifi/bluetooth tiles swap their leading icon to a check while on.
+    assert panel.count("checkIcon: true") == 2
 
     # --- service boundaries --------------------------------------------------
     audio = read(ROOT / "Services" / "Audio.qml")
