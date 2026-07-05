@@ -48,18 +48,11 @@ MD.Button {
     mdState.backgroundColor: animBackground
     mdState.textColor: animText
 
-    // MD3 expressive toggle shape morph: stadium unselected, rounded-rect
-    // selected; pressed still wins with the StateButton pressed corner.
-    // Spatial-fast spring (the bouncy M3E one); MState's internal 100ms
-    // corner Behavior rides on top as a small follower lag.
-    property real stateCorner: checked && !down ? MD.Token.shape.corner.medium : mdState.corner
-    Behavior on stateCorner {
-        NumberAnimation {
-            duration: Motion.spatialFast.duration
-            easing.type: Easing.BezierSpline
-            easing.bezierCurve: Motion.spatialFast.curve
-        }
-    }
+    // Toggle shape morph: stadium unselected, medium selected; pressed corner
+    // wins while down. Step the target — StateButton's own Behavior on corners
+    // renders it. Don't add a spring Behavior here: it stalls that internal
+    // Behavior and freezes the morph.
+    readonly property real stateCorner: checked && !down ? MD.Token.shape.corner.medium : mdState.corner
     // Select pop (web prototype `pop` keyframes): the icon rescales through
     // the same spring, whose overshoot supplies the bounce. Select only —
     // deselect stays quiet, like the prototype.

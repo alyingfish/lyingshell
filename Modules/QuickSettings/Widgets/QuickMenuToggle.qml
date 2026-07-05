@@ -75,20 +75,11 @@ Item {
         mdState.backgroundColor: animBackground
         mdState.textColor: animText
 
-        // Mirror the toggle half's shape morph so the split tile stays
-        // symmetric: outer (trailing) corners go stadium -> medium on select,
-        // inner corners stay squared toward the divider. Same spatial-fast
-        // spring as QuickToggle; the indicator's internal corner Behavior rides
-        // on top as the follower lag. Without this the arrow half kept its
-        // default stadium outer corners while the toggle rounded to 12dp.
-        property real outerCorner: control.checked ? MD.Token.shape.corner.medium : mdState.baseCorner
-        Behavior on outerCorner {
-            NumberAnimation {
-                duration: Motion.spatialFast.duration
-                easing.type: Easing.BezierSpline
-                easing.bezierCurve: Motion.spatialFast.curve
-            }
-        }
+        // Mirror the toggle's morph so the split tile stays symmetric: outer
+        // corners step stadium -> medium on select, inner corners hold the
+        // divider. Step it (no spring Behavior) for the same reason as
+        // QuickToggle — a spring here stalls the internal Behavior.
+        readonly property real outerCorner: control.checked ? MD.Token.shape.corner.medium : mdState.baseCorner
         mdState.corners: MD.Util.corners(MD.Token.split_button.xsmall.inner_corner_size, outerCorner, MD.Token.split_button.xsmall.inner_corner_size, outerCorner)
 
         onClicked: control.expandRequested()

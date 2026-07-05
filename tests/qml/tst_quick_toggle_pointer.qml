@@ -91,12 +91,18 @@ Window {
                 toggle.checked = true;
                 root.verify(toggle.mdState.type === MD.Enum.BtFilled, "checked toggle is filled");
 
-                // M3E spring morph: the selected corner animates toward
-                // medium through the Motion.js spatial spring instead of
-                // snapping (Behavior must intercept the binding change).
-                root.verify(toggle.stateCorner > MD.Token.shape.corner.medium + 1, "corner morph must animate, not snap");
-                tester.wait(600);
-                root.verify(Math.abs(toggle.stateCorner - MD.Token.shape.corner.medium) < 0.5, "corner morph settles at medium, got " + toggle.stateCorner);
+                // Selected corner morph. Assert the RENDERED corner
+                // (mdState.corners), not the stepped driver, so a morph that
+                // freezes then snaps is actually caught. Right after the flip
+                // the internal Behavior has not ticked yet (still stadium);
+                // ~130ms in it must already be past halfway toward medium (the
+                // old spring-into-internal-Behavior stall left it frozen at
+                // stadium until ~300ms); then it settles at medium.
+                root.verify(toggle.mdState.corners.topLeft > MD.Token.shape.corner.medium + 1, "corner morph must animate, not snap");
+                tester.wait(130);
+                root.verify(toggle.mdState.corners.topLeft < 17, "corner morph must track the color, not freeze then snap; at 130ms got " + toggle.mdState.corners.topLeft);
+                tester.wait(500);
+                root.verify(Math.abs(toggle.mdState.corners.topLeft - MD.Token.shape.corner.medium) < 0.5, "corner morph settles at medium, got " + toggle.mdState.corners.topLeft);
                 toggle.checked = false;
                 tester.wait(600);
 
