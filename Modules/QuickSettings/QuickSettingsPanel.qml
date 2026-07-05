@@ -188,6 +188,10 @@ Item {
                     mdState.type: MD.Enum.IBtFilledTonal
                     mdState.size: MD.Enum.XS
                     icon.name: "power_settings_new"
+                    // flat drops the ElevationRectangle shadow in every state
+                    // (IconButton has no `elevation` prop; mdState.elevation
+                    // defaults to level1 and the bg only hides it when flat).
+                    flat: true
 
                     onClicked: sessionMenu.open()
 
