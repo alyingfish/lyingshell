@@ -9,7 +9,10 @@ import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-TEST_FILES = (ROOT / "tests" / "qml" / "tst_quick_toggle_pointer.qml",)
+TEST_FILES = (
+    ROOT / "tests" / "qml" / "tst_quick_toggle_pointer.qml",
+    ROOT / "tests" / "qml" / "tst_connected_group_pointer.qml",
+)
 MOCKS = ROOT / "tests" / "qml" / "mocks"
 
 

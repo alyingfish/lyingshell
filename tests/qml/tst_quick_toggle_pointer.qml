@@ -90,7 +90,15 @@ Window {
                 root.verify(toggle.mdState.type === MD.Enum.BtFilledTonal, "unchecked toggle is tonal");
                 toggle.checked = true;
                 root.verify(toggle.mdState.type === MD.Enum.BtFilled, "checked toggle is filled");
+
+                // M3E spring morph: the selected corner animates toward
+                // medium through the Motion.js spatial spring instead of
+                // snapping (Behavior must intercept the binding change).
+                root.verify(toggle.stateCorner > MD.Token.shape.corner.medium + 1, "corner morph must animate, not snap");
+                tester.wait(600);
+                root.verify(Math.abs(toggle.stateCorner - MD.Token.shape.corner.medium) < 0.5, "corner morph settles at medium, got " + toggle.stateCorner);
                 toggle.checked = false;
+                tester.wait(600);
 
                 // QuickMenuToggle: left half toggles, arrow segment expands.
                 tester.mouseClick(menuToggle, 40, menuToggle.height / 2, Qt.LeftButton);

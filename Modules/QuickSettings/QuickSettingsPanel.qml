@@ -7,6 +7,7 @@ import qs.Commons.I18n
 import qs.Commons.Settings
 import qs.Commons.Theme
 import qs.Services
+import qs.Modules.Material
 import qs.Modules.QuickSettings.Widgets
 import "QuickSettingsIcons.js" as QSIcons
 
@@ -106,13 +107,12 @@ Item {
         MD.MProp.textColor: detailRow.current ? MD.Token.color.on_secondary_container : MD.Token.color.on_surface
         MD.MProp.backgroundColor: detailRow.current ? MD.Token.color.secondary_container : "transparent"
 
-        trailing: MD.Text {
+        // MD3 selected-list indicator: a trailing check on the current row.
+        trailing: MD.Icon {
             visible: detailRow.current
-            text: I18n.t("quickSettings.current")
-            typescale: MD.Token.typescale.label_medium
-            font.family: Theme.textTypeface
-            // Prototype detail-row-state opacity.
-            opacity: 0.78
+            name: "check"
+            size: 18
+            color: MD.Token.color.on_secondary_container
         }
     }
 
@@ -183,7 +183,9 @@ Item {
                 MD.IconButton {
                     id: powerButton
 
-                    mdState.type: MD.Enum.IBtStandard
+                    // M3E icon-button hierarchy: tonal power button reads as
+                    // the emphasized header action next to the standard rest.
+                    mdState.type: MD.Enum.IBtFilledTonal
                     mdState.size: MD.Enum.XS
                     icon.name: "power_settings_new"
 
@@ -216,7 +218,7 @@ Item {
                             text: I18n.t("quickSettings.lock")
                             icon.name: "lock"
                             font.family: Theme.textTypeface
-                            leadingIconColor: MD.Token.color.onSurfaceVariant
+                            leadingIconColor: MD.Token.color.on_surface_variant
 
                             onTriggered: {
                                 root.closeRequested();
@@ -696,6 +698,8 @@ Item {
                         MD.TextField {
                             id: pskField
 
+                            // Compact 56dp field for the panel (outlined default is 64dp).
+                            mdState.dense: true
                             width: parent.width - connectButton.width - root.cellSpacing
                             echoMode: TextInput.Password
                             placeholderText: I18n.t("quickSettings.wifiPassword")
@@ -782,47 +786,43 @@ Item {
         }
     }
 
-    // --- power profile list -------------------------------------------------
+    // --- power profile group --------------------------------------------------
     Component {
         id: powerDetail
 
         Column {
             spacing: 6
 
-            Repeater {
+            // M3E connected button group (plus kit): the selected profile
+            // fills primary, springs round, and grows; the panel stays open
+            // so the selection motion is visible (back exits).
+            ConnectedButtonGroup {
+                width: parent.width
+                textTypeface: Theme.textTypeface
+                // Same profile icons as the service's pill/tile mapping.
                 model: [
                     {
-                        "profile": PowerProfile.Performance,
-                        "token": "quickSettings.powerProfile.performance",
-                        "available": PowerMode.hasPerformanceProfile
-                    },
-                    {
-                        "profile": PowerProfile.Balanced,
-                        "token": "quickSettings.powerProfile.balanced",
+                        "icon": "energy_savings_leaf",
+                        "text": I18n.t("quickSettings.powerProfile.powerSaver"),
+                        "value": PowerProfile.PowerSaver,
                         "available": true
                     },
                     {
-                        "profile": PowerProfile.PowerSaver,
-                        "token": "quickSettings.powerProfile.powerSaver",
+                        "icon": "balance",
+                        "text": I18n.t("quickSettings.powerProfile.balanced"),
+                        "value": PowerProfile.Balanced,
                         "available": true
+                    },
+                    {
+                        "icon": "speed",
+                        "text": I18n.t("quickSettings.powerProfile.performance"),
+                        "available": PowerMode.hasPerformanceProfile,
+                        "value": PowerProfile.Performance
                     }
-                ]
+                ].filter(profile => profile.available)
+                current: PowerMode.profile
 
-                DetailRow {
-                    id: profileRow
-
-                    required property var modelData
-
-                    model: profileRow.modelData
-                    visible: profileRow.modelData.available
-                    text: I18n.t(profileRow.modelData.token)
-                    current: PowerMode.profile === profileRow.modelData.profile
-
-                    onClicked: {
-                        PowerMode.setProfile(profileRow.modelData.profile);
-                        root.detail = "";
-                    }
-                }
+                onSelected: value => PowerMode.setProfile(value)
             }
         }
     }

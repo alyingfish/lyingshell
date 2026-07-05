@@ -56,7 +56,6 @@
     },
     "outputDevice": "Sound Output",
     "wifiPassword": "Password",
-    "connect": "Connect",
-    "current": "Current"
+    "connect": "Connect"
   }
 }

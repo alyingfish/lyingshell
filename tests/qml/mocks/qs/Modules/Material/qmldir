@@ -1,2 +1,3 @@
 module qs.Modules.Material
 SliderHandle 1.0 SliderHandle.qml
+ConnectedButtonGroup 1.0 ConnectedButtonGroup.qml

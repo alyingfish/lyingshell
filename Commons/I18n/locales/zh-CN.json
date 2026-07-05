@@ -56,7 +56,6 @@
     },
     "outputDevice": "声音输出",
     "wifiPassword": "密码",
-    "connect": "连接",
-    "current": "当前"
+    "connect": "连接"
   }
 }

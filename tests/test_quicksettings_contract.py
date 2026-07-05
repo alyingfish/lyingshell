@@ -237,7 +237,7 @@ def main() -> None:
     assert "WheelHandler {" not in panel, "WheelHandler is dead on the live compositor"
     assert "mainViewHeight" in panel, "detail pages keep the measured main height"
     assert "VerticalFlickable" in panel, "overlong detail lists scroll inside the card"
-    assert "quickSettings.current" in panel, "the active detail row shows a Current badge"
+    assert 'name: "check"' in panel, "the active detail row shows a trailing check"
 
     # Night light lives on the brightness slider icon; the do-not-disturb tile
     # moved out (future notification panel owns it). Neither is a grid tile.
