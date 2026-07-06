@@ -4,7 +4,7 @@ import Qcm.Material as MD
 import qs.Material
 import "../../Material/Motion.js" as Motion
 
-// Quick-settings menu (GNOME's quick-settings panel): a floating MD3 card
+// Quick-settings popup (GNOME's quick-settings panel): a floating MD3 card
 // below the bar, opened by the bar's quick-settings button. The card and
 // its click-catcher render in a window-level overlay reparented to the
 // window contentItem; Bar.qml expands the window to full height while

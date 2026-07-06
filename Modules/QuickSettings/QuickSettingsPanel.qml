@@ -1,7 +1,7 @@
 import QtQuick
 import qs.Material
 import qs.Services
-import qs.Modules.QuickSettingsMenu.Widgets
+import qs.Modules.QuickSettings.Widgets
 import "../../Material/Motion.js" as Motion
 import "../../Commons/Icons/StatusIcons.js" as StatusIcons
 

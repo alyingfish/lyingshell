@@ -7,7 +7,7 @@ import qs.Commons.I18n
 import qs.Commons.Settings
 import qs.Commons.Theme
 import qs.Services
-import qs.Modules.QuickSettingsMenu
+import qs.Modules.QuickSettings
 import "../../../Commons/Icons/StatusIcons.js" as StatusIcons
 
 // Quick-settings button (GNOME's system status pill): the bar widget that
@@ -262,7 +262,7 @@ Item {
         }
     }
 
-    QuickSettingsMenu {
+    QuickSettingsPopup {
         id: menu
 
         anchorItem: pillButton

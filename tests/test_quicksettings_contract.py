@@ -10,7 +10,7 @@ import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-QS_DIR = ROOT / "Modules" / "QuickSettingsMenu"
+QS_DIR = ROOT / "Modules" / "QuickSettings"
 QS_BUTTON = ROOT / "Modules" / "Bar" / "Widgets" / "QuickSettingsButton.qml"
 BAR_QML = ROOT / "Modules" / "Bar" / "Bar.qml"
 SETTINGS_QML = ROOT / "Commons" / "Settings" / "Settings.qml"
@@ -28,7 +28,7 @@ SERVICES = [
 
 QS_FILES = [
     QS_BUTTON,
-    QS_DIR / "QuickSettingsMenu.qml",
+    QS_DIR / "QuickSettingsPopup.qml",
     QS_DIR / "QuickSettingsPanel.qml",
     QS_DIR / "Widgets" / "PanelHeader.qml",
     QS_DIR / "Widgets" / "ToolsRow.qml",
@@ -229,8 +229,8 @@ def main() -> None:
 
     # --- pill: Bar icon rule (16) -------------------------------------------
     qs_root = read(QS_BUTTON)
-    assert "import qs.Modules.QuickSettingsMenu" in qs_root
-    assert "QuickSettingsMenu {" in qs_root
+    assert "import qs.Modules.QuickSettings" in qs_root
+    assert "QuickSettingsPopup {" in qs_root
     pill_sizes = re.findall(r"^\s*size: (\d+)", qs_root, re.MULTILINE)
     assert pill_sizes and all(size == "16" for size in pill_sizes), (
         f"pill icons must all be size 16, got {pill_sizes}"

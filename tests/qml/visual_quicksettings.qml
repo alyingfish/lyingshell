@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Window
 import Qcm.Material as MD
 import Quickshell.Bluetooth
-import "../../Modules/QuickSettingsMenu"
+import "../../Modules/QuickSettings"
 
 // Offscreen visual dump of the quick-settings panel against the web
 // prototype: renders the real QuickSettingsPanel over mocked services (demo
@@ -12,7 +12,7 @@ import "../../Modules/QuickSettingsMenu"
 //       qml6 -I tests/qml/mocks -I ~/.local/lib \
 //       tests/qml/visual_quicksettings.qml -- /tmp/out
 //
-// The card wrapper mirrors QuickSettingsMenu.qml (radius 24,
+// The card wrapper mirrors QuickSettingsPopup.qml (radius 24,
 // surface-container-low) so corners and edge spacing are comparable. Each
 // state settles, is grabbed, and only then advances (grab callbacks chain
 // the sequence, so animation load cannot race a fixed schedule).

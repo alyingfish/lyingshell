@@ -83,7 +83,7 @@ Repository layout:
 +-- App/                   Top-level shell composition
 +-- Commons/               I18n, settings, theme, and shared icon mappings
 +-- Material/              Custom Material building blocks (wrappers, motion)
-+-- Modules/               User-facing shell surfaces (Bar, QuickSettingsMenu, ...)
++-- Modules/               User-facing shell surfaces (Bar, QuickSettings, ...)
 +-- Services/              Runtime system and compositor services
 +-- scripts/               Public install and run scripts
 +-- tests/                 Product regression tests
