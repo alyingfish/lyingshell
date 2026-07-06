@@ -58,10 +58,8 @@ Item {
                 // while the selected segment grows and the rest yield.
                 width: root.slotWidth * (isCurrent ? root.selectedWeight : 1) / root.weightSum
                 Behavior on width {
-                    NumberAnimation {
-                        duration: Motion.spatialDefault.duration
-                        easing.type: Easing.BezierSpline
-                        easing.bezierCurve: Motion.spatialDefault.curve
+                    MotionAnimation {
+                        spring: Motion.spatialDefault
                     }
                 }
 
@@ -73,18 +71,10 @@ Item {
                 property color animBackground: isCurrent ? mdState.ctx.color.primary : mdState.ctx.color.surface_container_highest
                 property color animText: isCurrent ? mdState.ctx.color.on_primary : mdState.ctx.color.on_surface
                 Behavior on animBackground {
-                    ColorAnimation {
-                        duration: Motion.effectsDefault.duration
-                        easing.type: Easing.BezierSpline
-                        easing.bezierCurve: Motion.effectsDefault.curve
-                    }
+                    MotionColorAnimation {}
                 }
                 Behavior on animText {
-                    ColorAnimation {
-                        duration: Motion.effectsDefault.duration
-                        easing.type: Easing.BezierSpline
-                        easing.bezierCurve: Motion.effectsDefault.curve
-                    }
+                    MotionColorAnimation {}
                 }
                 mdState.backgroundColor: animBackground
                 mdState.textColor: animText
@@ -96,18 +86,10 @@ Item {
                 property real leftCorner: index === 0 || isCurrent ? mdState.corner : root.innerCorner
                 property real rightCorner: index === root.count - 1 || isCurrent ? mdState.corner : root.innerCorner
                 Behavior on leftCorner {
-                    NumberAnimation {
-                        duration: Motion.spatialFast.duration
-                        easing.type: Easing.BezierSpline
-                        easing.bezierCurve: Motion.spatialFast.curve
-                    }
+                    MotionAnimation {}
                 }
                 Behavior on rightCorner {
-                    NumberAnimation {
-                        duration: Motion.spatialFast.duration
-                        easing.type: Easing.BezierSpline
-                        easing.bezierCurve: Motion.spatialFast.curve
-                    }
+                    MotionAnimation {}
                 }
                 mdState.corners: MD.Util.corners(leftCorner, rightCorner, leftCorner, rightCorner)
 

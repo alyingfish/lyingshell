@@ -14,7 +14,6 @@ Singleton {
     property string errorMessage: ""
 
     readonly property alias options: settingsAdapter
-    readonly property bool hasError: errorMessage.length > 0
     readonly property string homeDir: String(Quickshell.env("HOME") || "")
     readonly property string configDir: homeDir + "/.config/lyingshell"
     readonly property string settingsPath: configDir + "/settings.json"

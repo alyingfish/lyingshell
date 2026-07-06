@@ -11,14 +11,8 @@ QtObject {
     }
     function powerOff() {
     }
-    function logOut() {
-    }
-    function takeScreenshot() {
-    }
     function openSettings() {
     }
     function openCalculator() {
-    }
-    function pickColor() {
     }
 }

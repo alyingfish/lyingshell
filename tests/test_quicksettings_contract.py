@@ -280,9 +280,9 @@ def main() -> None:
     for feature in [
         "Session.lock",
         "Session.openSettings",
-        "Session.pickColor",
+        "Niri.pickColor",
         "Session.openCalculator",
-        "Session.takeScreenshot",
+        "Niri.takeScreenshot",
     ]:
         assert feature in panel, f"panel missing {feature}"
     for detail in ['"wifi"', '"bluetooth"', '"output"', '"kbd"']:

@@ -2,10 +2,10 @@ pragma Singleton
 
 import QtQml
 import Quickshell
-import qs.Services.Niri
 
 // One-shot session actions for the quick-settings system row. Commands are
-// detached launches, not state: nothing here is polled or parsed.
+// detached launches, not state: nothing here is polled or parsed. Niri IPC
+// actions (screenshot, color pick, quit) live on the Niri service directly.
 Singleton {
     id: root
 
@@ -28,14 +28,6 @@ Singleton {
         Quickshell.execDetached(["systemctl", "poweroff"]);
     }
 
-    function logOut() {
-        Niri.quitSession();
-    }
-
-    function takeScreenshot() {
-        Niri.takeScreenshot();
-    }
-
     function openSettings() {
         // ponytail: gnome-control-center until the planned Lying Shell
         // settings window exists.
@@ -46,9 +38,5 @@ Singleton {
         // ponytail: hardcoded app; make it a setting when a second machine
         // needs a different calculator.
         Quickshell.execDetached(["gnome-calculator"]);
-    }
-
-    function pickColor() {
-        Niri.pickColor();
     }
 }

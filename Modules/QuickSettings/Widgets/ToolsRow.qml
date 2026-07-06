@@ -40,7 +40,7 @@ Row {
 
         interval: 300
 
-        onTriggered: Session.takeScreenshot()
+        onTriggered: Niri.takeScreenshot()
     }
 
     ToolChip {
@@ -51,7 +51,7 @@ Row {
 
         onClicked: {
             root.collapseRequested();
-            Session.pickColor();
+            Niri.pickColor();
         }
 
         // Picked-color swatch (prototype .cdot).

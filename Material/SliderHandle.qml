@@ -73,18 +73,12 @@ Item {
         scale: shown ? 1 : 0.6
 
         Behavior on opacity {
-            NumberAnimation {
-                duration: Motion.effectsFast.duration
-                easing.type: Easing.BezierSpline
-                easing.bezierCurve: Motion.effectsFast.curve
+            MotionAnimation {
+                spring: Motion.effectsFast
             }
         }
         Behavior on scale {
-            NumberAnimation {
-                duration: Motion.spatialFast.duration
-                easing.type: Easing.BezierSpline
-                easing.bezierCurve: Motion.spatialFast.curve
-            }
+            MotionAnimation {}
         }
 
         MD.Text {
@@ -111,19 +105,11 @@ Item {
 
         Behavior on width {
             enabled: !root.horizontal
-            NumberAnimation {
-                duration: Motion.spatialFast.duration
-                easing.type: Easing.BezierSpline
-                easing.bezierCurve: Motion.spatialFast.curve
-            }
+            MotionAnimation {}
         }
         Behavior on height {
             enabled: root.horizontal
-            NumberAnimation {
-                duration: Motion.spatialFast.duration
-                easing.type: Easing.BezierSpline
-                easing.bezierCurve: Motion.spatialFast.curve
-            }
+            MotionAnimation {}
         }
 
         radius: 2

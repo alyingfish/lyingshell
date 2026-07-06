@@ -9,4 +9,12 @@ QtObject {
         colorPicked("#8150ff");
         return true;
     }
+
+    function takeScreenshot() {
+        return true;
+    }
+
+    function quitSession() {
+        return true;
+    }
 }

@@ -2,6 +2,7 @@ import Qcm.Material as MD
 import qs.Commons.I18n
 import qs.Commons.Theme
 import qs.Services
+import qs.Services.Niri
 
 // Session menu behind the header power button. Leading icons are
 // color-coded by consequence so the options scan apart.
@@ -71,7 +72,7 @@ MD.Menu {
 
         onTriggered: {
             root.panelCloseRequested();
-            Session.logOut();
+            Niri.quitSession();
         }
     }
 }
