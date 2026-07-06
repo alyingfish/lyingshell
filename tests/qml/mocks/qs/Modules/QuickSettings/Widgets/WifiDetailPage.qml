@@ -1,1 +1,1 @@
-../../../../../../../Modules/QuickSettingsMenu/Widgets/WifiDetailPage.qml
+../../../../../../../Modules/QuickSettings/Widgets/WifiDetailPage.qml

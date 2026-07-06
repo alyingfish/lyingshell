@@ -1,1 +1,1 @@
-../../../../../../../Modules/QuickSettingsMenu/Widgets/ToolsRow.qml
+../../../../../../../Modules/QuickSettings/Widgets/ToolsRow.qml

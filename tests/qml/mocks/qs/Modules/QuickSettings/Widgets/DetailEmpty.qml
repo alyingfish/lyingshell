@@ -1,1 +1,1 @@
-../../../../../../../Modules/QuickSettingsMenu/Widgets/DetailEmpty.qml
+../../../../../../../Modules/QuickSettings/Widgets/DetailEmpty.qml

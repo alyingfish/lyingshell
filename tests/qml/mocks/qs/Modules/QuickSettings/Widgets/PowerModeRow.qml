@@ -1,1 +1,1 @@
-../../../../../../../Modules/QuickSettingsMenu/Widgets/PowerModeRow.qml
+../../../../../../../Modules/QuickSettings/Widgets/PowerModeRow.qml

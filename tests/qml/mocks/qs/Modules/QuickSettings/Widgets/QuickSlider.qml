@@ -1,1 +1,1 @@
-../../../../../../../Modules/QuickSettingsMenu/Widgets/QuickSlider.qml
+../../../../../../../Modules/QuickSettings/Widgets/QuickSlider.qml

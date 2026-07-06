@@ -1,1 +1,1 @@
-../../../../../../../Modules/QuickSettingsMenu/Widgets/QuickMenuToggle.qml
+../../../../../../../Modules/QuickSettings/Widgets/QuickMenuToggle.qml

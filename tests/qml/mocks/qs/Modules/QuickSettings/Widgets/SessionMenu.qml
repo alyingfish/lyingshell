@@ -1,1 +1,1 @@
-../../../../../../../Modules/QuickSettingsMenu/Widgets/SessionMenu.qml
+../../../../../../../Modules/QuickSettings/Widgets/SessionMenu.qml

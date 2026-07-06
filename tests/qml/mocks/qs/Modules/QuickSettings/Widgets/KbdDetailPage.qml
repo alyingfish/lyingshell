@@ -1,1 +1,1 @@
-../../../../../../../Modules/QuickSettingsMenu/Widgets/KbdDetailPage.qml
+../../../../../../../Modules/QuickSettings/Widgets/KbdDetailPage.qml

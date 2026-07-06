@@ -1,1 +1,1 @@
-../../../../../../../Modules/QuickSettingsMenu/Widgets/OutputDetailPage.qml
+../../../../../../../Modules/QuickSettings/Widgets/OutputDetailPage.qml

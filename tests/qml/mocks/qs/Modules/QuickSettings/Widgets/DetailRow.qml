@@ -1,1 +1,1 @@
-../../../../../../../Modules/QuickSettingsMenu/Widgets/DetailRow.qml
+../../../../../../../Modules/QuickSettings/Widgets/DetailRow.qml

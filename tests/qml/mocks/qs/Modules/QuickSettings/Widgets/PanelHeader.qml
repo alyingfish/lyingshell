@@ -1,1 +1,1 @@
-../../../../../../../Modules/QuickSettingsMenu/Widgets/PanelHeader.qml
+../../../../../../../Modules/QuickSettings/Widgets/PanelHeader.qml

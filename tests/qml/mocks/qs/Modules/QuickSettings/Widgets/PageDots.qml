@@ -1,1 +1,1 @@
-../../../../../../../Modules/QuickSettingsMenu/Widgets/PageDots.qml
+../../../../../../../Modules/QuickSettings/Widgets/PageDots.qml

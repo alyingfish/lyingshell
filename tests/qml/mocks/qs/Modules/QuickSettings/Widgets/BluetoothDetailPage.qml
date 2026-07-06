@@ -1,1 +1,1 @@
-../../../../../../../Modules/QuickSettingsMenu/Widgets/BluetoothDetailPage.qml
+../../../../../../../Modules/QuickSettings/Widgets/BluetoothDetailPage.qml

@@ -1,1 +1,1 @@
-../../../../../../../Modules/QuickSettingsMenu/Widgets/DetailView.qml
+../../../../../../../Modules/QuickSettings/Widgets/DetailView.qml
