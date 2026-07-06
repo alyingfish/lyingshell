@@ -72,6 +72,19 @@ assert(context.batteryIcon(90, true) === "battery_charging_90", "charging 90 ste
 assert(context.batteryIcon(55, true) === "battery_charging_50", "charging snaps down");
 assert(context.batteryIcon(10, true) === "battery_charging_20", "charging floor step");
 
+assert(context.brightnessIcon(0) === "brightness_empty", "zero brightness");
+assert(context.brightnessIcon(0.2) === "brightness_low", "low brightness");
+assert(context.brightnessIcon(0.5) === "brightness_medium", "mid brightness");
+assert(context.brightnessIcon(0.9) === "brightness_high", "high brightness");
+
+assert(context.btDeviceIcon("audio-headset") === "headset_mic", "bt headset icon");
+assert(context.btDeviceIcon("input-mouse") === "mouse", "bt mouse icon");
+assert(context.btDeviceIcon("") === "bluetooth", "bt fallback icon");
+
+assert(context.audioSinkIcon("Navi 31 HDMI Audio") === "monitor", "hdmi sink icon");
+assert(context.audioSinkIcon("Built-in Speakers") === "speaker", "speaker sink icon");
+assert(context.audioSinkIcon("WH-1000XM4 bluez_output") === "headset_mic", "bt sink icon");
+
 assert(context.wifiSignalIcon(90) === "signal_wifi_4_bar", "strong signal 0-100");
 assert(context.wifiSignalIcon(0.9) === "signal_wifi_4_bar", "strong signal 0-1");
 assert(context.wifiSignalIcon(60) === "network_wifi_3_bar", "good signal");
@@ -139,9 +152,15 @@ def main() -> None:
     assert "checkable: false" in toggle, "toggle display state is service-owned"
     assert "MD.Enum.BtFilled :" in toggle and "BtFilledTonal" in toggle
     assert 'I18n.t(control.labelKey)' in toggle
-    # MD3 expressive selected-state cues beyond color alone.
-    assert "MD.Token.shape.corner.medium" in toggle, "selected toggles morph to rounded-rect"
+    # MD3 expressive selected-state cues beyond color alone (web-prototype
+    # tile: full pill at rest, radius 14 + emphasized type selected).
+    assert "readonly property real selectedCorner: 14" in toggle, (
+        "selected tiles morph to the prototype's 14px corner"
+    )
+    assert "prominent: control.checked" in toggle, "selected tiles use emphasized type"
+    assert "surface_container_high" in toggle, "resting tiles sit on surface-container-high"
     assert "implicitHeight: 44" in toggle, "tiles use the web-prototype 44px height"
+    assert "offIconName" in toggle, "wifi/bt tiles cross-fade their off/on glyphs"
     assert "statusText.length > 0 ? control.statusText" in toggle, (
         "runtime status (SSID, ...) replaces the static label, not a second line"
     )
@@ -160,14 +179,19 @@ def main() -> None:
     assert "MD.Slider {" in slider
     assert "signal moved(" in slider
     # Compact handle wrapper with a percent value indicator, plus an icon
-    # tooltip (the icon button is a toggle: mute / night light).
+    # tooltip (the icon button is a toggle: mute).
     assert "SliderHandle {" in slider, "QuickSlider uses the qs.Modules.Material handle"
     assert "quickSettings.percentValue" in slider, "value indicator must read as a percentage"
     assert "MD.ToolTip" in slider and "iconTooltipKey" in slider
     assert "dimmed" in slider, "muted sliders fade the track"
-    assert "detailArrow.visible ? detailArrow.left : parent.right" in slider, (
-        "tracks run to the prototype row inset unless a detail chevron exists"
+    # Web-prototype expressive track: 13px tall, 10px handle gap, stop dot,
+    # and a fixed 32px trailing slot so both sliders' right edges align.
+    assert "height: 13" in slider, "track uses the prototype 13px thickness"
+    assert "handleCenter - 10" in slider and "handleCenter + 10" in slider, (
+        "active/inactive tracks keep the 10px inset gap around the handle"
     )
+    assert 'icon.name: "tune"' in slider, "the output-device button uses the mixer glyph"
+    assert "trailingSlot" in slider, "sliders keep the trailing 32px alignment slot"
     # MouseArea.onWheel, not WheelHandler: WheelHandler gets no wheel events
     # on the live compositor (Workspaces proves the MouseArea pattern).
     assert "wheelNotches" in slider and "onWheel" in slider, (
@@ -206,11 +230,17 @@ def main() -> None:
         "quickSettings.nightLight",
         "quickSettings.darkStyle",
         "quickSettings.airplaneMode",
+        "quickSettings.doNotDisturb",
         "quickSettings.keyboardBacklight",
         "quickSettings.session.suspend",
         "quickSettings.session.restart",
         "quickSettings.session.powerOff",
         "quickSettings.session.logOut",
+        # Tools row (prototype #rowTools).
+        "quickSettings.tools",
+        "quickSettings.tool.colorPicker",
+        "quickSettings.tool.screenshot",
+        "quickSettings.tool.calculator",
         # Tooltips on the icon-only header actions (prototype: settings + power).
         "quickSettings.settings",
         "quickSettings.lock",
@@ -220,36 +250,55 @@ def main() -> None:
         # Slider icon-button tooltips.
         "quickSettings.mute",
         "quickSettings.unmute",
+        # Detail-list sub lines + off states.
+        "quickSettings.wifiConnected",
+        "quickSettings.detailOffTitle",
     ]:
         assert token in panel, f"panel missing function for {token}"
-    for feature in ["Session.lock", "Session.openSettings"]:
+    for feature in [
+        "Session.lock",
+        "Session.openSettings",
+        "Session.pickColor",
+        "Session.openCalculator",
+        "Session.takeScreenshot",
+    ]:
         assert feature in panel, f"panel missing {feature}"
-    for detail in ['"wifi"', '"bluetooth"', '"output"', '"power"', '"kbd"']:
+    for detail in ['"wifi"', '"bluetooth"', '"output"', '"kbd"']:
         assert detail in panel, f"panel missing detail page {detail}"
-    # Detail pages replace the whole panel (header included) and keep at
-    # least the measured main-view height; the paged tile grid keeps the
-    # panel height stable and is switched via page dots or wheel/touchpad.
-    assert 'visible: root.detail === ""' in panel, "system row hides on detail pages"
+    # Power mode lives in the header battery pill + expandable connected
+    # group now, not in a detail page or grid tile.
+    assert '"power"' not in panel.replace('"power_settings_new"', ""), (
+        "the power detail page moved into the power-mode row"
+    )
+    assert "ConnectedButtonGroup" in panel, "power modes use the M3E connected group"
+    assert "battPill" in panel and "pmodeOpen" in panel, (
+        "the battery pill expands the power-mode row"
+    )
+    assert "toolsOpen" in panel and "ToolChip" in panel, (
+        "the tools button expands the tools row"
+    )
+    # Detail pages slide in over the locked compact height; the main view
+    # slides out (prototype #viewMain/#viewDetail motion).
+    assert 'enabled: root.detail === ""' in panel, "main view goes inert on detail pages"
+    assert "compactContentHeight" in panel, "detail pages keep the compact main height"
     assert "pageCount" in panel and "pager.page" in panel, "tile grid is paged with dots"
     assert "wheelNotches" in panel and "onWheel" in panel, (
         "wheel/touchpad over the tile area flips pages"
     )
     assert "WheelHandler {" not in panel, "WheelHandler is dead on the live compositor"
-    assert "mainViewHeight" in panel, "detail pages keep the measured main height"
+    assert "DragHandler {" in panel, "pointer drag swipes between tile pages"
     assert "VerticalFlickable" in panel, "overlong detail lists scroll inside the card"
     assert 'name: "check"' in panel, "the active detail row shows a trailing check"
+    assert "MD.Switch" in panel, "wifi/bt detail headers carry the radio switch"
 
-    # Night light lives on the brightness slider icon; the do-not-disturb tile
-    # moved out (future notification panel owns it). Neither is a grid tile.
-    assert "NightLight.toggle" in panel, "brightness icon must toggle night light"
-    assert '"wb_twilight"' in panel, "night-light-on icon must not be a second moon"
-    assert 'labelKey: "quickSettings.nightLight"' not in panel, "no Night Light tile"
-    assert "quickSettings.doNotDisturb" not in panel, "no Do Not Disturb tile"
-    assert "DoNotDisturb." not in panel, "panel no longer drives DoNotDisturb"
+    # Night light and do-not-disturb are grid tiles (prototype tile set);
+    # the brightness slider icon is a plain level readout.
+    assert "NightLight.toggle" in panel, "night light tile must toggle the service"
+    assert '"wb_twilight"' in panel, "night-light icon must not be a second moon"
+    assert 'labelKey: "quickSettings.nightLight"' in panel, "Night Light is a tile"
+    assert "DoNotDisturb.toggle" in panel, "Do Not Disturb is a tile"
+    assert "brightnessIcon" in panel, "brightness icon is a level readout"
 
-    # Battery is a plain readout, not a button; power is the one emphasized
-    # icon button and its menu color-codes the session actions.
-    assert 'Session.openSettings("power")' not in panel, "battery chip must not be clickable"
     assert "MD.IconLabel" in panel
     assert "MD.Enum.IBtFilledTonal" in panel, "power button is visually separated"
     # Settings, power: every icon-only header action button.

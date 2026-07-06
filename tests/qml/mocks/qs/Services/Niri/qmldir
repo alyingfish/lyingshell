@@ -1,0 +1,2 @@
+module qs.Services.Niri
+singleton Niri 1.0 Niri.qml

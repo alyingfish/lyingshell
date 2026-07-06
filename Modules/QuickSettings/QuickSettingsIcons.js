@@ -68,6 +68,54 @@ function wheelNotches(acc, angle, pixel) {
     };
 }
 
+// Web-prototype brightness glyph steps (0 / <34 / <67 / high) on a 0..1
+// value; the slider icon is a plain readout, not a button.
+function brightnessIcon(percent) {
+    if (percent <= 0) {
+        return "brightness_empty";
+    }
+    if (percent < 0.34) {
+        return "brightness_low";
+    }
+    if (percent < 0.67) {
+        return "brightness_medium";
+    }
+    return "brightness_high";
+}
+
+// Bluez freedesktop icon name -> Material Symbol for the device list.
+function btDeviceIcon(iconName) {
+    var name = String(iconName || "");
+    if (name.indexOf("headset") >= 0 || name.indexOf("headphone") >= 0 || name.indexOf("audio") >= 0) {
+        return "headset_mic";
+    }
+    if (name.indexOf("mouse") >= 0) {
+        return "mouse";
+    }
+    if (name.indexOf("keyboard") >= 0) {
+        return "keyboard";
+    }
+    if (name.indexOf("phone") >= 0) {
+        return "smartphone";
+    }
+    if (name.indexOf("watch") >= 0) {
+        return "watch";
+    }
+    return "bluetooth";
+}
+
+// Output-device glyph from its Pipewire description/name keywords.
+function audioSinkIcon(label) {
+    var name = String(label || "").toLowerCase();
+    if (name.indexOf("headphone") >= 0 || name.indexOf("headset") >= 0 || name.indexOf("bluez") >= 0) {
+        return "headset_mic";
+    }
+    if (name.indexOf("hdmi") >= 0 || name.indexOf("displayport") >= 0 || name.indexOf("display") >= 0) {
+        return "monitor";
+    }
+    return "speaker";
+}
+
 // NetworkManager reports 0-100; tolerate an already-normalized 0-1 value.
 function wifiSignalIcon(strength) {
     var normalized = strength > 1 ? strength / 100 : strength;

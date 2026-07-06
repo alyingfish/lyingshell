@@ -2,15 +2,18 @@ import QtQuick
 import Qcm.Material as MD
 import "../../Material/Motion.js" as Motion
 
-// MD3 split button pairing a QuickToggle with a trailing arrow segment
-// (GNOME QuickMenuToggle). The toggle half emits `clicked`; the arrow half
-// emits `expandRequested` and always navigates to an in-panel detail page,
-// so it shows a static chevron_right, never an expand chevron.
+// Web-prototype split tile pairing a QuickToggle with a trailing arrow
+// segment (GNOME QuickMenuToggle): 2px divider, 38px arrow, outer corners
+// 22 -> 14 on select while the divider edge holds 6 -> 5. The toggle half
+// emits `clicked`; the arrow half emits `expandRequested` and always
+// navigates to an in-panel detail page, so it shows a static chevron_right,
+// never an expand chevron.
 Item {
     id: control
 
     required property string labelKey
     property alias iconName: toggleButton.icon.name
+    property alias offIconName: toggleButton.offIconName
     property alias statusText: toggleButton.statusText
     property bool checked: false
 
@@ -40,8 +43,8 @@ Item {
 
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
-        // Compact arrow: xsmall spaces around a 16px chevron.
-        width: MD.Token.split_button.xsmall.trailing_button_leading_space + 16 + MD.Token.split_button.xsmall.trailing_button_trailing_space
+        // Prototype `.chev`: a fixed 38px arrow segment with a 16px chevron.
+        width: 38
         height: toggleButton.height
         icon.width: 16
         icon.height: 16
@@ -56,8 +59,8 @@ Item {
         // Cross-fade selection colors in step with the toggle half (M3E
         // effects spring, same as QuickToggle); `checked` is outside the
         // state machine so the library won't animate these.
-        property color animBackground: control.checked ? mdState.ctx.color.primary : mdState.ctx.color.surface_container_highest
-        property color animText: control.checked ? mdState.ctx.color.on_primary : mdState.ctx.color.on_surface
+        property color animBackground: control.checked ? mdState.ctx.color.primary : mdState.ctx.color.surface_container_high
+        property color animText: control.checked ? mdState.ctx.color.on_primary : mdState.ctx.color.on_surface_variant
         Behavior on animBackground {
             ColorAnimation {
                 duration: Motion.effectsDefault.duration
@@ -76,11 +79,12 @@ Item {
         mdState.textColor: animText
 
         // Mirror the toggle's morph so the split tile stays symmetric: outer
-        // corners step stadium -> medium on select, inner corners hold the
-        // divider. Step it (no spring Behavior) for the same reason as
-        // QuickToggle — a spring here stalls the internal Behavior.
-        readonly property real outerCorner: control.checked ? MD.Token.shape.corner.medium : mdState.baseCorner
-        mdState.corners: MD.Util.corners(MD.Token.split_button.xsmall.inner_corner_size, outerCorner, MD.Token.split_button.xsmall.inner_corner_size, outerCorner)
+        // corners step 22 -> 14 on select, the divider edge holds 6 -> 5.
+        // Step it (no spring Behavior) for the same reason as QuickToggle —
+        // a spring here stalls the internal Behavior.
+        readonly property real outerCorner: control.checked ? toggleButton.selectedCorner : height / 2
+        readonly property real dividerCorner: toggleButton.innerCorner
+        mdState.corners: MD.Util.corners(dividerCorner, outerCorner, dividerCorner, outerCorner)
 
         onClicked: control.expandRequested()
     }

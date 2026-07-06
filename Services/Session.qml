@@ -41,4 +41,14 @@ Singleton {
         // settings window exists.
         Quickshell.execDetached(["gnome-control-center"]);
     }
+
+    function openCalculator() {
+        // ponytail: hardcoded app; make it a setting when a second machine
+        // needs a different calculator.
+        Quickshell.execDetached(["gnome-calculator"]);
+    }
+
+    function pickColor() {
+        Niri.pickColor();
+    }
 }

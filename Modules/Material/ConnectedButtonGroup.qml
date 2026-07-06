@@ -20,6 +20,8 @@ Item {
     property real selectedWeight: 1.5
     // Label typeface; callers pass Theme.textTypeface.
     property string textTypeface: Qt.application.font.family
+    // MD.Enum.IconOnly drops the labels (web-prototype power-mode group).
+    property int labelStyle: MD.Enum.IconAndText
 
     // Radio semantics: emitted only for a not-yet-selected segment.
     signal selected(var value)
@@ -27,8 +29,10 @@ Item {
     implicitHeight: 44
     implicitWidth: count * implicitHeight * 2 + gap * (count - 1)
 
-    readonly property real gap: MD.Token.split_button.xsmall.between_space
-    readonly property real innerCorner: MD.Token.split_button.xsmall.inner_corner_size
+    // Defaults are the split-button XS tokens; the quick-settings power-mode
+    // row overrides both with its web-prototype metrics (gap 3, inner 6).
+    property real gap: MD.Token.split_button.xsmall.between_space
+    property real innerCorner: MD.Token.split_button.xsmall.inner_corner_size
     readonly property int count: model.length
     readonly property bool hasCurrent: model.some(entry => entry.value === root.current)
     readonly property real weightSum: count + (hasCurrent ? selectedWeight - 1 : 0)
@@ -111,6 +115,7 @@ Item {
                     root.selected(modelData.value)
 
                 contentItem: MD.IconLabel {
+                    style: root.labelStyle
                     opacity: segment.mdState.contentOpacity
                     icon.name: segment.modelData.icon
                     icon.size: MD.Token.button.xsmall.icon_size

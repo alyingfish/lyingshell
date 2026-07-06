@@ -27,10 +27,8 @@
     "lock": "锁屏",
     "power": "电源",
     "wifi": "Wi-Fi",
-    "wifiNetworks": "Wi-Fi 网络",
     "wired": "有线网络",
     "bluetooth": "蓝牙",
-    "bluetoothDevices": "蓝牙设备",
     "bluetoothConnectedCount": "已连接 {count} 台设备",
     "powerMode": "电源模式",
     "powerProfile": {
@@ -56,6 +54,23 @@
     },
     "outputDevice": "声音输出",
     "wifiPassword": "密码",
-    "connect": "连接"
+    "connect": "连接",
+    "tools": "小工具",
+    "tool": {
+      "colorPicker": "取色器",
+      "screenshot": "截图",
+      "calculator": "计算器"
+    },
+    "back": "返回",
+    "timeLeft": "剩余 {hours} 小时 {minutes} 分钟",
+    "timeUntilFull": "{hours} 小时 {minutes} 分钟后充满",
+    "detailOffTitle": "{name}已关闭",
+    "detailOffHint": "使用上方开关开启",
+    "wifiConnected": "已连接",
+    "wifiConnecting": "连接中…",
+    "wifiSecured": "加密",
+    "wifiOpen": "开放网络",
+    "btConnected": "已连接",
+    "btNotConnected": "未连接"
   }
 }

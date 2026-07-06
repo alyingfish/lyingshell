@@ -16,14 +16,15 @@ Singleton {
     readonly property var profile: PowerProfiles.profile
     readonly property bool hasPerformanceProfile: PowerProfiles.hasPerformanceProfile
 
+    // Web-prototype glyphs: leaf / speedometer / bolt.
     readonly property string iconName: {
         if (profile === PowerProfile.Performance) {
-            return "speed";
+            return "bolt";
         }
         if (profile === PowerProfile.PowerSaver) {
             return "energy_savings_leaf";
         }
-        return "balance";
+        return "speed";
     }
 
     function setProfile(newProfile) {

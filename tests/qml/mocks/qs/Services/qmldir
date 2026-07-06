@@ -1,0 +1,8 @@
+module qs.Services
+singleton Audio 1.0 Audio.qml
+singleton Brightness 1.0 Brightness.qml
+singleton NightLight 1.0 NightLight.qml
+singleton Airplane 1.0 Airplane.qml
+singleton DoNotDisturb 1.0 DoNotDisturb.qml
+singleton PowerMode 1.0 PowerMode.qml
+singleton Session 1.0 Session.qml

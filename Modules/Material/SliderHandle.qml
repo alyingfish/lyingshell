@@ -1,12 +1,16 @@
 import QtQuick
 import Qcm.Material as MD
+import "Motion.js" as Motion
 
 // Desktop-compact MD3 slider handle. Upstream QmlMaterial SliderHandle
 // hardcodes the 44dp expressive handle line; this wrapper sizes the line from
-// `handleHeight` and takes caller-provided indicator text. Value indicator
-// shows immediately while pressed/dragged (MD3 LABEL_FLOATING) or keyboard
-// focused, and after a `hoverDelay` dwell hovering the handle itself (desktop
-// tooltip feel). Drop it when upstream honors handleHeight + label text.
+// `handleHeight` and takes caller-provided indicator text. Web-prototype
+// styling: the line grows +6px while dragged (spatial spring) and the value
+// indicator is a flat inverse-surface pill that pops in above the track
+// (scale 0.6 + 4px drop -> rest on the spatial spring) while pressed/dragged,
+// keyboard focused, wheel-adjusted, or after a `hoverDelay` dwell on the
+// handle itself (desktop tooltip feel). Drop when upstream honors
+// handleHeight + label text.
 Item {
     id: root
 
@@ -26,6 +30,9 @@ Item {
     property int handleLineWidth: 4
     // Dwell before hovering the handle reveals the indicator (ms).
     property int hoverDelay: 500
+    // Distance from the handle's resting top edge up to the indicator's
+    // bottom edge; QuickSlider passes the prototype's 6px above the row.
+    property real bubbleGap: 10
 
     readonly property var control: parent
 
@@ -42,51 +49,82 @@ Item {
         onTriggered: root._hoverRevealed = true
     }
 
-    // The value indicator (bubble); constants mirror upstream SliderHandle.
-    MD.Control {
-        y: root.horizontal ? -height - 4 : (parent.height - height) / 2
-        x: root.horizontal ? (parent.width - width) / 2 : -width - 4
+    // The value indicator: prototype `.sval` — a flat inverse-surface pill
+    // 6px above the row that pops from scale .6 / +4px (origin bottom).
+    Rectangle {
+        id: bubble
 
-        visible: root.handlePressed || root.handleHasFocus || root._hoverRevealed || root.revealValue
-        opacity: visible ? 1 : 0
-        scale: visible ? 1 : 0
+        readonly property bool shown: root.handlePressed || root.handleHasFocus || root._hoverRevealed || root.revealValue
+        // Prototype clamp: the pill center stays >= 22px from either row
+        // edge so it never overflows the panel at the extremes.
+        readonly property real centerInControl: root.control ? Math.max(22, Math.min(root.control.width - 22, root.x + root.width / 2)) : root.width / 2
+
+        x: centerInControl - root.x - width / 2
+        y: -height - root.bubbleGap
+        // Prototype padding 4px 9px around 12px/650 text.
+        implicitWidth: bubbleText.implicitWidth + 18
+        implicitHeight: bubbleText.implicitHeight + 8
+        radius: MD.Token.shape.corner.medium
+        color: root.control ? root.control.mdState.ctx.color.inverse_surface : "transparent"
+
+        visible: opacity > 0.001
+        opacity: shown ? 1 : 0
+        transformOrigin: Item.Bottom
+        scale: shown ? 1 : 0.6
+
         Behavior on opacity {
             NumberAnimation {
-                duration: MD.Token.duration.short2
+                duration: Motion.effectsFast.duration
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Motion.effectsFast.curve
             }
         }
         Behavior on scale {
             NumberAnimation {
-                duration: MD.Token.duration.short2
-                easing: MD.Token.easing.standard
+                duration: Motion.spatialFast.duration
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Motion.spatialFast.curve
             }
         }
 
-        contentItem: Item {
-            implicitHeight: children[0].implicitHeight
-            implicitWidth: children[0].implicitWidth
-            MD.Text {
-                anchors.centerIn: parent
-                text: root.text
-                typescale: MD.Token.typescale.label_medium
-                color: root.control ? root.control.mdState.ctx.color.inverse_on_surface : "transparent"
-            }
-        }
-        background: MD.ElevationRectangle {
-            implicitWidth: 32
-            implicitHeight: 32
-            radius: 16
-            color: root.control ? root.control.mdState.ctx.color.inverse_surface : "transparent"
-            elevation: MD.Token.elevation.level2
+        MD.Text {
+            id: bubbleText
+
+            anchors.centerIn: parent
+            text: root.text
+            typescale: MD.Token.typescale.label_medium
+            // Prototype indicator weight 650 = M3E emphasized type.
+            prominent: true
+            color: root.control ? root.control.mdState.ctx.color.inverse_on_surface : "transparent"
         }
     }
 
-    // The line handle, sized from handleHeight instead of upstream's 44.
+    // The line handle, sized from handleHeight instead of upstream's 44;
+    // dragging stretches it +6px (prototype 24 -> 30) on the spatial spring.
     Rectangle {
         anchors.centerIn: parent
 
-        width: root.horizontal ? root.handleLineWidth : root.handleHeight
-        height: root.horizontal ? root.handleHeight : root.handleLineWidth
+        readonly property real line: root.handleHeight + (root.handlePressed ? 6 : 0)
+
+        width: root.horizontal ? root.handleLineWidth : line
+        height: root.horizontal ? line : root.handleLineWidth
+
+        Behavior on width {
+            enabled: !root.horizontal
+            NumberAnimation {
+                duration: Motion.spatialFast.duration
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Motion.spatialFast.curve
+            }
+        }
+        Behavior on height {
+            enabled: root.horizontal
+            NumberAnimation {
+                duration: Motion.spatialFast.duration
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Motion.spatialFast.curve
+            }
+        }
 
         radius: 2
         color: root.control ? root.control.mdState.backgroundColor : "transparent"

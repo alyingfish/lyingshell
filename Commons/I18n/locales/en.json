@@ -27,10 +27,8 @@
     "lock": "Lock Screen",
     "power": "Power",
     "wifi": "Wi-Fi",
-    "wifiNetworks": "Wi-Fi networks",
     "wired": "Wired",
     "bluetooth": "Bluetooth",
-    "bluetoothDevices": "Bluetooth devices",
     "bluetoothConnectedCount": "{count} connected",
     "powerMode": "Power Mode",
     "powerProfile": {
@@ -54,8 +52,25 @@
       "powerOff": "Power Off",
       "logOut": "Log Out"
     },
-    "outputDevice": "Sound Output",
+    "outputDevice": "Sound output",
     "wifiPassword": "Password",
-    "connect": "Connect"
+    "connect": "Connect",
+    "tools": "Tools",
+    "tool": {
+      "colorPicker": "Color picker",
+      "screenshot": "Screenshot",
+      "calculator": "Calculator"
+    },
+    "back": "Back",
+    "timeLeft": "{hours}h {minutes}m left",
+    "timeUntilFull": "{hours}h {minutes}m until full",
+    "detailOffTitle": "{name} is off",
+    "detailOffHint": "Use the switch above to turn it on",
+    "wifiConnected": "Connected",
+    "wifiConnecting": "Connecting…",
+    "wifiSecured": "Secured",
+    "wifiOpen": "Open network",
+    "btConnected": "Connected",
+    "btNotConnected": "Not connected"
   }
 }

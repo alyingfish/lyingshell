@@ -108,6 +108,62 @@ Singleton {
         }
     }
 
+    // Picked color as "#rrggbb" (quick-settings color-picker tool).
+    signal colorPicked(string hex)
+
+    // Starts niri's interactive color pick. Uses a dedicated socket: the
+    // reply only arrives after the user clicks, which would block the shared
+    // request socket for the whole aim time.
+    function pickColor(): bool {
+        if (!available || pickSocket.connected) {
+            return false;
+        }
+        pickSocket.connected = true;
+        return true;
+    }
+
+    Socket {
+        id: pickSocket
+
+        path: root.socketPath
+        connected: false
+
+        onConnectedChanged: {
+            if (connected) {
+                write(NiriProtocol.encodeRequest(NiriProtocol.pickColorRequest()));
+                flush();
+            }
+        }
+
+        onError: function (socketError) {
+            root._handleSocketError("pick-color", socketError);
+        }
+
+        parser: SplitParser {
+            onRead: function (line) {
+                root._handlePickColorReply(line);
+            }
+        }
+    }
+
+    function _handlePickColorReply(line) {
+        pickSocket.connected = false;
+        if (line.length === 0) {
+            return;
+        }
+
+        var reply = NiriProtocol.parseReplyLine(line);
+        // A cancelled pick (Esc) is a user choice, not a service error.
+        if (!reply.ok) {
+            return;
+        }
+
+        var hex = NiriProtocol.pickedColorHex(reply.payload);
+        if (hex.length > 0) {
+            colorPicked(hex);
+        }
+    }
+
     function _handleEventSocketConnected() {
         _eventStreamReady = false;
         errorMessage = "";

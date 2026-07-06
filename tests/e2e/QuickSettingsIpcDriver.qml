@@ -42,6 +42,15 @@ Item {
             root.view.e2eSetPage(Number(value));
         }
 
+        // Expandable header rows (tools / power mode) for screenshot passes.
+        function setTools(open: string): void {
+            root.view.e2ePanel.toolsOpen = open === "true";
+        }
+
+        function setPmode(open: string): void {
+            root.view.e2ePanel.pmodeOpen = open === "true";
+        }
+
         // Vertical wheel over the first tile (first row/column center).
         function wheelTiles(delta: string): void {
             const item = root.view.e2eTileArea;

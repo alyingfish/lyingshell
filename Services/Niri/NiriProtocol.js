@@ -70,6 +70,28 @@ function quitSessionRequest() {
     });
 }
 
+// PickColor is a plain request (like EventStream), not an Action: niri grabs
+// the pointer and replies once the user clicks (or cancels).
+function pickColorRequest() {
+    return "PickColor";
+}
+
+// Ok payload -> "#rrggbb", or "" when the user cancelled the pick. niri-ipc
+// PickedColor carries rgb as three 0..1 floats.
+function pickedColorHex(payload) {
+    var rgb = payload && payload.PickedColor ? payload.PickedColor.rgb : null;
+    if (!rgb || rgb.length !== 3) {
+        return "";
+    }
+
+    var hex = "#";
+    for (var i = 0; i < 3; i++) {
+        var channel = Math.max(0, Math.min(255, Math.round(rgb[i] * 255)));
+        hex += (channel < 16 ? "0" : "") + channel.toString(16);
+    }
+    return hex;
+}
+
 function actionRequest(actionName, payload) {
     var action = {};
     action[actionName] = payload;

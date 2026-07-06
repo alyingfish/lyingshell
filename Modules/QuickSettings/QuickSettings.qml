@@ -8,6 +8,7 @@ import qs.Commons.I18n
 import qs.Commons.Settings
 import qs.Commons.Theme
 import qs.Services
+import "../Material/Motion.js" as Motion
 import "QuickSettingsIcons.js" as QSIcons
 
 // Quick-settings bar widget (GNOME's system status pill) plus its panel.
@@ -22,7 +23,7 @@ Item {
 
     property bool panelOpen: false
     // Bar.qml: full-screen window + full input mask while true.
-    readonly property bool expanded: panelOpen || panelCard.openProgress > 0.001
+    readonly property bool expanded: panelOpen || panelCard.opacity > 0.001
     readonly property real barBottom: barSurfaceRect.y + barSurfaceRect.height
 
     // --- pill indicator state (GNOME panel-status-indicators-box) ---------
@@ -321,46 +322,99 @@ Item {
         Item {
             id: panelCard
 
-            property real openProgress: root.panelOpen ? 1 : 0
             readonly property real pad: 8
             readonly property real anchorRightX: root.overlayX(pillButton) + pillButton.width
 
-            Behavior on openProgress {
-                NumberAnimation {
-                    duration: MD.Token.duration.medium2
-                    easing: MD.Token.easing.emphasized
+            // Prototype #qs entrance: translateY(-16) + scale(.9) around a
+            // transform origin at 85% / -10%, opening on the bouncy spatial
+            // spring and closing on the quicker standard curve; opacity runs
+            // on the effects timing both ways.
+            property real slideY: -16
+            property real cardScale: 0.9
+
+            states: State {
+                name: "open"
+                when: root.panelOpen
+
+                PropertyChanges {
+                    panelCard.slideY: 0
+                    panelCard.cardScale: 1
+                    panelCard.opacity: 1
                 }
             }
 
+            transitions: [
+                Transition {
+                    to: "open"
+
+                    NumberAnimation {
+                        properties: "slideY,cardScale"
+                        duration: Motion.spatialFast.duration
+                        easing.type: Easing.BezierSpline
+                        easing.bezierCurve: Motion.spatialFast.curve
+                    }
+                    NumberAnimation {
+                        property: "opacity"
+                        duration: Motion.effectsDefault.duration
+                        easing.type: Easing.BezierSpline
+                        easing.bezierCurve: Motion.effectsDefault.curve
+                    }
+                },
+                Transition {
+                    from: "open"
+
+                    NumberAnimation {
+                        properties: "slideY,cardScale"
+                        duration: MD.Token.duration.short4
+                        easing: MD.Token.easing.standard
+                    }
+                    NumberAnimation {
+                        property: "opacity"
+                        duration: Motion.effectsDefault.duration
+                        easing.type: Easing.BezierSpline
+                        easing.bezierCurve: Motion.effectsDefault.curve
+                    }
+                }
+            ]
+
+            // Content height follows the expandable rows' own springs and
+            // the detail-page lock; a second height animation here would
+            // double-lag them (the prototype panel has no height transition).
             width: panel.implicitWidth
             height: panel.implicitHeight
 
-            Behavior on height {
-                NumberAnimation {
-                    duration: MD.Token.duration.medium2
-                    easing: MD.Token.easing.emphasized
-                }
-            }
-
             x: Math.max(pad, Math.min(anchorRightX - width, overlay.width - width - pad))
-            y: root.barBottom + pad - 12 * (1 - openProgress)
-            opacity: openProgress
-            visible: openProgress > 0.001
+            y: root.barBottom + pad
+            opacity: 0
+            visible: opacity > 0.001
+
+            transform: [
+                Scale {
+                    origin.x: panelCard.width * 0.85
+                    origin.y: -panelCard.height * 0.1
+                    xScale: panelCard.cardScale
+                    yScale: panelCard.cardScale
+                },
+                Translate {
+                    y: panelCard.slideY
+                }
+            ]
 
             MD.ElevationRectangle {
                 anchors.fill: parent
-                // Floating panel: 16px radius, surface-container fill (MD3 menu
-                // tone), level2 shadow only — MD3 elevated surfaces carry no
-                // border.
-                corners: MD.Util.corners(MD.Token.shape.corner.large)
-                color: MD.Token.color.surface_container
-                elevation: MD.Token.elevation.level2
+                // Prototype panel: 24px radius, surface-container-low fill,
+                // deep floating shadow — MD3 elevated surfaces carry no
+                // border. 24 sits between the large and extra-large corner
+                // tokens; it is the prototype's card radius.
+                corners: MD.Util.corners(24)
+                color: MD.Token.color.surface_container_low
+                elevation: MD.Token.elevation.level3
                 elevationVisible: true
 
                 // Context colors for descendants (ListItem, Menu, TextField
                 // defaults resolve MProp.textColor/backgroundColor).
                 MD.MProp.textColor: MD.Token.color.on_surface
-                MD.MProp.backgroundColor: MD.Token.color.surface_container
+                MD.MProp.backgroundColor: MD.Token.color.surface_container_low
 
                 // Swallow presses so the catcher below does not dismiss.
                 MouseArea {
@@ -379,6 +433,7 @@ Item {
 
                         width: parent.width
                         visible: root.expanded
+                        open: root.panelOpen
 
                         onCloseRequested: root.panelOpen = false
                     }
