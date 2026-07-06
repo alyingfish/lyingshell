@@ -13,6 +13,7 @@ TEST_FILES = (
     ROOT / "tests" / "qml" / "tst_quick_toggle_pointer.qml",
     ROOT / "tests" / "qml" / "tst_connected_group_pointer.qml",
     ROOT / "tests" / "qml" / "tst_quicksettings_motion.qml",
+    ROOT / "tests" / "qml" / "tst_powermode_matrix.qml",
 )
 MOCKS = ROOT / "tests" / "qml" / "mocks"
 

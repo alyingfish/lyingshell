@@ -34,7 +34,8 @@
     "powerProfile": {
       "performance": "性能",
       "balanced": "均衡",
-      "powerSaver": "省电"
+      "powerSaver": "省电",
+      "unavailable": "无电源配置"
     },
     "nightLight": "夜灯",
     "darkStyle": "深色样式",

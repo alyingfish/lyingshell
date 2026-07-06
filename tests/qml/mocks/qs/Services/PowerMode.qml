@@ -3,9 +3,11 @@ pragma Singleton
 import QtQml
 
 QtObject {
-    readonly property bool available: true
+    // Writable so tst_powermode_matrix.qml can drive the daemon-present and
+    // profile-count permutations; defaults match the other offscreen tests.
+    property bool available: true
     property int profile: 1
-    readonly property bool hasPerformanceProfile: true
+    property bool hasPerformanceProfile: true
 
     readonly property string iconName: {
         if (profile === 2) {

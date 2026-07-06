@@ -59,6 +59,12 @@ Item {
 
     implicitHeight: 32 + toolsSpace + pmodeSpace
 
+    // Test-only surface (tests/qml/tst_powermode_matrix.qml).
+    readonly property bool pillVisibleProbe: battPill.visible
+    readonly property bool pillEnabledProbe: battPill.enabled
+    readonly property string pillIconProbe: pillModeIcon.name
+    readonly property string pillTextProbe: pillLabel.text
+
     // --- header row (32px) -------------------------------------------------
     Item {
         width: parent.width
@@ -126,8 +132,10 @@ Item {
                 id: battPill
 
                 anchors.verticalCenter: parent.verticalCenter
+                // Interactive whenever it shows (battery present or a daemon):
+                // even with no profile daemon the pill expands the row to read
+                // the time-left estimate.
                 visible: SystemStatus.hasBattery || PowerMode.available
-                enabled: PowerMode.available
                 checkable: false
                 flat: true
                 topInset: 0
@@ -204,6 +212,8 @@ Item {
                     }
 
                     MD.Text {
+                        id: pillLabel
+
                         anchors.verticalCenter: parent.verticalCenter
                         text: SystemStatus.hasBattery ? I18n.t("quickSettings.batteryPercent", {
                             "percent": SystemStatus.batteryPercent

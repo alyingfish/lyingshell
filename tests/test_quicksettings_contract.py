@@ -296,6 +296,18 @@ def main() -> None:
     assert "battPill" in panel and "pmodeOpen" in panel, (
         "the battery pill expands the power-mode row"
     )
+    # The pill stays clickable with no power-profiles daemon so the row can be
+    # expanded to read time-left; the profile group + a soft "no power profile"
+    # notice swap on PowerMode.available.
+    assert "enabled: PowerMode.available" not in panel, (
+        "the battery pill must not be hard-gated on the profile daemon"
+    )
+    assert "visible: PowerMode.available" in panel, (
+        "the profile group is hidden when no daemon is running"
+    )
+    assert "quickSettings.powerProfile.unavailable" in panel, (
+        "the power-mode row shows a soft notice when no daemon is running"
+    )
     assert "toolsOpen" in panel and "ToolChip" in panel, (
         "the tools button expands the tools row"
     )
@@ -325,7 +337,11 @@ def main() -> None:
     assert "MD.Enum.IBtFilledTonal" in panel, "power button is visually separated"
     # Settings, power: every icon-only header action button.
     assert panel.count("MD.ToolTip") >= 2, "all header icon buttons need tooltips"
-    assert "leadingIconColor" in panel, "session menu items are color-coded"
+    # Prototype #pmenu: rows share the row colour (currentColor); only the
+    # shut-down row reads error red (.mi.danger).
+    assert "danger" in panel and 'iconName: "power_settings_new"' in panel, (
+        "the session menu's shut-down row is the danger action"
+    )
     assert "MD.Token.color.error" in panel, "power off must use the error color"
 
     # --- service boundaries --------------------------------------------------

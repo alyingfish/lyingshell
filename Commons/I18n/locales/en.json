@@ -34,7 +34,8 @@
     "powerProfile": {
       "performance": "Performance",
       "balanced": "Balanced",
-      "powerSaver": "Power Saver"
+      "powerSaver": "Power Saver",
+      "unavailable": "No power profile"
     },
     "nightLight": "Night Light",
     "darkStyle": "Dark Style",

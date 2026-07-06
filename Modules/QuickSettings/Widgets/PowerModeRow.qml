@@ -26,6 +26,13 @@ Rectangle {
                 "minutes": Math.floor(SystemStatus.battery.timeToFull % 3600 / 60)
             });
         }
+        // No daemon: there is no profile to name, so read out the battery
+        // instead of a bogus default profile.
+        if (!PowerMode.available) {
+            return SystemStatus.hasBattery ? I18n.t("quickSettings.batteryPercent", {
+                "percent": SystemStatus.batteryPercent
+            }) : I18n.t("quickSettings.acPower");
+        }
         if (PowerMode.profile === PowerProfile.Performance) {
             return I18n.t("quickSettings.powerProfile.performance");
         }
@@ -34,6 +41,11 @@ Rectangle {
         }
         return I18n.t("quickSettings.powerProfile.balanced");
     }
+
+    // Test-only surface (tests/qml/tst_powermode_matrix.qml).
+    readonly property bool groupVisibleProbe: pmodeGroup.visible
+    readonly property int segmentCountProbe: pmodeGroup.count
+    readonly property bool noticeVisibleProbe: noticeText.visible
 
     height: 40
     radius: 20
@@ -58,9 +70,25 @@ Rectangle {
         label.font.family: Theme.textTypeface
     }
 
+    // Soft notice in the space the profile group vacates when no daemon
+    // implements net.hadess.PowerProfiles.
+    MD.Text {
+        id: noticeText
+
+        anchors.right: parent.right
+        anchors.rightMargin: 12
+        anchors.verticalCenter: parent.verticalCenter
+        visible: !PowerMode.available
+        text: I18n.t("quickSettings.powerProfile.unavailable")
+        color: MD.Token.color.on_surface_variant
+        typescale: MD.Token.typescale.label_medium
+        font.family: Theme.textTypeface
+    }
+
     ConnectedButtonGroup {
         id: pmodeGroup
 
+        visible: PowerMode.available
         anchors.right: parent.right
         anchors.rightMargin: 3
         anchors.verticalCenter: parent.verticalCenter
