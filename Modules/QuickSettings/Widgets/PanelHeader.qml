@@ -45,7 +45,7 @@ Item {
         enabled: header.revealAnimated
 
         MotionAnimation {
-            spring: Motion.spatialDefault
+            spring: Motion.spatialSlow
         }
     }
 
@@ -55,7 +55,7 @@ Item {
         enabled: header.revealAnimated
 
         MotionAnimation {
-            spring: Motion.spatialDefault
+            spring: Motion.spatialSlow
         }
     }
 
@@ -337,10 +337,22 @@ Item {
         width: parent.width
         height: header.toolsSpace
         clip: true
-        opacity: header.toolsReveal
+        // Prototype .xrow: opacity is a fast standard fade (.25s), decoupled
+        // from the .45s grid-rows reveal; the content is top-anchored below
+        // the section gap and wipes in top-first (clip from the bottom).
+        opacity: header.toolsOpen ? 1 : 0
+
+        Behavior on opacity {
+            enabled: header.revealAnimated
+
+            MotionAnimation {
+                spring: Motion.effectsSlow
+            }
+        }
 
         ToolsRow {
-            anchors.bottom: parent.bottom
+            anchors.top: parent.top
+            anchors.topMargin: header.sectionGap
             width: parent.width
 
             onCollapseRequested: header.toolsOpen = false
@@ -354,10 +366,19 @@ Item {
         width: parent.width
         height: header.pmodeSpace
         clip: true
-        opacity: header.pmodeReveal
+        opacity: header.pmodeOpen ? 1 : 0
+
+        Behavior on opacity {
+            enabled: header.revealAnimated
+
+            MotionAnimation {
+                spring: Motion.effectsSlow
+            }
+        }
 
         PowerModeRow {
-            anchors.bottom: parent.bottom
+            anchors.top: parent.top
+            anchors.topMargin: header.sectionGap
             width: parent.width
         }
     }
