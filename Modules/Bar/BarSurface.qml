@@ -24,7 +24,7 @@ Item {
         if (Settings.options.bar.currentShape !== "autoShape")
             return Settings.options.bar.currentShape;
         void Niri.lastEventVersion;
-        return AutoShape.resolve(Settings.options.bar.autoShape, Niri, outputName, locked, width);
+        return AutoShape.resolve(Settings.options.bar.shape.autoShape, Niri, outputName, locked, width);
     }
     readonly property var shapeOptions: Settings.options.bar.shape
     readonly property bool isHidden: shape === "hidden"

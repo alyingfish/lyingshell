@@ -1,0 +1,5 @@
+module qs.Material
+SliderHandle 1.0 SliderHandle.qml
+ConnectedButtonGroup 1.0 ConnectedButtonGroup.qml
+MotionAnimation 1.0 MotionAnimation.qml
+MotionColorAnimation 1.0 MotionColorAnimation.qml

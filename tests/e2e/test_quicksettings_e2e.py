@@ -236,8 +236,8 @@ def main() -> None:
         shell.ipc("toggleDarkStyle")
         wait_for(lambda: shell.state()["darkStyle"] is not dark0, 5, "dark style flip")
         wait_for(
-            lambda: json.loads(SETTINGS.read_text())["theme"]["mode"] == ("light" if dark0 else "dark"),
-            5, "settings.json theme.mode write",
+            lambda: json.loads(SETTINGS.read_text())["appearance"]["mode"] == ("light" if dark0 else "dark"),
+            5, "settings.json appearance.mode write",
         )
         wait_for(
             lambda: run(["gsettings", "get", "org.gnome.desktop.interface", "color-scheme"]).stdout.strip() != scheme0,

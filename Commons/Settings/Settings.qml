@@ -115,7 +115,16 @@ Singleton {
         adapter: JsonAdapter {
             id: settingsAdapter
 
-            property string language: "en"
+            property JsonObject appearance: JsonObject {
+                property string language: "en"
+                property string mode: "light"
+                property string accentColor: "#4F6357"
+                property string font: "Noto Sans"
+                // Derive the runtime accent from the wallpaper via matugen.
+                // The derived color stays in memory (Theme.wallpaperAccent);
+                // it never overwrites accentColor in this file.
+                property bool useWallpaperColor: false
+            }
             property JsonObject bar: JsonObject {
                 property real height: 32
                 property string currentShape: "floating"
@@ -149,52 +158,52 @@ Singleton {
                         property real opacity: 1.0
                         property real blur: 0.0
                     }
+                    // autoShape state→shape map; "" = fall through. See
+                    // Modules/Bar/AutoShape.js.
+                    property JsonObject autoShape: JsonObject {
+                        property string noWindowShape: "floating"
+                        property string hasWindowShape: "fullWidth"
+                        property string floatingWindowShape: "softAttach"
+                        property string maximizedColumnShape: "hug"
+                        property string overviewShape: "hidden"
+                        property string lockscreenShape: "hidden"
+                        property string unfocusedOutputShape: ""
+                    }
                 }
-                // autoShape state→shape map; "" = fall through. See Modules/Bar/AutoShape.js.
-                property JsonObject autoShape: JsonObject {
-                    property string noWindowShape: "floating"
-                    property string hasWindowShape: "fullWidth"
-                    property string floatingWindowShape: "softAttach"
-                    property string maximizedColumnShape: "hug"
-                    property string overviewShape: "hidden"
-                    property string lockscreenShape: "hidden"
-                    property string unfocusedOutputShape: ""
-                }
-                property JsonObject workspaces: JsonObject {
-                    property bool reverseScroll: false
-                    property bool scrollLoop: true
-                    property bool urgentPulse: true
-                }
-                property JsonObject quickSettings: JsonObject {
-                    // Bar pill battery percent text: always | never | whenLow.
-                    property string showBatteryValue: "whenLow"
-                }
-                property JsonObject tray: JsonObject {
-                    // Tray items whose id/title matches any regex stay in the
-                    // pinned zone; the rest go to the overflow popover.
-                    property var pinnedRegexes: ["syncthing"]
-                    // Item ids in display order for the overflow popover;
-                    // unlisted items follow in service order.
-                    property var overflowOrder: []
-                    // Recolor tray icons to the theme foreground (on_surface) so
-                    // dark/monochrome app icons stay legible on the dark bar.
-                    // Flattens colored logos to silhouettes; turn off to keep
-                    // original icon colors.
-                    property bool recolorIcons: true
+                property JsonObject widgets: JsonObject {
+                    property JsonObject quickSettingsButton: JsonObject {
+                        // Bar pill battery percent text: always | never | whenLow.
+                        property string showBatteryValue: "whenLow"
+                    }
+                    property JsonObject tray: JsonObject {
+                        // Tray items whose id/title matches any regex stay in the
+                        // pinned zone; the rest go to the overflow popover.
+                        property var pinnedRegexes: ["syncthing"]
+                        // Item ids in display order for the overflow popover;
+                        // unlisted items follow in service order.
+                        property var overflowOrder: []
+                        // Recolor tray icons to the theme foreground (on_surface) so
+                        // dark/monochrome app icons stay legible on the dark bar.
+                        // Flattens colored logos to silhouettes; turn off to keep
+                        // original icon colors.
+                        property bool recolorIcons: true
+                    }
+                    property JsonObject workspaces: JsonObject {
+                        property bool reverseScroll: false
+                        property bool scrollLoop: true
+                        property bool urgentPulse: true
+                    }
                 }
             }
-            property JsonObject theme: JsonObject {
-                property string mode: "light"
-                property string accentColor: "#4F6357"
-                property string font: "Noto Sans"
-                // Re-derive accentColor from the wallpaper via matugen on each change.
-                property bool useWallpaperColor: false
-            }
-            property JsonObject nightLight: JsonObject {
-                // Manual quick-settings toggle; Services/NightLight.qml owns
-                // the wlsunset process bound to it.
-                property bool enabled: false
-                property int temperature: 4000
+            property JsonObject quickSettingsMenu: JsonObject {
+                property JsonObject widgets: JsonObject {
+                    property JsonObject nightLight: JsonObject {
+                        // Manual quick-settings toggle; Services/NightLight.qml
+                        // owns the wlsunset process bound to it.
+                        property bool enabled: false
+                        property int temperature: 4000
+                    }
+                }
             }
             property JsonObject wallpaper: JsonObject {
                 property bool enabled: true

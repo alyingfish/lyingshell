@@ -10,8 +10,8 @@ ROOT = Path(__file__).resolve().parents[1]
 APP = ROOT / "App" / "Shell.qml"
 BAR = ROOT / "Modules" / "Bar" / "Bar.qml"
 DATE_TIME = ROOT / "Modules" / "Bar" / "Widgets" / "DateTime.qml"
-WORKSPACES = ROOT / "Modules" / "Bar" / "Widgets" / "Workspaces.qml"
-WORKSPACE_DOT = ROOT / "Modules" / "Bar" / "Widgets" / "WorkspaceDot.qml"
+WORKSPACES = ROOT / "Modules" / "Bar" / "Widgets" / "Workspaces" / "Workspaces.qml"
+WORKSPACE_DOT = ROOT / "Modules" / "Bar" / "Widgets" / "Workspaces" / "WorkspaceDot.qml"
 NIRI_QML = ROOT / "Services" / "Niri" / "Niri.qml"
 NIRI_PROTOCOL = ROOT / "Services" / "Niri" / "NiriProtocol.js"
 NIRI_STATE = ROOT / "Services" / "Niri" / "NiriState.js"
@@ -105,9 +105,9 @@ def main() -> None:
     assert "readonly property int horizontalPadding: 8" in workspaces
     assert "readonly property int controlHeight: 28" in workspaces
     assert "readonly property int dotGap: 6" in workspaces
-    assert "Settings.options.bar.workspaces.reverseScroll" in workspaces
-    assert "Settings.options.bar.workspaces.scrollLoop" in workspaces
-    assert "Settings.options.bar.workspaces.urgentPulse" in workspaces
+    assert "Settings.options.bar.widgets.workspaces.reverseScroll" in workspaces
+    assert "Settings.options.bar.widgets.workspaces.scrollLoop" in workspaces
+    assert "Settings.options.bar.widgets.workspaces.urgentPulse" in workspaces
     assert "Workspaces {" in workspaces_pointer_test
     assert "tester.mouseWheel(workspaces" in workspaces_pointer_test
 

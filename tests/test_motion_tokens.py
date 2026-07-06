@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""M3 Expressive motion-token contract: Modules/Material/Motion.js carries
+"""M3 Expressive motion-token contract: Material/Motion.js carries
 the official androidx ExpressiveMotionTokens spring physics, and each
 duration/BezierSpline projection tracks the exact analytic step response."""
 
@@ -11,7 +11,7 @@ import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-MOTION_JS = ROOT / "Modules" / "Material" / "Motion.js"
+MOTION_JS = ROOT / "Material" / "Motion.js"
 
 # androidx compose material3 tokens/ExpressiveMotionTokens.kt
 OFFICIAL = {

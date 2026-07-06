@@ -1,0 +1,1 @@
+../../../../../../../Modules/QuickSettingsMenu/Widgets/ToolChip.qml

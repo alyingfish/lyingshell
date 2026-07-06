@@ -1,5 +1,5 @@
 import QtQml
-import "../../Modules/Bar/Widgets/TrayPinning.js" as TrayPinning
+import "../../Modules/Bar/Widgets/SystemTray/TrayPinning.js" as TrayPinning
 
 QtObject {
     id: root

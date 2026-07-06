@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Window
 import QtTest
-import "../../Modules/Bar/Widgets"
+import "../../Modules/Bar/Widgets/Workspaces"
 
 Window {
     id: root

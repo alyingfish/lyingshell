@@ -10,7 +10,8 @@ import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-QS_DIR = ROOT / "Modules" / "QuickSettings"
+QS_DIR = ROOT / "Modules" / "QuickSettingsMenu"
+QS_BUTTON = ROOT / "Modules" / "Bar" / "Widgets" / "QuickSettingsButton.qml"
 BAR_QML = ROOT / "Modules" / "Bar" / "Bar.qml"
 SETTINGS_QML = ROOT / "Commons" / "Settings" / "Settings.qml"
 LOCALES = ROOT / "Commons" / "I18n" / "locales"
@@ -26,20 +27,38 @@ SERVICES = [
 ]
 
 QS_FILES = [
-    QS_DIR / "QuickSettings.qml",
+    QS_BUTTON,
+    QS_DIR / "QuickSettingsMenu.qml",
     QS_DIR / "QuickSettingsPanel.qml",
-    QS_DIR / "QuickSettingsIcons.js",
+    QS_DIR / "Widgets" / "PanelHeader.qml",
+    QS_DIR / "Widgets" / "ToolsRow.qml",
+    QS_DIR / "Widgets" / "ToolChip.qml",
+    QS_DIR / "Widgets" / "PowerModeRow.qml",
+    QS_DIR / "Widgets" / "SessionMenu.qml",
+    QS_DIR / "Widgets" / "TilePager.qml",
+    QS_DIR / "Widgets" / "PageDots.qml",
+    QS_DIR / "Widgets" / "DetailView.qml",
+    QS_DIR / "Widgets" / "DetailRow.qml",
+    QS_DIR / "Widgets" / "DetailEmpty.qml",
+    QS_DIR / "Widgets" / "WifiDetailPage.qml",
+    QS_DIR / "Widgets" / "BluetoothDetailPage.qml",
+    QS_DIR / "Widgets" / "OutputDetailPage.qml",
+    QS_DIR / "Widgets" / "KbdDetailPage.qml",
     QS_DIR / "Widgets" / "QuickToggle.qml",
     QS_DIR / "Widgets" / "QuickMenuToggle.qml",
     QS_DIR / "Widgets" / "QuickSlider.qml",
-    ROOT / "Modules" / "Material" / "SliderHandle.qml",
+    ROOT / "Services" / "SystemStatus.qml",
+    ROOT / "Commons" / "Icons" / "StatusIcons.js",
+    ROOT / "Material" / "Wheel.js",
+    ROOT / "Material" / "SliderHandle.qml",
 ]
 
 NODE_SCRIPT = r"""
 const fs = require("fs");
 const vm = require("vm");
 
-const source = fs.readFileSync(process.argv[2], "utf8")
+const source = process.argv.slice(2).map(path => fs.readFileSync(path, "utf8"))
+    .join("\n")
     .split(/\r?\n/)
     .filter(line => !/^\s*\.(pragma|import)\b/.test(line))
     .join("\n");
@@ -139,8 +158,8 @@ def main() -> None:
     # --- Bar wiring --------------------------------------------------------
     bar = read(BAR_QML)
     assert 'I18n.t("app.name")' not in bar, "pill placeholder must be replaced"
-    assert "QuickSettings {" in bar, "Bar must instantiate QuickSettings"
-    assert "import qs.Modules.QuickSettings" in bar
+    assert "QuickSettingsButton {" in bar, "Bar must instantiate QuickSettingsButton"
+    assert "import qs.Modules.Bar.Widgets" in bar
     assert "systemTray.expanded || quickSettings.expanded" in bar, (
         "window expansion must cover the quick-settings panel"
     )
@@ -180,7 +199,7 @@ def main() -> None:
     assert "signal moved(" in slider
     # Compact handle wrapper with a percent value indicator, plus an icon
     # tooltip (the icon button is a toggle: mute).
-    assert "SliderHandle {" in slider, "QuickSlider uses the qs.Modules.Material handle"
+    assert "SliderHandle {" in slider, "QuickSlider uses the qs.Material handle"
     assert "quickSettings.percentValue" in slider, "value indicator must read as a percentage"
     assert "MD.ToolTip" in slider and "iconTooltipKey" in slider
     assert "dimmed" in slider, "muted sliders fade the track"
@@ -199,7 +218,7 @@ def main() -> None:
     )
     assert "WheelHandler {" not in slider, "WheelHandler is dead on the live compositor"
 
-    handle = read(ROOT / "Modules" / "Material" / "SliderHandle.qml")
+    handle = read(ROOT / "Material" / "SliderHandle.qml")
     assert "handlePressed || root.handleHasFocus || root._hoverRevealed" in handle, (
         "value indicator shows instantly on press/drag + keyboard focus"
     )
@@ -209,19 +228,22 @@ def main() -> None:
     assert "handleHeight" in handle
 
     # --- pill: Bar icon rule (16) -------------------------------------------
-    qs_root = read(QS_DIR / "QuickSettings.qml")
+    qs_root = read(QS_BUTTON)
+    assert "import qs.Modules.QuickSettingsMenu" in qs_root
+    assert "QuickSettingsMenu {" in qs_root
     pill_sizes = re.findall(r"^\s*size: (\d+)", qs_root, re.MULTILINE)
     assert pill_sizes and all(size == "16" for size in pill_sizes), (
         f"pill icons must all be size 16, got {pill_sizes}"
     )
     assert "readonly property bool expanded" in qs_root
-    # Battery percent text obeys bar.quickSettings.showBatteryValue.
+    # Battery percent text obeys bar.widgets.quickSettingsButton.showBatteryValue.
     assert "visible: root.showBatteryText" in qs_root
     assert 'showBatteryValue === "always"' in qs_root
     assert "batteryLow" in qs_root
 
     # --- panel covers the GNOME quick-settings functions --------------------
-    panel = read(QS_DIR / "QuickSettingsPanel.qml")
+    # The panel is split across the module; assert against the whole tree.
+    panel = "\n".join(read(path) for path in sorted(QS_DIR.rglob("*.qml")))
     for token in [
         "quickSettings.wifi",
         "quickSettings.wired",
@@ -328,7 +350,7 @@ def main() -> None:
     assert "PowerProfiles" in power_mode and "busctl" in power_mode
 
     # No product QML calls forbidden CLI tools.
-    for qml in list(QS_DIR.rglob("*.qml")) + [ROOT / "Services" / n for n in SERVICES]:
+    for qml in list(QS_DIR.rglob("*.qml")) + [QS_BUTTON] + [ROOT / "Services" / n for n in SERVICES + ["SystemStatus.qml"]]:
         text = read(qml)
         for banned in ["nmcli", "pactl", "bluetoothctl", '"upower"', "hyprctl", "swaymsg"]:
             assert banned not in text, f"{qml.name} uses forbidden {banned}"
@@ -352,14 +374,14 @@ def main() -> None:
     assert en_keys == zh_keys, f"locale key mismatch: {en_keys ^ zh_keys}"
 
     used = set()
-    for qml in list(QS_DIR.rglob("*.qml")) + [BAR_QML]:
+    for qml in list(QS_DIR.rglob("*.qml")) + [BAR_QML, QS_BUTTON]:
         used |= set(re.findall(r'I18n\.t\("([^"]+)"', read(qml)))
     missing = {token for token in used if token not in en_keys}
     assert not missing, f"tokens used but missing from locales: {missing}"
 
     # --- icon helper behavior ----------------------------------------------------
     result = subprocess.run(
-        ["node", "-", str(QS_DIR / "QuickSettingsIcons.js")],
+        ["node", "-", str(ROOT / "Commons" / "Icons" / "StatusIcons.js"), str(ROOT / "Material" / "Wheel.js")],
         input=NODE_SCRIPT,
         text=True,
         capture_output=True,

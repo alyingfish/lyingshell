@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Window
 import QtTest
 import Qcm.Material as MD
-import "../../Modules/QuickSettings/Widgets"
+import "../../Modules/QuickSettingsMenu/Widgets"
 
 // Pointer behavior of the quick-settings MD3 widgets under offscreen qml6.
 // qs.Commons.* singletons come from tests/qml/mocks. Assertions live in a

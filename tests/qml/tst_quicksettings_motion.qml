@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Window
 import QtTest
 import Qcm.Material as MD
-import "../../Modules/QuickSettings"
+import "../../Modules/QuickSettingsMenu"
 
 // Motion contract for the quick-settings panel under offscreen qml6 (mocked
 // services): the staggered entrance, expandable-row reveal spring, detail

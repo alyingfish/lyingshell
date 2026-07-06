@@ -6,3 +6,4 @@ singleton Airplane 1.0 Airplane.qml
 singleton DoNotDisturb 1.0 DoNotDisturb.qml
 singleton PowerMode 1.0 PowerMode.qml
 singleton Session 1.0 Session.qml
+singleton SystemStatus 1.0 SystemStatus.qml

@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Window
 import QtTest
-import "../../Modules/Material"
+import "../../Material"
 
 // Pointer + motion behavior of the plus-kit M3E connected button group
 // under offscreen qml6: radio semantics, selected-segment grow on the

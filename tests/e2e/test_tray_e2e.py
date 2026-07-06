@@ -173,7 +173,7 @@ def main() -> None:
         if SETTINGS.exists():
             shell.settings_backup = SETTINGS.read_bytes()
             data = json.loads(shell.settings_backup)
-            data.setdefault("bar", {})["tray"] = {"pinnedRegexes": ["syncthing"]}
+            data.setdefault("bar", {}).setdefault("widgets", {})["tray"] = {"pinnedRegexes": ["syncthing"]}
             SETTINGS.write_text(json.dumps(data))
 
         # Icons: solid colors we can find in screenshots.
@@ -274,7 +274,7 @@ def main() -> None:
         screenshot(artifacts, "popover-after-pin")
 
         def saved_regexes():
-            return json.loads(SETTINGS.read_text())["bar"]["tray"]["pinnedRegexes"]
+            return json.loads(SETTINGS.read_text())["bar"]["widgets"]["tray"]["pinnedRegexes"]
 
         # The adapter write-back is async; poll the file.
         wait_for(
@@ -311,7 +311,7 @@ def main() -> None:
         state = shell.state()
         assert state["overflow"][0] == last, f"reorder did not move {last} to head: {state}"
         wait_for(
-            lambda: json.loads(SETTINGS.read_text())["bar"]["tray"].get("overflowOrder", [])[:1] == [last],
+            lambda: json.loads(SETTINGS.read_text())["bar"]["widgets"]["tray"].get("overflowOrder", [])[:1] == [last],
             timeout=10, what="overflow order to persist",
         )
         print("OK drag reorder: popover order + settings.json persisted")
@@ -341,7 +341,7 @@ def main() -> None:
         qs_proc.wait(timeout=5)
         shell.procs.remove(qs_proc)
         data = json.loads(SETTINGS.read_text())
-        data["bar"]["tray"]["pinnedRegexes"] = []
+        data["bar"]["widgets"]["tray"]["pinnedRegexes"] = []
         SETTINGS.write_text(json.dumps(data))
         shell.spawn([str(ROOT / "scripts" / "run.sh")], artifacts / "quickshell-restart.log")
 

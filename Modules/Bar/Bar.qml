@@ -4,7 +4,8 @@ import Quickshell.Wayland
 import Qcm.Material as MD
 import qs.Commons.Settings
 import qs.Modules.Bar.Widgets
-import qs.Modules.QuickSettings
+import qs.Modules.Bar.Widgets.SystemTray
+import qs.Modules.Bar.Widgets.Workspaces
 import qs.Services.Niri
 
 PanelWindow {
@@ -121,7 +122,7 @@ PanelWindow {
                 barSurfaceRect: Qt.rect(barSurface.surfaceX, barSurface.surfaceY, barSurface.surfaceWidth, barSurface.surfaceHeight)
             }
 
-            QuickSettings {
+            QuickSettingsButton {
                 id: quickSettings
 
                 anchors.verticalCenter: parent.verticalCenter

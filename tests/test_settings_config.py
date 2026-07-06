@@ -44,14 +44,18 @@ def main() -> None:
     assert 'settingsPath: configDir + "/settings.json"' in settings_qml
     assert "settings.jsonc" not in settings_qml
     assert "JsonAdapter" in settings_qml
+    assert "property JsonObject appearance" in settings_qml
     assert "property JsonObject bar" in settings_qml
+    assert "property JsonObject quickSettingsMenu" in settings_qml
     assert "property JsonObject shape" in settings_qml
     assert "property JsonObject floating" in settings_qml
     assert "property JsonObject softAttach" in settings_qml
     assert "property JsonObject fullWidth" in settings_qml
     assert "property JsonObject hug" in settings_qml
-    # autoShape: state -> shape map; "" encodes null (no switch on that state).
-    assert "property JsonObject autoShape" in settings_qml
+    # autoShape: state -> shape map nested under bar.shape; "" encodes null
+    # (no switch on that state).
+    shape_body = handler_body(settings_qml, "property JsonObject shape")
+    assert "property JsonObject autoShape" in shape_body
     assert 'property string noWindowShape: "floating"' in settings_qml
     assert 'property string hasWindowShape: "fullWidth"' in settings_qml
     assert 'property string floatingWindowShape: "softAttach"' in settings_qml
@@ -59,8 +63,13 @@ def main() -> None:
     assert 'property string overviewShape: "hidden"' in settings_qml
     assert 'property string lockscreenShape: "hidden"' in settings_qml
     assert 'property string unfocusedOutputShape: ""' in settings_qml
-    assert "property JsonObject workspaces" in settings_qml
-    assert "property JsonObject theme" in settings_qml
+    # Per-widget settings nest under bar.widgets / quickSettingsMenu.widgets.
+    bar_widgets = handler_body(settings_qml, "property JsonObject widgets")
+    assert "property JsonObject quickSettingsButton" in bar_widgets
+    assert "property JsonObject tray" in bar_widgets
+    assert "property JsonObject workspaces" in bar_widgets
+    menu_body = handler_body(settings_qml, "property JsonObject quickSettingsMenu")
+    assert "property JsonObject nightLight" in menu_body
     assert "runtimeSettingsFile.writeAdapter()" in settings_qml
     assert "onAdapterUpdated" in settings_qml
     assert "function reloadRuntimeSettings()" in settings_qml
@@ -90,9 +99,12 @@ def main() -> None:
     assert "property bool reverseScroll: false" in settings_qml
     assert "property bool scrollLoop: true" in settings_qml
     assert "property bool urgentPulse: true" in settings_qml
-    assert 'property string mode: "light"' in settings_qml
-    assert 'property string accentColor: "#4F6357"' in settings_qml
-    assert 'property string font: "Noto Sans"' in settings_qml
+    appearance_body = handler_body(settings_qml, "property JsonObject appearance")
+    assert 'property string language: "en"' in appearance_body
+    assert 'property string mode: "light"' in appearance_body
+    assert 'property string accentColor: "#4F6357"' in appearance_body
+    assert 'property string font: "Noto Sans"' in appearance_body
+    assert "property bool useWallpaperColor: false" in appearance_body
 
     # Missing-file branch creates the file; corrupt/IO error branch must not
     # overwrite the bad file, only fall back to in-memory defaults.

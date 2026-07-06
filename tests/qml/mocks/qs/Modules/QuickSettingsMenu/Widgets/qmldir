@@ -1,0 +1,18 @@
+module qs.Modules.QuickSettingsMenu.Widgets
+QuickToggle 1.0 QuickToggle.qml
+QuickMenuToggle 1.0 QuickMenuToggle.qml
+QuickSlider 1.0 QuickSlider.qml
+ToolChip 1.0 ToolChip.qml
+ToolsRow 1.0 ToolsRow.qml
+SessionMenu 1.0 SessionMenu.qml
+PowerModeRow 1.0 PowerModeRow.qml
+PanelHeader 1.0 PanelHeader.qml
+TilePager 1.0 TilePager.qml
+PageDots 1.0 PageDots.qml
+DetailView 1.0 DetailView.qml
+DetailRow 1.0 DetailRow.qml
+DetailEmpty 1.0 DetailEmpty.qml
+WifiDetailPage 1.0 WifiDetailPage.qml
+BluetoothDetailPage 1.0 BluetoothDetailPage.qml
+OutputDetailPage 1.0 OutputDetailPage.qml
+KbdDetailPage 1.0 KbdDetailPage.qml

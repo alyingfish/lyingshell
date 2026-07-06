@@ -81,8 +81,9 @@ Repository layout:
 .
 +-- shell.qml              Quickshell entrypoint
 +-- App/                   Top-level shell composition
-+-- Commons/               I18n, settings, and theme services
-+-- Modules/               User-facing shell surfaces
++-- Commons/               I18n, settings, theme, and shared icon mappings
++-- Material/              Custom Material building blocks (wrappers, motion)
++-- Modules/               User-facing shell surfaces (Bar, QuickSettingsMenu, ...)
 +-- Services/              Runtime system and compositor services
 +-- scripts/               Public install and run scripts
 +-- tests/                 Product regression tests

@@ -8,9 +8,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SETTINGS_QML = ROOT / "Commons" / "Settings" / "Settings.qml"
-SYSTEM_TRAY = ROOT / "Modules" / "Bar" / "Widgets" / "SystemTray.qml"
-TRAY_BUTTON = ROOT / "Modules" / "Bar" / "Widgets" / "TrayItemButton.qml"
-TRAY_PINNING = ROOT / "Modules" / "Bar" / "Widgets" / "TrayPinning.js"
+SYSTEM_TRAY = ROOT / "Modules" / "Bar" / "Widgets" / "SystemTray" / "SystemTray.qml"
+TRAY_BUTTON = ROOT / "Modules" / "Bar" / "Widgets" / "SystemTray" / "TrayItemButton.qml"
+TRAY_PINNING = ROOT / "Modules" / "Bar" / "Widgets" / "SystemTray" / "TrayPinning.js"
 BAR_QML = ROOT / "Modules" / "Bar" / "Bar.qml"
 SHELL_QML = ROOT / "shell.qml"
 

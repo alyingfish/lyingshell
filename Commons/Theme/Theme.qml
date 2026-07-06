@@ -10,10 +10,15 @@ import qs.Services.Wallpaper
 Singleton {
     id: root
 
-    readonly property string textTypeface: Settings.options.theme.font
-    readonly property string requestedMode: Settings.options.theme.mode
-    readonly property string requestedAccentColor: Settings.options.theme.accentColor
+    readonly property string textTypeface: Settings.options.appearance.font
+    readonly property string requestedMode: Settings.options.appearance.mode
     readonly property string effectiveMode: requestedMode === "dark" ? "dark" : "light"
+
+    // Wallpaper-derived accent is runtime-only: appearance.useWallpaperColor
+    // selects which source drives the theme, and the matugen seed must never
+    // overwrite the user's accentColor in settings.json.
+    property string wallpaperAccent: ""
+    readonly property string requestedAccentColor: Settings.options.appearance.useWallpaperColor && wallpaperAccent.length > 0 ? wallpaperAccent : Settings.options.appearance.accentColor
 
     // Source screen for wallpaper-derived accent: first screen.
     // ponytail: single source screen; add a setting if multi-monitor ever needs
@@ -27,6 +32,8 @@ Singleton {
         apply();
         pushSystemMode();
         pushAccentColor();
+        // The derived accent is not persisted, so re-extract on every start.
+        maybeExtractFromWallpaper();
     }
 
     onEffectiveModeChanged: {
@@ -99,10 +106,11 @@ Singleton {
         }
     }
 
-    // When useWallpaperColor is on, extract the wallpaper's matugen primary into
-    // theme.accentColor (which drives apply()/pushAccentColor). mode stays manual.
+    // When useWallpaperColor is on, extract the wallpaper's matugen primary
+    // into the runtime wallpaperAccent (which drives apply()/pushAccentColor
+    // through requestedAccentColor). mode stays manual.
     Connections {
-        target: Settings.options.theme
+        target: Settings.options.appearance
         function onUseWallpaperColorChanged() {
             root.maybeExtractFromWallpaper();
         }
@@ -117,7 +125,7 @@ Singleton {
     }
 
     function maybeExtractFromWallpaper() {
-        if (!Settings.options.theme.useWallpaperColor) {
+        if (!Settings.options.appearance.useWallpaperColor) {
             return;
         }
         // Debounce: picker drags can fire many wallpaperChanged in a row.
@@ -153,7 +161,7 @@ Singleton {
             }
             var accent = root.parseAccent(stdout.text, root.effectiveMode);
             if (accent) {
-                Settings.options.theme.accentColor = accent;
+                root.wallpaperAccent = accent;
             }
         }
     }

@@ -1,4 +1,0 @@
-module qs.Modules.QuickSettings.Widgets
-QuickToggle 1.0 QuickToggle.qml
-QuickMenuToggle 1.0 QuickMenuToggle.qml
-QuickSlider 1.0 QuickSlider.qml
