@@ -8,7 +8,6 @@ Singleton {
     id: root
 
     property bool isLoaded: false
-    property bool directoriesReady: false
     property bool creatingRuntimeFile: false
     property bool loadingRuntimeFile: false
     property string errorMessage: ""
@@ -43,7 +42,8 @@ Singleton {
                 return;
             }
 
-            root.directoriesReady = true;
+            // Dir exists now; write out the default settings file.
+            root.createRuntimeSettingsFile();
         }
     }
 
@@ -66,7 +66,10 @@ Singleton {
 
     FileView {
         id: runtimeSettingsFile
-        path: root.directoriesReady ? root.settingsPath : ""
+        // Load settings.json directly. The config dir already exists on every
+        // run after the first, so the happy path skips the mkdir Process;
+        // it's only spawned lazily on the first-run FileNotFound branch below.
+        path: root.homeDir.length > 0 ? root.settingsPath : ""
         printErrors: false
         watchChanges: true
 
@@ -88,7 +91,9 @@ Singleton {
         onLoadFailed: function(error) {
             root.loadingRuntimeFile = false;
             if (error === FileViewError.FileNotFound) {
-                root.createRuntimeSettingsFile();
+                // First run (or dir missing): ensure the dir, then write
+                // defaults from createConfigDir.onExited.
+                createConfigDir.running = true;
                 return;
             }
 
@@ -228,11 +233,12 @@ Singleton {
     }
 
     function initialize() {
+        // settings.json loads via runtimeSettingsFile.path; the config dir is
+        // created lazily on the first-run FileNotFound branch. Nothing to do
+        // here but flag a missing HOME (which leaves the load path empty).
         if (homeDir.length === 0) {
             errorMessage = "HOME is not set";
-            return;
         }
-        createConfigDir.running = true;
     }
 
     function reloadRuntimeSettings() {

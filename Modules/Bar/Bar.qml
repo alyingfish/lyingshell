@@ -26,8 +26,20 @@ PanelWindow {
     // never animated — so the tray popover, tooltip, and drag visuals stay in
     // this window's scene. The collapsed reserve keeps room for tray tooltips.
     // Quick-settings panel expansion reuses the same full-height jump.
-    readonly property bool overlayExpanded: systemTray.expanded || quickSettings.expanded
-    implicitHeight: overlayExpanded && root.screen ? root.screen.height : barSurface.config.margin + barSurface.barHeight + Math.max(barSurface.shadowBuffer, barSurface.reversedTarget + 4, systemTray.collapsedReserve)
+    // The tray + quick-settings widgets (the whole ~4k-line quick-settings tree)
+    // cost ~90ms to construct; defer them one tick past the bar's first paint so
+    // workspaces + clock show immediately (measured first paint ~0.24s vs ~0.32s
+    // eager). Loaders are null until deferredReady flips, so every reference
+    // below is guarded.
+    property bool deferredReady: false
+    Timer {
+        interval: 0
+        running: true
+        onTriggered: root.deferredReady = true
+    }
+
+    readonly property bool overlayExpanded: (systemTrayLoader.item ? systemTrayLoader.item.expanded : false) || (quickSettingsLoader.item ? quickSettingsLoader.item.expanded : false)
+    implicitHeight: overlayExpanded && root.screen ? root.screen.height : barSurface.config.margin + barSurface.barHeight + Math.max(barSurface.shadowBuffer, barSurface.reversedTarget + 4, systemTrayLoader.item ? systemTrayLoader.item.collapsedReserve : 0)
     // Reserve from the settled target, not animMargin: an animated zone repushes
     // every frame and re-tiles windows on every morph frame.
     exclusiveZone: barSurface.isHidden ? 0 : Math.round(barSurface.config.margin + barSurface.barHeight)
@@ -114,20 +126,26 @@ PanelWindow {
             spacing: content.rowSpacing
             visible: content.rightContentVisible
 
-            SystemTray {
-                id: systemTray
+            Loader {
+                id: systemTrayLoader
 
+                active: root.deferredReady
                 anchors.verticalCenter: parent.verticalCenter
-                barHidden: barSurface.isHidden
-                barSurfaceRect: Qt.rect(barSurface.surfaceX, barSurface.surfaceY, barSurface.surfaceWidth, barSurface.surfaceHeight)
+                sourceComponent: SystemTray {
+                    barHidden: barSurface.isHidden
+                    barSurfaceRect: Qt.rect(barSurface.surfaceX, barSurface.surfaceY, barSurface.surfaceWidth, barSurface.surfaceHeight)
+                }
             }
 
-            QuickSettingsButton {
-                id: quickSettings
+            Loader {
+                id: quickSettingsLoader
 
+                active: root.deferredReady
                 anchors.verticalCenter: parent.verticalCenter
-                barHidden: barSurface.isHidden
-                barSurfaceRect: Qt.rect(barSurface.surfaceX, barSurface.surfaceY, barSurface.surfaceWidth, barSurface.surfaceHeight)
+                sourceComponent: QuickSettingsButton {
+                    barHidden: barSurface.isHidden
+                    barSurfaceRect: Qt.rect(barSurface.surfaceX, barSurface.surfaceY, barSurface.surfaceWidth, barSurface.surfaceHeight)
+                }
             }
         }
 
