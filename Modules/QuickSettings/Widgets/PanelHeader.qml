@@ -22,8 +22,13 @@ Item {
     // Instant collapse (no spring) when a detail page must measure the
     // compact panel, mirroring the prototype's collapseRowsInstant().
     property bool revealAnimated: true
+    // Driven by the panel so the power button suppresses its tooltip while
+    // the session card is up.
+    property bool powerMenuOpen: false
 
     signal closeRequested
+    // Power button pressed; the panel owns the session-menu card.
+    signal powerRequested
 
     function collapseRowsInstant() {
         revealAnimated = false;
@@ -264,6 +269,8 @@ Item {
                     MD.Icon {
                         anchors.centerIn: parent
                         name: settingsButton.icon.name
+                        // Prototype #i-settings is the filled gear.
+                        fill: true
                         size: settingsButton.icon.width
                         color: settingsButton.mdState.textColor
                         rotation: settingsButton.hovered ? 55 : 0
@@ -294,8 +301,11 @@ Item {
                 mdState.type: MD.Enum.IBtFilledTonal
                 mdState.size: MD.Enum.XS
                 icon.name: "power_settings_new"
-                icon.width: 18
-                icon.height: 18
+                // Prototype .ib-err glyph reads smaller than the tonal chips'
+                // 18px; the filled power_settings_new symbol is optically
+                // heavier, so 16 matches the prototype's breathing room.
+                icon.width: 16
+                icon.height: 16
                 // flat drops the ElevationRectangle shadow in every state
                 // (IconButton has no `elevation` prop; mdState.elevation
                 // defaults to level1 and the bg only hides it when flat).
@@ -308,22 +318,14 @@ Item {
                     MotionAnimation {}
                 }
 
-                onClicked: sessionMenu.open()
+                // The session menu is a panel-level card (see
+                // QuickSettingsPanel); the button just toggles it.
+                onClicked: header.powerRequested()
 
                 MD.ToolTip {
                     y: parent.height + 4
                     text: I18n.t("quickSettings.power")
-                    visible: powerButton.hovered && !sessionMenu.visible
-                }
-
-                SessionMenu {
-                    id: sessionMenu
-
-                    // 8px visual offset below the inset button (prototype
-                    // power-menu y-offset).
-                    y: powerButton.height + 4
-
-                    onPanelCloseRequested: header.closeRequested()
+                    visible: powerButton.hovered && !header.powerMenuOpen
                 }
             }
         }

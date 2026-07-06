@@ -36,6 +36,10 @@ Item {
     property alias toolsReveal: header.toolsReveal
     property alias pmodeReveal: header.pmodeReveal
 
+    // Session-menu card (prototype #pmenu) floats over the panel at top-right;
+    // owned here so it stacks above the tiles and stays clipped to the card.
+    property bool sessionMenuOpen: false
+
     // Layout metrics (web prototype: 344px panel, 12px padding, 10px section
     // gap, 6px tile gap).
     readonly property real pad: 12
@@ -53,6 +57,7 @@ Item {
             shownDetail = "";
             header.toolsOpen = false;
             header.pmodeOpen = false;
+            sessionMenuOpen = false;
             pager.setPage(0);
         }
     }
@@ -65,6 +70,7 @@ Item {
             // Lock the compact height before the detail view replaces the
             // main view 1:1 (prototype collapseRowsInstant + height lock).
             header.collapseRowsInstant();
+            sessionMenuOpen = false;
             shownDetail = detail;
             detailUnload.stop();
         } else {
@@ -152,7 +158,10 @@ Item {
                     id: headerRise
                 }
 
+                powerMenuOpen: root.sessionMenuOpen
+
                 onCloseRequested: root.closeRequested()
+                onPowerRequested: root.sessionMenuOpen = !root.sessionMenuOpen
             }
 
             // --- sliders ----------------------------------------------------
@@ -177,7 +186,7 @@ Item {
                     iconTooltipKey: Audio.muted ? "quickSettings.unmute" : "quickSettings.mute"
                     value: Audio.volume
                     dimmed: Audio.muted
-                    hasDetail: Audio.sinkDevices.length > 1
+                    hasDetail: Audio.hasSink
                     visible: Audio.hasSink
 
                     onMoved: newValue => Audio.setVolume(newValue)
@@ -320,5 +329,31 @@ Item {
         shownDetail: root.shownDetail
 
         onBackRequested: root.detail = ""
+    }
+
+    // ======================================================================
+    // Session menu (prototype #pmenu): a card over the panel + a catcher that
+    // dismisses it on any press elsewhere in the panel.
+    // ======================================================================
+    MouseArea {
+        anchors.fill: parent
+        z: 5
+        visible: root.sessionMenuOpen
+        acceptedButtons: Qt.AllButtons
+
+        onPressed: root.sessionMenuOpen = false
+    }
+
+    SessionMenu {
+        id: sessionMenu
+
+        z: 6
+        open: root.sessionMenuOpen
+        // Prototype #pmenu: right edge flush with the content's right edge,
+        // 6px below the 32px header row.
+        x: root.pad + root.contentWidth - width
+        y: root.pad + 32 + 6
+
+        onPanelCloseRequested: root.closeRequested()
     }
 }

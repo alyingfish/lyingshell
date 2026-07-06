@@ -61,7 +61,11 @@ Window {
     property int shotIndex: 0
     readonly property var shots: [
         ["main-light", () => panel.open = true],
-        ["tools-open", () => panel.toolsOpen = true],
+        ["session-menu", () => panel.sessionMenuOpen = true],
+        ["tools-open", () => {
+                panel.sessionMenuOpen = false;
+                panel.toolsOpen = true;
+            }],
         ["pmode-open", () => {
                 panel.toolsOpen = false;
                 panel.pmodeOpen = true;
