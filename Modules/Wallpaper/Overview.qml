@@ -66,17 +66,25 @@ Loader {
                 mipmap: false
                 cache: true // Shares texture with Background's currentWallpaper
                 asynchronous: true
+                // Same clamp as Background's Images; a mismatch would fork the
+                // shared pixmap cache entry into two full decodes.
+                sourceSize: Qt.size(Math.ceil(modelData.width * modelData.devicePixelRatio), Math.ceil(modelData.height * modelData.devicePixelRatio))
             }
 
             // Standalone MultiEffect; item-layer.effect renders empty on this surface.
-            MultiEffect {
+            // Loader keeps the effect (and its offscreen buffers) out of the scene
+            // entirely while blur is disabled.
+            Loader {
                 anchors.fill: parent
-                source: bgImage
-                visible: panelWindow.blurOn
-                autoPaddingEnabled: false
-                blurEnabled: true
-                blur: 1.0
-                blurMax: Math.round(Settings.options.wallpaper.overviewBlur)
+                active: panelWindow.blurOn
+
+                sourceComponent: MultiEffect {
+                    source: bgImage
+                    autoPaddingEnabled: false
+                    blurEnabled: true
+                    blur: 1.0
+                    blurMax: Math.round(Settings.options.wallpaper.overviewBlur)
+                }
             }
 
             Rectangle {

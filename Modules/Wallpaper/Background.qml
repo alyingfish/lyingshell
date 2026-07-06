@@ -101,6 +101,10 @@ Variants {
                 visible: false
                 cache: true // Cached so Overview can share the same texture
                 asynchronous: true
+                // Clamp decode to the output's physical size: an oversized photo
+                // otherwise costs width*height*4 per Image. Must match Overview's
+                // sourceSize or the pixmap cache stops sharing the entry.
+                sourceSize: Qt.size(Math.ceil(modelData.width * modelData.devicePixelRatio), Math.ceil(modelData.height * modelData.devicePixelRatio))
                 onStatusChanged: {
                     if (status === Image.Error) {
                         console.warn("[Background] current wallpaper failed:", source);
@@ -119,6 +123,7 @@ Variants {
                 visible: false
                 cache: false
                 asynchronous: true
+                sourceSize: Qt.size(Math.ceil(modelData.width * modelData.devicePixelRatio), Math.ceil(modelData.height * modelData.devicePixelRatio))
                 onStatusChanged: {
                     if (status === Image.Error) {
                         console.warn("[Background] next wallpaper failed:", source);
