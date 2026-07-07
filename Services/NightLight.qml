@@ -13,12 +13,12 @@ import qs.Commons.Settings
 Singleton {
     id: root
 
-    readonly property bool enabled: Settings.isLoaded && Settings.options.quickSettingsMenu.widgets.nightLight.enabled
-    readonly property int temperature: Settings.options.quickSettingsMenu.widgets.nightLight.temperature
+    readonly property bool enabled: Settings.isLoaded && Settings.options.quickSettings.widgets.nightLight.enabled
+    readonly property int temperature: Settings.options.quickSettings.widgets.nightLight.temperature
     readonly property bool active: runner.running
 
     function toggle() {
-        Settings.options.quickSettingsMenu.widgets.nightLight.enabled = !Settings.options.quickSettingsMenu.widgets.nightLight.enabled;
+        Settings.options.quickSettings.widgets.nightLight.enabled = !Settings.options.quickSettings.widgets.nightLight.enabled;
     }
 
     onEnabledChanged: _sync()

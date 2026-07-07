@@ -1,6 +1,7 @@
 import QtQuick
 import Qcm.Material as MD
 import qs.Commons.I18n
+import qs.Commons.Settings
 import qs.Material
 import "../../../Material/Wheel.js" as Wheel
 
@@ -280,7 +281,14 @@ Item {
         // Wheel is dead while muted, matching the disabled slider.
         enabled: !control.dimmed
         onWheel: function(wheel) {
-            const result = Wheel.wheelNotches(acc, wheel.angleDelta.y, wheel.pixelDelta.y);
+            // Touchpad left-right roll moves the slider too: take whichever axis
+            // dominates. Base orientation is scroll-up / roll-right = increase;
+            // Settings.quickSettings.sliders.reverseScroll (default true) flips
+            // both axes to scroll-down / roll-right = increase.
+            const dir = Settings.options.quickSettings.sliders.reverseScroll ? -1 : 1;
+            const angle = dir * (Math.abs(wheel.angleDelta.x) > Math.abs(wheel.angleDelta.y) ? -wheel.angleDelta.x : wheel.angleDelta.y);
+            const pixel = dir * (Math.abs(wheel.pixelDelta.x) > Math.abs(wheel.pixelDelta.y) ? -wheel.pixelDelta.x : wheel.pixelDelta.y);
+            const result = Wheel.wheelNotches(acc, angle, pixel);
             acc = result.acc;
             if (result.steps !== 0) {
                 // Wheel has no press/focus, so reveal the value indicator for a

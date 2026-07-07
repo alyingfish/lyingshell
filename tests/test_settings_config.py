@@ -46,7 +46,7 @@ def main() -> None:
     assert "JsonAdapter" in settings_qml
     assert "property JsonObject appearance" in settings_qml
     assert "property JsonObject bar" in settings_qml
-    assert "property JsonObject quickSettingsMenu" in settings_qml
+    assert "property JsonObject quickSettings" in settings_qml
     assert "property JsonObject shape" in settings_qml
     assert "property JsonObject floating" in settings_qml
     assert "property JsonObject softAttach" in settings_qml
@@ -63,12 +63,12 @@ def main() -> None:
     assert 'property string overviewShape: "hidden"' in settings_qml
     assert 'property string lockscreenShape: "hidden"' in settings_qml
     assert 'property string unfocusedOutputShape: ""' in settings_qml
-    # Per-widget settings nest under bar.widgets / quickSettingsMenu.widgets.
+    # Per-widget settings nest under bar.widgets / quickSettings.widgets.
     bar_widgets = handler_body(settings_qml, "property JsonObject widgets")
     assert "property JsonObject quickSettingsButton" in bar_widgets
     assert "property JsonObject tray" in bar_widgets
     assert "property JsonObject workspaces" in bar_widgets
-    menu_body = handler_body(settings_qml, "property JsonObject quickSettingsMenu")
+    menu_body = handler_body(settings_qml, "property JsonObject quickSettings")
     assert "property JsonObject nightLight" in menu_body
     assert "runtimeSettingsFile.writeAdapter()" in settings_qml
     assert "onAdapterUpdated" in settings_qml

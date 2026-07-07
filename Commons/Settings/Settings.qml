@@ -199,7 +199,12 @@ Singleton {
                     }
                 }
             }
-            property JsonObject quickSettingsMenu: JsonObject {
+            property JsonObject quickSettings: JsonObject {
+                property JsonObject sliders: JsonObject {
+                    // Volume/brightness scroll direction. true (default, current
+                    // behavior) = scroll-down / roll-right increases.
+                    property bool reverseScroll: true
+                }
                 property JsonObject widgets: JsonObject {
                     property JsonObject nightLight: JsonObject {
                         // Manual quick-settings toggle; Services/NightLight.qml
