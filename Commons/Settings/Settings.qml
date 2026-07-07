@@ -130,9 +130,11 @@ Singleton {
                 property bool useWallpaperColor: false
             }
             property JsonObject bar: JsonObject {
-                property real height: 32
                 property string currentShape: "floating"
                 // Per-shape fields; `radius` applied per shape by BarSurface.
+                // height + exclusiveZone are per-shape: the bar reserves exactly
+                // exclusiveZone from the top edge. Keep exclusiveZone equal across
+                // shapes so shape/hide switches never re-tile the output.
                 property JsonObject shape: JsonObject {
                     property JsonObject floating: JsonObject {
                         property int margin: 8
@@ -140,6 +142,8 @@ Singleton {
                         property real elevation: 3
                         property real opacity: 0.92
                         property real blur: 8.0
+                        property int height: 32
+                        property int exclusiveZone: 32
                     }
                     property JsonObject softAttach: JsonObject {
                         property int margin: 0
@@ -147,6 +151,8 @@ Singleton {
                         property real elevation: 3
                         property real opacity: 0.92
                         property real blur: 8.0
+                        property int height: 32
+                        property int exclusiveZone: 32
                     }
                     property JsonObject fullWidth: JsonObject {
                         property int margin: 0
@@ -154,6 +160,8 @@ Singleton {
                         property real elevation: 0
                         property real opacity: 1.0
                         property real blur: 0.0
+                        property int height: 32
+                        property int exclusiveZone: 32
                     }
                     property JsonObject hug: JsonObject {
                         property int margin: 0
@@ -161,6 +169,14 @@ Singleton {
                         property real elevation: 0
                         property real opacity: 1.0
                         property real blur: 0.0
+                        property int height: 32
+                        property int exclusiveZone: 32
+                    }
+                    // Hidden keeps no visual config (it borrows the last visible
+                    // shape's look while sliding away); only its reserve is its
+                    // own setting, so hiding never changes the reserved strip.
+                    property JsonObject hidden: JsonObject {
+                        property int exclusiveZone: 32
                     }
                     // autoShape state→shape map; "" = fall through. See
                     // Modules/Bar/AutoShape.js.

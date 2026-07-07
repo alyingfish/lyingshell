@@ -10,8 +10,6 @@ import "AutoShape.js" as AutoShape
 Item {
     id: root
 
-    property real barHeight: 32
-
     // Output for per-output autoShape resolution.
     property string outputName: ""
     // ponytail: inert until a lock signal exists (no lock module / niri IPC
@@ -37,13 +35,17 @@ Item {
     readonly property string activeShape: isHidden ? lastVisibleShape : shape
     readonly property var config: shapeOptions[activeShape] || shapeOptions.fullWidth
 
-    // Reserve margin excludes floating: floating shows only on empty workspaces
-    // (AutoShape.noWindowShape), so its detached margin has no tiled window to
-    // push. Counting it would step the exclusive zone on every floating↔docked
-    // switch and re-tile the whole output. Docked shapes reserve their own
-    // margin (0 by default). The window still SIZES off config.margin so the
-    // floating surface draws fully — this only trims what gets reserved.
-    readonly property real reserveMargin: activeShape === "floating" ? 0 : config.margin
+    // Per-shape bar height. Not animated: default config keeps every shape at the
+    // same height, so switching shapes never steps it. Add a Behavior here if a
+    // config ever varies height between shapes.
+    readonly property real barHeight: config.height
+
+    // Reserved strip, straight from settings. While hidden `config` still tracks
+    // lastVisibleShape (for the slide-away look), so the reserve reads the
+    // dedicated `hidden` entry instead — its own setting, independent of which
+    // shape was last visible. Equal defaults (32) mean hide/shape switches never
+    // change the reserve, so niri never re-tiles.
+    readonly property int exclusiveZone: isHidden ? shapeOptions.hidden.exclusiveZone : config.exclusiveZone
 
     readonly property real reversedTarget: activeShape === "hug" ? config.radius : 0
 

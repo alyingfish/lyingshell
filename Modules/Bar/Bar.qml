@@ -2,7 +2,6 @@ import QtQuick
 import Quickshell
 import Quickshell.Wayland
 import Qcm.Material as MD
-import qs.Commons.Settings
 import qs.Modules.Bar.Widgets
 import qs.Modules.Bar.Widgets.SystemTray
 import qs.Modules.Bar.Widgets.Workspaces
@@ -40,15 +39,12 @@ PanelWindow {
 
     readonly property bool overlayExpanded: (systemTrayLoader.item ? systemTrayLoader.item.expanded : false) || (quickSettingsLoader.item ? quickSettingsLoader.item.expanded : false)
     implicitHeight: overlayExpanded && root.screen ? root.screen.height : barSurface.config.margin + barSurface.barHeight + Math.max(barSurface.shadowBuffer, barSurface.reversedTarget + 4, systemTrayLoader.item ? systemTrayLoader.item.collapsedReserve : 0)
-    // Keep the reserve constant even while hidden. Dropping it to 0 on hide
-    // (e.g. overview) makes niri re-tile every window in one step, and that
-    // reflow fights the overview zoom → the stutter. The bar slides away
-    // visually via barSurface.revealOffset; the reserved strip stays put so
-    // tiles never move. reserveMargin (not config.margin) excludes floating's
-    // detached margin so empty↔populated workspace switches don't re-tile
-    // either. Reserve from the settled target, not animMargin: an animated zone
-    // repushes every frame and re-tiles on every morph frame.
-    exclusiveZone: Math.round(barSurface.reserveMargin + barSurface.barHeight)
+    // Reserve straight from settings (barSurface resolves hidden → its own
+    // `hidden.exclusiveZone`, else the active shape's). Equal defaults (32) mean
+    // neither hiding the bar (overview) nor switching shapes on an empty↔populated
+    // workspace changes the reserve, so niri never re-tiles — no reflow stutter.
+    // The bar disappears visually via revealOffset.
+    exclusiveZone: barSurface.exclusiveZone
 
     // Restrict input to the visible surface; margins/shadow/hidden stay
     // click-through. While the tray popover/drag is active the whole window
@@ -79,7 +75,6 @@ PanelWindow {
         id: barSurface
 
         anchors.fill: parent
-        barHeight: Settings.options.bar.height
         outputName: root.screen ? root.screen.name : ""
     }
 
