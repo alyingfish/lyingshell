@@ -67,7 +67,9 @@ MD.Button {
         }
 
         PauseAnimation {
-            duration: detailRow.order * 35
+            // order goes to -1 while a delegate tears down; clamp so the
+            // stagger never asks for a negative duration.
+            duration: Math.max(0, detailRow.order * 35)
         }
 
         ParallelAnimation {

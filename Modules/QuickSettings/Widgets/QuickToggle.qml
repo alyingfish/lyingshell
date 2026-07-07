@@ -112,7 +112,9 @@ MD.Button {
                 name: control.icon.name
                 size: control.icon.width
                 color: control.mdState.textColor
-                fill: control.checked || (control.fillOnHover && control.hovered)
+                // fillOnHover tiles (dark): on-glyph is outline at rest, fills
+                // on hover like the off-glyph. Others: solid whenever selected.
+                fill: control.fillOnHover ? control.hovered : control.checked
                 // Prototype ico-on/ico-off cross-fade (effects easing).
                 opacity: control.offIconName.length === 0 || control.checked ? 1 : 0
 
