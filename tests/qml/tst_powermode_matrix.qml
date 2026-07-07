@@ -103,6 +103,20 @@ Window {
             wait(10);
             compare(row.label, "< 1m until full", "2d: sub-minute charge reads '< 1m until full'");
 
+            // 2e: UPower reports FullyCharged at 99% (charge threshold /
+            // rounding) -> the percent, never "Fully charged" beside a 99% pill.
+            apply(true, false, true);
+            UPower.state = 4; // FullyCharged
+            UPower.percentage = 0.99;
+            UPower.timeToFull = 0;
+            wait(10);
+            compare(row.label, "99%", "2e: FullyCharged at 99% reads the percent, not 'Fully charged'");
+
+            // 2f: genuinely at 100% -> "Fully charged".
+            UPower.percentage = 1.0;
+            wait(10);
+            compare(row.label, "Fully charged", "2f: 100% reads 'Fully charged'");
+
             // 3: no battery (PC) + daemon -> AC readout, full profile selector.
             apply(false, true, true);
             verify(header.pillVisibleProbe, "3: pill shows for the daemon");
