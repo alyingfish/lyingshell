@@ -133,8 +133,10 @@ Singleton {
                 property string currentShape: "floating"
                 // Per-shape fields; `radius` applied per shape by BarSurface.
                 // height + exclusiveZone are per-shape: the bar reserves exactly
-                // exclusiveZone from the top edge. Keep exclusiveZone equal across
-                // shapes so shape/hide switches never re-tile the output.
+                // exclusiveZone from the top edge.
+                // NOTE: all shapes default to the same exclusiveZone to avoid
+                // stuttering during window resizing — an unequal value re-tiles
+                // the output on that shape/hide switch.
                 property JsonObject shape: JsonObject {
                     property JsonObject floating: JsonObject {
                         property int margin: 8
