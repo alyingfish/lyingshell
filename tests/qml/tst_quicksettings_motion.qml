@@ -73,20 +73,36 @@ Window {
         }
 
         function test_page_spring() {
-            // SwipeView scrolls its content flickable: contentX runs 0 -> page*width.
+            // The page track slides x 0 -> -page*width on the prototype's exact
+            // --spring-soft curve (cubic-bezier(.38,1.21,.22,1) @ .5s): it
+            // front-loads the travel (~92% of the way by ~160ms) and overshoots
+            // ~1.4% near 280ms before settling by ~500ms. The front-loaded rise
+            // is what pins the prototype curve -- an MD3 spring token would only
+            // be ~75% along at 160ms (and never traces the same shape).
             const track = panel.tileTrackProbe;
             const w = panel.tileArea.width;
             compare(panel.page, 0, "starts on page 1");
             panel.setPage(1);
-            wait(50);
-            verify(track.contentX > 5, "content scrolls toward page 2, got " + track.contentX);
-            wait(600);
+            wait(40);
+            verify(track.x < -5, "track slides toward page 2, got " + track.x);
+            // ~160ms in, the prototype curve is ~92% travelled; require >=85% so
+            // the slow/late MD3 springs (only ~75% here) can't pass.
+            wait(130);
+            verify(track.x < -0.85 * w, "front-loaded rise: >=85% travelled by ~170ms, got " + (-track.x / w * 100).toFixed(1) + "%");
+            // Then it overshoots past -w (peak ~1.4% near 280ms) before settling.
+            let overshoot = 0;
+            for (let i = 0; i < 12; ++i) {
+                overshoot = Math.min(overshoot, track.x + w);
+                wait(20);
+            }
+            verify(overshoot < -1, "track rebounds past page 2 (peak " + overshoot.toFixed(1) + "px past -w)");
+            wait(300);
             compare(panel.page, 1, "settled on page 2");
-            verify(Math.abs(track.contentX - w) < 2, "content rests on page 2, got " + track.contentX + " vs " + w);
+            verify(Math.abs(track.x + w) < 2, "track rests on page 2, got " + track.x + " vs " + w);
             panel.setPage(0);
             wait(600);
             compare(panel.page, 0, "returns to page 1");
-            verify(Math.abs(track.contentX) < 2, "content returns to page 1, got " + track.contentX);
+            verify(Math.abs(track.x) < 2, "track returns to page 1, got " + track.x);
             console.log("PASS: quick settings motion contract");
         }
     }

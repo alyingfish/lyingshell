@@ -1,11 +1,9 @@
 import QtQuick
-import QtQuick.Controls as QC
 import Quickshell.Networking
 import qs.Commons.I18n
 import qs.Commons.Settings
 import qs.Material
 import qs.Services
-import "../../../Material/Motion.js" as Motion
 import "../../../Material/Wheel.js" as Wheel
 import "../../../Commons/Icons/StatusIcons.js" as StatusIcons
 
@@ -13,15 +11,38 @@ import "../../../Commons/Icons/StatusIcons.js" as StatusIcons
 // 3 rows per page, tiles packed in shown order. Connectivity cluster first
 // (wifi | bluetooth, wired | airplane), then appearance and page-2 extras.
 //
-// Built on a SwipeView: the tile set is availability-filtered into
-// `shownComps` and chunked 6-per-page; each page's slots are Loaders pulling
-// from that list, so pages reflow as devices appear/disappear. Pages flip by
-// drag (SwipeView native), wheel/touchpad, or the dots below (PageDots).
+// The tile set is availability-filtered into `shownComps` and chunked
+// 6-per-page; each page's slots are Loaders pulling from that list, so pages
+// reflow as devices appear/disappear. All pages sit side by side on a single
+// track (prototype .tiles-track) translated by one panel width per page.
+//
+// The flip is a full-width slide on the prototype's exact page-turn curve:
+// `.tiles-track { transition: transform .5s var(--spring-soft) }`, i.e.
+// cubic-bezier(.38, 1.21, .22, 1) over 500ms (see `springSoft`). This is NOT
+// an MD3 spring token: those overshoot late (~82% of the timeline), while the
+// prototype front-loads the travel (~92% done by 160ms) and peaks its ~1.4%
+// overshoot near 56%, so spatialDefault/Slow drift 20-60px off the prototype
+// mid-slide (measured; the slow token was the worse of the two). It stays a
+// pure spatial slide -- opacity is left alone, as the prototype cross-fades
+// nothing here. A strict-range SwipeView snaps contentX and fixup-fights any
+// overshoot, so it could never trace this. Pages flip by wheel or the dots.
+//
+// ponytail: dropped the SwipeView finger-drag swipe. Both target machines are
+// pointer-driven (mouse + touchpad), so the real page inputs are the wheel and
+// the dots; add a DragHandler + drag-gated Behavior if a touchscreen lands.
 Item {
     id: pager
 
     property real tileGap: 6
     readonly property real cellWidth: (width - tileGap) / 2
+
+    // Prototype --spring-soft as a MotionAnimation spring (duration + Bezier
+    // control points): the literal cubic-bezier(.38,1.21,.22,1) at .5s. One
+    // cubic segment ending at (1,1); the 1.21 control-y is the overshoot.
+    readonly property var springSoft: ({
+            "duration": 500,
+            "curve": [0.38, 1.21, 0.22, 1.0, 1.0, 1.0]
+        })
 
     // Detail-page navigation ("wifi" | "bluetooth" | "kbd").
     signal detailRequested(string name)
@@ -55,30 +76,43 @@ Item {
 
     readonly property int pageCount: Math.max(1, Math.ceil(shownComps.length / 6))
     readonly property int firstPageRows: Math.ceil(Math.min(Math.max(shownComps.length, 1), 6) / 2)
-    readonly property int page: view.currentIndex
+    property int page: 0
 
-    // Motion-test probe (tests/qml/tst_quicksettings_motion.qml): SwipeView's
-    // scrolling content flickable.
-    readonly property Item trackItem: view.contentItem
+    // Follow the count down when a device disappears out from under us.
+    onPageCountChanged: if (page > pageCount - 1) {
+        setPage(pageCount - 1);
+    }
+
+    // Motion-test probe (tests/qml/tst_quicksettings_motion.qml): the sliding
+    // page track. Its x runs 0 -> -page*width with the spring rebound.
+    readonly property Item trackItem: track
 
     function setPage(target: int) {
-        view.currentIndex = Math.max(0, Math.min(pageCount - 1, target));
+        page = Math.max(0, Math.min(pageCount - 1, target));
     }
 
     function movePage(delta: int) {
-        setPage(view.currentIndex + delta);
+        setPage(page + delta);
     }
 
     height: firstPageRows * 44 + (firstPageRows - 1) * tileGap
     clip: true
 
-    QC.SwipeView {
-        id: view
+    // Prototype .tiles-track: every page side by side, the whole track slid
+    // one panel width per page on the exact prototype curve; the overshoot then
+    // settle is the rebound.
+    Item {
+        id: track
 
-        anchors.fill: parent
-        // Tiles handle their own press; horizontal drag past the threshold
-        // takes the grab for the page swipe.
-        clip: false
+        width: pager.width * pager.pageCount
+        height: pager.height
+        x: -pager.page * pager.width
+
+        Behavior on x {
+            MotionAnimation {
+                spring: pager.springSoft
+            }
+        }
 
         Repeater {
             model: pager.pageCount
@@ -87,6 +121,10 @@ Item {
                 id: pageItem
 
                 required property int index
+
+                x: index * pager.width
+                width: pager.width
+                height: track.height
 
                 // Six slots, 2 columns x 3 rows; each loads the tile for its
                 // absolute position in shownComps (empty past the end).
@@ -114,9 +152,9 @@ Item {
 
     // Wheel/touchpad anywhere over the tile area flips pages, one per
     // accumulated notch on the dominant scroll axis. Topmost button-less
-    // MouseArea: wheel lands here first (and is consumed so SwipeView does not
-    // also flick), clicks fall through to the tiles. Qt's wheel sign is
-    // inverted relative to the web's deltaX/deltaY.
+    // MouseArea over the track: wheel lands here (and is consumed), clicks fall
+    // through to the tiles. Qt's wheel sign is inverted relative to the web's
+    // deltaX/deltaY.
     MouseArea {
         anchors.fill: parent
         acceptedButtons: Qt.NoButton
@@ -254,9 +292,10 @@ Item {
         QuickMenuToggle {
             width: pager.cellWidth
             labelKey: "quickSettings.keyboardBacklight"
-            // Backlight glyphs, not an input-device keyboard.
-            iconName: "backlight_high"
-            offIconName: "backlight_low"
+            // Backlight glyphs, not an input-device keyboard. Track the level
+            // like the detail page: off / low (below max) / high (at max).
+            iconName: Brightness.kbdLevel >= Brightness.kbdMax ? "backlight_high" : "backlight_low"
+            offIconName: "backlight_high_off"
             checked: Brightness.kbdLevel > 0
 
             onClicked: Brightness.toggleKbd()

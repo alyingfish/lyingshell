@@ -328,7 +328,17 @@ def main() -> None:
         "wheel/touchpad over the tile area flips pages"
     )
     assert "WheelHandler {" not in panel, "WheelHandler is dead on the live compositor"
-    assert "SwipeView {" in panel, "tile pages use a SwipeView (native drag swipe)"
+    pager = read(QS_DIR / "Widgets" / "TilePager.qml")
+    assert "SwipeView {" not in pager, (
+        "tile pages slide a spring track, not a strict-range SwipeView: "
+        "StrictlyEnforceRange fixup-fights the MD3 rebound overshoot"
+    )
+    assert "Behavior on x" in pager, "the page track animates its x offset"
+    assert "0.38, 1.21, 0.22, 1.0, 1.0, 1.0" in pager and '"duration": 500' in pager, (
+        "the track uses the prototype's literal --spring-soft page-turn curve "
+        "(cubic-bezier(.38,1.21,.22,1) @ .5s); the MD3 spring tokens overshoot late "
+        "and drift 20-60px off the prototype mid-slide"
+    )
     assert "VerticalFlickable" in panel, "overlong detail lists scroll inside the card"
     assert 'name: "check"' in panel, "the active detail row shows a trailing check"
     assert "MD.Switch" in panel, "wifi/bt detail headers carry the radio switch"
