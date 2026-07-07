@@ -22,6 +22,7 @@ Window {
         id: page
 
         width: parent.width
+        height: parent.height
     }
 
     TestCase {
@@ -29,9 +30,12 @@ Window {
 
         name: "WifiDetailRefresh"
 
+        // The list body is async-incubated by DetailPage; grab it once loaded.
+        property var body: null
+
         function rowFor(name) {
-            for (var i = 0; i < page.rows.count; i++) {
-                var it = page.rows.itemAt(i);
+            for (var i = 0; i < body.rows.count; i++) {
+                var it = body.rows.itemAt(i);
                 if (it && it.modelData && it.modelData.name === name) {
                     return it;
                 }
@@ -40,15 +44,18 @@ Window {
         }
 
         function test_list_and_reuse() {
+            tryVerify(() => page.bodyItem !== null, 5000, "async body loads");
+            body = page.bodyItem;
+
             // Top 10, connected network first.
-            compare(page.rows.count, 10, "top-10 networks listed");
-            compare(page.rows.itemAt(0).modelData.name, "Homelab-5G", "connected network sorts first");
+            compare(body.rows.count, 10, "top-10 networks listed");
+            compare(body.rows.itemAt(0).modelData.name, "Homelab-5G", "connected network sorts first");
 
             // Sub-bar jitter changes nothing: same delegate instance.
             var five = rowFor("Homelab-5G");
             verify(five !== null, "Homelab-5G row present");
             Networking.wifiNets[0].signalStrength = 0.88; // 0.9 -> 0.88, still bar 4
-            page.refresh();
+            body.refresh();
             verify(rowFor("Homelab-5G") === five, "sub-bar jitter keeps the delegate");
 
             // Crossing a signal bar reorders the list. The moved row keeps its
@@ -56,16 +63,16 @@ Window {
             var homelab = rowFor("Homelab");
             verify(homelab !== null, "Homelab row present");
             Networking.wifiNets[1].signalStrength = 0.5; // bar 4 -> bar 2, drops down
-            page.refresh();
+            body.refresh();
             verify(rowFor("Homelab") === homelab, "reordered row keeps its delegate instance");
 
             // Toggling wifi off empties the list; back on repopulates.
             Networking.wifiEnabled = false;
-            page.refresh();
-            compare(page.rows.count, 0, "disabled wifi clears the list");
+            body.refresh();
+            compare(body.rows.count, 0, "disabled wifi clears the list");
             Networking.wifiEnabled = true;
-            page.refresh();
-            compare(page.rows.count, 10, "re-enabled wifi repopulates the list");
+            body.refresh();
+            compare(body.rows.count, 10, "re-enabled wifi repopulates the list");
 
             console.log("PASS: wifi detail refresh");
         }

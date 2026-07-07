@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls as QC
 import Quickshell.Networking
 import qs.Commons.I18n
 import qs.Commons.Settings
@@ -9,9 +10,13 @@ import "../../../Material/Wheel.js" as Wheel
 import "../../../Commons/Icons/StatusIcons.js" as StatusIcons
 
 // Horizontally paged toggle-tile grid (prototype .tiles-track): 2 columns x
-// 3 rows per page, slots packed in shown order. Connectivity cluster first
+// 3 rows per page, tiles packed in shown order. Connectivity cluster first
 // (wifi | bluetooth, wired | airplane), then appearance and page-2 extras.
-// Pages flip by pointer drag, wheel/touchpad, or the dots below (PageDots).
+//
+// Built on a SwipeView: the tile set is availability-filtered into
+// `shownComps` and chunked 6-per-page; each page's slots are Loaders pulling
+// from that list, so pages reflow as devices appear/disappear. Pages flip by
+// drag (SwipeView native), wheel/touchpad, or the dots below (PageDots).
 Item {
     id: pager
 
@@ -21,229 +26,87 @@ Item {
     // Detail-page navigation ("wifi" | "bluetooth" | "kbd").
     signal detailRequested(string name)
 
-    readonly property var shownTiles: [wifiTile, btTile, wiredTile, airplaneTile, darkTile, nightTile, dndTile, kbdTile].filter(tile => tile.shown)
-    readonly property int pageCount: Math.max(1, Math.ceil(shownTiles.length / 6))
-    readonly property int firstPageRows: Math.ceil(Math.min(Math.max(shownTiles.length, 1), 6) / 2)
-    property int page: 0
-    // Live drag offset from the swipe handler (prototype .tiles-track.drag
-    // follows the pointer 1:1).
-    property real dragOffset: 0
+    // Availability-filtered tile components in prototype order. Recomputes when
+    // any availability signal changes; drives page count + per-slot Loaders.
+    readonly property var shownComps: {
+        const list = [];
+        if (SystemStatus.wifiDevice !== null) {
+            list.push(wifiTileComp);
+        }
+        if (SystemStatus.btAdapter !== null) {
+            list.push(btTileComp);
+        }
+        if (SystemStatus.wiredDevice !== null && (SystemStatus.wiredDevice.connected || SystemStatus.wiredDevice.networks.values.length > 0)) {
+            list.push(wiredTileComp);
+        }
+        if (Airplane.available) {
+            list.push(airplaneTileComp);
+        }
+        list.push(darkTileComp);
+        list.push(nightTileComp);
+        if (DoNotDisturb.available) {
+            list.push(dndTileComp);
+        }
+        if (Brightness.kbdAvailable) {
+            list.push(kbdTileComp);
+        }
+        return list;
+    }
 
-    // Motion-test probe (tests/qml/tst_quicksettings_motion.qml).
-    readonly property Item trackItem: tileTrack
+    readonly property int pageCount: Math.max(1, Math.ceil(shownComps.length / 6))
+    readonly property int firstPageRows: Math.ceil(Math.min(Math.max(shownComps.length, 1), 6) / 2)
+    readonly property int page: view.currentIndex
+
+    // Motion-test probe (tests/qml/tst_quicksettings_motion.qml): SwipeView's
+    // scrolling content flickable.
+    readonly property Item trackItem: view.contentItem
 
     function setPage(target: int) {
-        page = Math.max(0, Math.min(pageCount - 1, target));
+        view.currentIndex = Math.max(0, Math.min(pageCount - 1, target));
     }
 
     function movePage(delta: int) {
-        setPage(page + delta);
-    }
-
-    function slotX(index: int): real {
-        if (index < 0) {
-            return 0;
-        }
-        return Math.floor(index / 6) * width + (index % 2) * (cellWidth + tileGap);
-    }
-
-    function slotY(index: int): real {
-        if (index < 0) {
-            return 0;
-        }
-        return Math.floor((index % 6) / 2) * (44 + tileGap);
+        setPage(view.currentIndex + delta);
     }
 
     height: firstPageRows * 44 + (firstPageRows - 1) * tileGap
     clip: true
 
-    onPageCountChanged: page = Math.min(page, pageCount - 1)
+    QC.SwipeView {
+        id: view
 
-    Item {
-        id: tileTrack
+        anchors.fill: parent
+        // Tiles handle their own press; horizontal drag past the threshold
+        // takes the grab for the page swipe.
+        clip: false
 
-        width: pager.pageCount * pager.width
-        height: pager.height
-        x: -pager.page * pager.width + pager.dragOffset
+        Repeater {
+            model: pager.pageCount
 
-        Behavior on x {
-            enabled: !tileSwipe.active
+            Item {
+                id: pageItem
 
-            MotionAnimation {
-                spring: Motion.spatialDefault
-            }
-        }
+                required property int index
 
-        QuickMenuToggle {
-            id: wifiTile
+                // Six slots, 2 columns x 3 rows; each loads the tile for its
+                // absolute position in shownComps (empty past the end).
+                Repeater {
+                    model: 6
 
-            readonly property bool shown: SystemStatus.wifiDevice !== null
+                    Loader {
+                        id: slotLoader
 
-            x: pager.slotX(pager.shownTiles.indexOf(wifiTile))
-            y: pager.slotY(pager.shownTiles.indexOf(wifiTile))
-            width: pager.cellWidth
-            visible: shown
-            labelKey: "quickSettings.wifi"
-            iconName: SystemStatus.activeWifiNetwork ? StatusIcons.wifiSignalIcon(SystemStatus.activeWifiNetwork.signalStrength) : "wifi"
-            offIconName: "signal_wifi_off"
-            statusText: SystemStatus.activeWifiNetwork ? SystemStatus.activeWifiNetwork.name : ""
-            checked: Networking.wifiEnabled
+                        required property int index
+                        readonly property int slot: pageItem.index * 6 + index
 
-            onClicked: Networking.wifiEnabled = !Networking.wifiEnabled
-            onExpandRequested: pager.detailRequested("wifi")
-        }
-
-        QuickMenuToggle {
-            id: btTile
-
-            readonly property bool shown: SystemStatus.btAdapter !== null
-
-            x: pager.slotX(pager.shownTiles.indexOf(btTile))
-            y: pager.slotY(pager.shownTiles.indexOf(btTile))
-            width: pager.cellWidth
-            visible: shown
-            labelKey: "quickSettings.bluetooth"
-            iconName: SystemStatus.btConnectedDevices.length > 0 ? "bluetooth_connected" : "bluetooth"
-            offIconName: "bluetooth_disabled"
-            statusText: SystemStatus.btConnectedDevices.length > 0 ? I18n.t("quickSettings.bluetoothConnectedCount", {
-                "count": SystemStatus.btConnectedDevices.length
-            }) : ""
-            checked: SystemStatus.btEnabled
-
-            onClicked: SystemStatus.btAdapter.enabled = !SystemStatus.btAdapter.enabled
-            onExpandRequested: pager.detailRequested("bluetooth")
-        }
-
-        QuickToggle {
-            id: wiredTile
-
-            readonly property bool shown: SystemStatus.wiredDevice !== null && (SystemStatus.wiredDevice.connected || SystemStatus.wiredDevice.networks.values.length > 0)
-
-            x: pager.slotX(pager.shownTiles.indexOf(wiredTile))
-            y: pager.slotY(pager.shownTiles.indexOf(wiredTile))
-            width: pager.cellWidth
-            visible: shown
-            labelKey: "quickSettings.wired"
-            icon.name: "lan"
-            checked: SystemStatus.wiredConnected
-
-            onClicked: {
-                if (checked) {
-                    SystemStatus.wiredDevice.disconnect();
-                } else {
-                    const known = SystemStatus.wiredDevice.networks.values.find(network => network !== null && network.known);
-                    if (known) {
-                        known.connect();
+                        active: slot < pager.shownComps.length
+                        visible: active
+                        width: pager.cellWidth
+                        height: 44
+                        x: (index % 2) * (pager.cellWidth + pager.tileGap)
+                        y: Math.floor(index / 2) * (44 + pager.tileGap)
+                        sourceComponent: active ? pager.shownComps[slot] : null
                     }
-                }
-            }
-        }
-
-        QuickToggle {
-            id: airplaneTile
-
-            readonly property bool shown: Airplane.available
-
-            x: pager.slotX(pager.shownTiles.indexOf(airplaneTile))
-            y: pager.slotY(pager.shownTiles.indexOf(airplaneTile))
-            width: pager.cellWidth
-            visible: shown
-            labelKey: "quickSettings.airplaneMode"
-            icon.name: "airplanemode_active"
-            checked: Airplane.enabled
-
-            onClicked: Airplane.toggle()
-        }
-
-        QuickToggle {
-            id: darkTile
-
-            readonly property bool shown: true
-
-            x: pager.slotX(pager.shownTiles.indexOf(darkTile))
-            y: pager.slotY(pager.shownTiles.indexOf(darkTile))
-            width: pager.cellWidth
-            labelKey: "quickSettings.darkStyle"
-            // Prototype tile-dark: sun at rest, moon when on, outline glyphs
-            // that fill on hover.
-            icon.name: "dark_mode"
-            offIconName: "light_mode"
-            fillOnHover: true
-            checked: Settings.options.appearance.mode === "dark"
-
-            onClicked: Settings.options.appearance.mode = checked ? "light" : "dark"
-        }
-
-        QuickToggle {
-            id: nightTile
-
-            readonly property bool shown: true
-
-            x: pager.slotX(pager.shownTiles.indexOf(nightTile))
-            y: pager.slotY(pager.shownTiles.indexOf(nightTile))
-            width: pager.cellWidth
-            visible: shown
-            labelKey: "quickSettings.nightLight"
-            icon.name: "wb_twilight"
-            checked: NightLight.enabled
-
-            onClicked: NightLight.toggle()
-        }
-
-        QuickToggle {
-            id: dndTile
-
-            readonly property bool shown: DoNotDisturb.available
-
-            x: pager.slotX(pager.shownTiles.indexOf(dndTile))
-            y: pager.slotY(pager.shownTiles.indexOf(dndTile))
-            width: pager.cellWidth
-            visible: shown
-            labelKey: "quickSettings.doNotDisturb"
-            icon.name: "do_not_disturb_on"
-            checked: DoNotDisturb.enabled
-
-            onClicked: DoNotDisturb.toggle()
-        }
-
-        QuickMenuToggle {
-            id: kbdTile
-
-            readonly property bool shown: Brightness.kbdAvailable
-
-            x: pager.slotX(pager.shownTiles.indexOf(kbdTile))
-            y: pager.slotY(pager.shownTiles.indexOf(kbdTile))
-            width: pager.cellWidth
-            visible: shown
-            labelKey: "quickSettings.keyboardBacklight"
-            // Backlight glyphs, not an input-device keyboard.
-            iconName: "backlight_high"
-            offIconName: "backlight_low"
-            checked: Brightness.kbdLevel > 0
-
-            onClicked: Brightness.toggleKbd()
-            onExpandRequested: pager.detailRequested("kbd")
-        }
-    }
-
-    // Pointer-drag swipe between pages (prototype tiles-track drag): passive
-    // until the drag threshold, then it takes the grab from the pressed tile
-    // so the release cannot also toggle it.
-    DragHandler {
-        id: tileSwipe
-
-        target: null
-        xAxis.enabled: true
-        yAxis.enabled: false
-
-        onActiveTranslationChanged: if (active)
-            pager.dragOffset = activeTranslation.x
-        onActiveChanged: {
-            if (!active) {
-                const moved = pager.dragOffset;
-                pager.dragOffset = 0;
-                if (Math.abs(moved) > 45) {
-                    pager.movePage(moved < 0 ? 1 : -1);
                 }
             }
         }
@@ -251,9 +114,9 @@ Item {
 
     // Wheel/touchpad anywhere over the tile area flips pages, one per
     // accumulated notch on the dominant scroll axis. Topmost button-less
-    // MouseArea: wheel lands here first, clicks fall through to the tiles
-    // (WheelHandler gets no wheel events on the live compositor). Qt's wheel
-    // sign is inverted relative to the web's deltaX/deltaY.
+    // MouseArea: wheel lands here first (and is consumed so SwipeView does not
+    // also flick), clicks fall through to the tiles. Qt's wheel sign is
+    // inverted relative to the web's deltaX/deltaY.
     MouseArea {
         anchors.fill: parent
         acceptedButtons: Qt.NoButton
@@ -269,6 +132,135 @@ Item {
                 pager.movePage(-result.steps);
             }
             wheel.accepted = true;
+        }
+    }
+
+    // --- tile components (packed by shownComps, positioned by the Loaders) ---
+    Component {
+        id: wifiTileComp
+
+        QuickMenuToggle {
+            width: pager.cellWidth
+            labelKey: "quickSettings.wifi"
+            iconName: SystemStatus.activeWifiNetwork ? StatusIcons.wifiSignalIcon(SystemStatus.activeWifiNetwork.signalStrength) : "wifi"
+            offIconName: "signal_wifi_off"
+            statusText: SystemStatus.activeWifiNetwork ? SystemStatus.activeWifiNetwork.name : ""
+            checked: Networking.wifiEnabled
+
+            onClicked: Networking.wifiEnabled = !Networking.wifiEnabled
+            onExpandRequested: pager.detailRequested("wifi")
+        }
+    }
+
+    Component {
+        id: btTileComp
+
+        QuickMenuToggle {
+            width: pager.cellWidth
+            labelKey: "quickSettings.bluetooth"
+            iconName: SystemStatus.btConnectedDevices.length > 0 ? "bluetooth_connected" : "bluetooth"
+            offIconName: "bluetooth_disabled"
+            statusText: SystemStatus.btConnectedDevices.length > 0 ? I18n.t("quickSettings.bluetoothConnectedCount", {
+                "count": SystemStatus.btConnectedDevices.length
+            }) : ""
+            checked: SystemStatus.btEnabled
+
+            onClicked: SystemStatus.btAdapter.enabled = !SystemStatus.btAdapter.enabled
+            onExpandRequested: pager.detailRequested("bluetooth")
+        }
+    }
+
+    Component {
+        id: wiredTileComp
+
+        QuickToggle {
+            width: pager.cellWidth
+            labelKey: "quickSettings.wired"
+            icon.name: "lan"
+            checked: SystemStatus.wiredConnected
+
+            onClicked: {
+                if (checked) {
+                    SystemStatus.wiredDevice.disconnect();
+                } else {
+                    const known = SystemStatus.wiredDevice.networks.values.find(network => network !== null && network.known);
+                    if (known) {
+                        known.connect();
+                    }
+                }
+            }
+        }
+    }
+
+    Component {
+        id: airplaneTileComp
+
+        QuickToggle {
+            width: pager.cellWidth
+            labelKey: "quickSettings.airplaneMode"
+            icon.name: "airplanemode_active"
+            checked: Airplane.enabled
+
+            onClicked: Airplane.toggle()
+        }
+    }
+
+    Component {
+        id: darkTileComp
+
+        QuickToggle {
+            width: pager.cellWidth
+            labelKey: "quickSettings.darkStyle"
+            // Prototype tile-dark: sun at rest, moon when on, outline glyphs
+            // that fill on hover.
+            icon.name: "dark_mode"
+            offIconName: "light_mode"
+            fillOnHover: true
+            checked: Settings.options.appearance.mode === "dark"
+
+            onClicked: Settings.options.appearance.mode = checked ? "light" : "dark"
+        }
+    }
+
+    Component {
+        id: nightTileComp
+
+        QuickToggle {
+            width: pager.cellWidth
+            labelKey: "quickSettings.nightLight"
+            icon.name: "wb_twilight"
+            checked: NightLight.enabled
+
+            onClicked: NightLight.toggle()
+        }
+    }
+
+    Component {
+        id: dndTileComp
+
+        QuickToggle {
+            width: pager.cellWidth
+            labelKey: "quickSettings.doNotDisturb"
+            icon.name: "do_not_disturb_on"
+            checked: DoNotDisturb.enabled
+
+            onClicked: DoNotDisturb.toggle()
+        }
+    }
+
+    Component {
+        id: kbdTileComp
+
+        QuickMenuToggle {
+            width: pager.cellWidth
+            labelKey: "quickSettings.keyboardBacklight"
+            // Backlight glyphs, not an input-device keyboard.
+            iconName: "backlight_high"
+            offIconName: "backlight_low"
+            checked: Brightness.kbdLevel > 0
+
+            onClicked: Brightness.toggleKbd()
+            onExpandRequested: pager.detailRequested("kbd")
         }
     }
 }

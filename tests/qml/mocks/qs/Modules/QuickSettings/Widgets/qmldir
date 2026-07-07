@@ -9,7 +9,8 @@ PowerModeRow 1.0 PowerModeRow.qml
 PanelHeader 1.0 PanelHeader.qml
 TilePager 1.0 TilePager.qml
 PageDots 1.0 PageDots.qml
-DetailView 1.0 DetailView.qml
+MainPage 1.0 MainPage.qml
+DetailPage 1.0 DetailPage.qml
 DetailRow 1.0 DetailRow.qml
 DetailEmpty 1.0 DetailEmpty.qml
 WifiDetailPage 1.0 WifiDetailPage.qml

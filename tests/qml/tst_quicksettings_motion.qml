@@ -73,17 +73,20 @@ Window {
         }
 
         function test_page_spring() {
+            // SwipeView scrolls its content flickable: contentX runs 0 -> page*width.
             const track = panel.tileTrackProbe;
-            const x0 = track.x;
+            const w = panel.tileArea.width;
+            compare(panel.page, 0, "starts on page 1");
             panel.setPage(1);
-            wait(100);
-            const mid = track.x;
-            verify(mid < x0 - 20 && mid > x0 - panel.width + 20, "track springs between pages, midflight got " + mid);
+            wait(50);
+            verify(track.contentX > 5, "content scrolls toward page 2, got " + track.contentX);
             wait(600);
-            verify(Math.abs(track.x - (x0 - panel.tileArea.width)) < 1, "track settles on page 2");
+            compare(panel.page, 1, "settled on page 2");
+            verify(Math.abs(track.contentX - w) < 2, "content rests on page 2, got " + track.contentX + " vs " + w);
             panel.setPage(0);
             wait(600);
-            verify(Math.abs(track.x - x0) < 1, "track returns to page 1");
+            compare(panel.page, 0, "returns to page 1");
+            verify(Math.abs(track.contentX) < 2, "content returns to page 1, got " + track.contentX);
             console.log("PASS: quick settings motion contract");
         }
     }

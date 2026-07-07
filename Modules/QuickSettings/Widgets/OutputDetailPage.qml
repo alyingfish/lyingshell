@@ -1,30 +1,40 @@
 import QtQuick
+import qs.Commons.I18n
 import qs.Services
 import "../../../Commons/Icons/StatusIcons.js" as StatusIcons
 
-// Sound-output device list from the Pipewire sinks.
-Column {
-    id: page
+// Sound-output detail page: the body lists the Pipewire sinks.
+DetailPage {
+    id: root
 
-    property real viewportHeight: 0
+    detailName: "output"
+    title: I18n.t("quickSettings.outputDevice")
 
-    spacing: 5
+    bodyContent: Component {
+        Column {
+            id: page
 
-    Repeater {
-        model: Audio.sinkDevices
+            property real viewportHeight: 0
 
-        DetailRow {
-            id: sinkRow
+            spacing: 5
 
-            required property var modelData
-            required property int index
+            Repeater {
+                model: Audio.sinkDevices
 
-            order: index
-            text: sinkRow.modelData.description.length > 0 ? sinkRow.modelData.description : sinkRow.modelData.name
-            current: Audio.sink !== null && sinkRow.modelData.id === Audio.sink.id
-            leadingIcon: StatusIcons.audioSinkIcon(sinkRow.modelData.description + " " + sinkRow.modelData.name)
+                DetailRow {
+                    id: sinkRow
 
-            onClicked: Audio.setPreferredSink(sinkRow.modelData)
+                    required property var modelData
+                    required property int index
+
+                    order: index
+                    text: sinkRow.modelData.description.length > 0 ? sinkRow.modelData.description : sinkRow.modelData.name
+                    current: Audio.sink !== null && sinkRow.modelData.id === Audio.sink.id
+                    leadingIcon: StatusIcons.audioSinkIcon(sinkRow.modelData.description + " " + sinkRow.modelData.name)
+
+                    onClicked: Audio.setPreferredSink(sinkRow.modelData)
+                }
+            }
         }
     }
 }

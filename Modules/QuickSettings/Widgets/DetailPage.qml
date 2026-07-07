@@ -1,69 +1,34 @@
 import QtQuick
-import Quickshell.Networking
+import QtQuick.Controls as QC
 import Qcm.Material as MD
 import qs.Commons.I18n
 import qs.Commons.Theme
 import qs.Material
-import qs.Services
-import "../../../Material/Motion.js" as Motion
 
-// Detail view (prototype #viewDetail): slides in over the locked-height
-// panel; back + title + radio-switch header, then a scrolling device list
-// loaded from the sibling *DetailPage files.
+// Reusable detail-page chrome for the quick-settings StackView (prototype
+// #viewDetail): back + title + optional radio switch header, then a scrolling
+// device list. A concrete page (WifiDetailPage, ...) sets `title`/`showSwitch`/
+// `switchChecked`/`onSwitchToggled` and supplies its list as `bodyContent`.
+//
+// The page fills the StackView; the stack owns the slide/opacity transition and
+// visibility, so this carries NO enabled/opacity gating of its own (that was
+// the greying-flash trap). `bodyContent` is incubated asynchronously so the
+// push slide starts on the click frame and the list fills in behind it.
 Item {
     id: root
 
-    // Live detail target: "" | "wifi" | "bluetooth" | "output" | "kbd".
-    property string detail: ""
-    // The mounted page: lags `detail` on close so the exit slide has content
-    // to fade out (the panel owns the lag timer).
-    property string shownDetail: ""
+    // Detail identity, set by the panel on push; reflected back into
+    // QuickSettingsPanel.detail so the external contract keeps working.
+    property string detailName: ""
 
-    signal backRequested
+    property string title: ""
+    property bool showSwitch: false
+    property bool switchChecked: false
+    signal switchToggled(bool checked)
 
-    // Motion probe (tests/qml/tst_quicksettings_motion.qml).
-    readonly property real slideX: detailTx.x
-
-    visible: shownDetail !== ""
-    // Input is gated by pointer-events (detailCatch below), NOT `enabled`:
-    // disabling would grey the back button / switch during the fade, a flash
-    // the prototype's pure crossfade never has.
-    opacity: detail !== "" ? 1 : 0
-
-    // Prototype #viewDetail pointer-events: swallow stray input over the covered
-    // main view while the detail is active; its own controls sit above this.
-    MouseArea {
-        anchors.fill: parent
-        enabled: root.detail !== ""
-        acceptedButtons: Qt.AllButtons
-        onWheel: wheel => wheel.accepted = true
-    }
-
-    transform: Translate {
-        id: detailTx
-
-        x: root.detail !== "" ? 0 : 44
-
-        Behavior on x {
-            MotionAnimation {
-                spring: Motion.spatialDefault
-            }
-        }
-    }
-
-    Behavior on opacity {
-        MotionAnimation {
-            spring: Motion.effectsDefault
-        }
-    }
-
-    // Wifi scanning only while the network list is open.
-    Binding {
-        target: SystemStatus.wifiDevice
-        property: "scannerEnabled"
-        value: root.detail === "wifi"
-        when: SystemStatus.wifiDevice !== null
-    }
+    // The list body (a Column). Loaded async; exposed for tests/plumbing.
+    property Component bodyContent: null
+    readonly property alias bodyItem: bodyLoader.item
 
     // --- detail header (prototype .dv-head) --------------------------------
     Item {
@@ -93,7 +58,7 @@ Item {
                     MotionAnimation {}
                 }
 
-                onClicked: root.backRequested()
+                onClicked: root.QC.StackView.view.pop()
 
                 MD.ToolTip {
                     y: parent.height + 4
@@ -104,18 +69,7 @@ Item {
 
             MD.Text {
                 anchors.verticalCenter: parent.verticalCenter
-                text: {
-                    if (root.shownDetail === "wifi") {
-                        return I18n.t("quickSettings.wifi");
-                    }
-                    if (root.shownDetail === "bluetooth") {
-                        return I18n.t("quickSettings.bluetooth");
-                    }
-                    if (root.shownDetail === "kbd") {
-                        return I18n.t("quickSettings.keyboardBacklight");
-                    }
-                    return I18n.t("quickSettings.outputDevice");
-                }
+                text: root.title
                 color: MD.Token.color.on_surface
                 typescale: MD.Token.typescale.title_medium
                 prominent: true
@@ -129,23 +83,16 @@ Item {
 
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
-            visible: root.shownDetail === "wifi" || root.shownDetail === "bluetooth"
+            visible: root.showSwitch
 
-            // A Binding object re-asserts service state after user toggles
-            // wrote `checked` directly.
+            // Re-assert page-owned state after a user toggle wrote `checked`.
             Binding {
                 target: dvSwitch
                 property: "checked"
-                value: root.shownDetail === "wifi" ? Networking.wifiEnabled : SystemStatus.btEnabled
+                value: root.switchChecked
             }
 
-            onToggled: {
-                if (root.shownDetail === "wifi") {
-                    Networking.wifiEnabled = checked;
-                } else if (SystemStatus.btAdapter !== null) {
-                    SystemStatus.btAdapter.enabled = checked;
-                }
-            }
+            onToggled: root.switchToggled(checked)
 
             // Prototype 34x20 track, 10px outline thumb growing to a 15px
             // filled one; springs on the thumb travel and size.
@@ -208,41 +155,22 @@ Item {
             anchors.fill: parent
 
             Loader {
-                id: detailLoader
+                id: bodyLoader
 
-                // Incubate the page (and the Wi-Fi list's up-to-10 rows) across
-                // frames instead of in one synchronous burst, so the detail
-                // slide starts on the click frame and the list fills in behind
-                // it rather than the transition waiting on the build.
+                // Incubate the list across frames so the push slide starts on
+                // the click frame and rows fill in behind it.
                 asynchronous: true
-                // Never (async-)load an empty source; unload once the exit
-                // slide has released the mounted page.
-                active: root.shownDetail !== ""
                 width: parent.width
-                source: {
-                    if (root.shownDetail === "wifi") {
-                        return "WifiDetailPage.qml";
-                    }
-                    if (root.shownDetail === "bluetooth") {
-                        return "BluetoothDetailPage.qml";
-                    }
-                    if (root.shownDetail === "output") {
-                        return "OutputDetailPage.qml";
-                    }
-                    if (root.shownDetail === "kbd") {
-                        return "KbdDetailPage.qml";
-                    }
-                    return "";
-                }
+                sourceComponent: root.bodyContent
             }
 
-            // Every page carries a `viewportHeight` used by its empty state
-            // to center in the list viewport.
+            // Every page carries a `viewportHeight` used by its empty state to
+            // center in the list viewport.
             Binding {
-                target: detailLoader.item
+                target: bodyLoader.item
                 property: "viewportHeight"
                 value: detailListArea.height
-                when: detailLoader.item !== null
+                when: bodyLoader.item !== null
             }
         }
 

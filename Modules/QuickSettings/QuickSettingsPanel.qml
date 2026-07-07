@@ -1,9 +1,9 @@
 import QtQuick
+import Qcm.Material as MD
 import qs.Material
 import qs.Services
 import qs.Modules.QuickSettings.Widgets
 import "../../Material/Motion.js" as Motion
-import "../../Commons/Icons/StatusIcons.js" as StatusIcons
 
 // Quick-settings panel content mirroring the web prototype: a 344px card
 // (12px padding, 10px section gap) of header actions + battery pill, two
@@ -11,40 +11,130 @@ import "../../Commons/Icons/StatusIcons.js" as StatusIcons
 // paged toggle-tile grid with page dots, and sliding detail views (Wi-Fi /
 // Bluetooth / Sound output / Keyboard). System state lives in Quickshell
 // services and the qs.Services boundaries; this module only wires state to
-// MD3 controls. Motion map: the prototype's bouncy `--spring` is
-// Motion.spatialFast, its `--spring-soft` is Motion.spatialDefault, and its
-// short standard fades are the effects springs. This file owns panel state
-// and composition; the pieces live in Widgets/.
+// MD3 controls.
+//
+// Navigation is an MD.StackView: MainPage is the initial item, each detail is a
+// self-contained DetailPage pushed on top. The stack owns page
+// visibility/input/lifecycle, so switching views can never grey a control
+// (the old `enabled`-gated crossfade bug) and nested drill-downs are free.
+// Motion map: the prototype's `--spring-soft` is Motion.spatialDefault, its
+// short standard fades are the effects springs. This file owns panel state and
+// composition; the pieces live in Widgets/.
 Item {
     id: root
 
     signal closeRequested
 
-    // Mirrors the menu's open state so the staggered entrance can run at
-    // the start of the card's open transform, not at first visibility.
+    // Mirrors the menu's open state so the staggered entrance can run at the
+    // start of the card's open transform.
     property bool open: false
 
-    // "" | "wifi" | "bluetooth" | "output" | "kbd"
+    // "" | "wifi" | "bluetooth" | "output" | "kbd". Settable command AND a
+    // reflection of the stack (the back button pops directly); kept for the
+    // external contract (serializeState / setDetail / e2e).
     property string detail: ""
-    // The mounted detail page: lags `detail` on close so the exit slide has
-    // content to fade out.
-    property string shownDetail: ""
 
-    // Expandable-row state lives in the header; aliased here for tests/e2e.
-    property alias toolsOpen: header.toolsOpen
-    property alias pmodeOpen: header.pmodeOpen
-    property alias toolsReveal: header.toolsReveal
-    property alias pmodeReveal: header.pmodeReveal
-
-    // Session-menu card (prototype #pmenu) floats over the panel at top-right;
-    // owned here so it stacks above the tiles and stays clipped to the card.
+    // Session-menu card (prototype #pmenu) floats over the panel at top-right.
     property bool sessionMenuOpen: false
 
-    // Layout metrics (web prototype: 344px panel, 12px padding, 10px section
-    // gap, 6px tile gap).
+    // Layout metrics (web prototype: 344px panel, 12px padding, 10px section gap).
     readonly property real pad: 12
     readonly property real sectionGap: 10
     readonly property real contentWidth: 344 - pad * 2
+
+    // Expandable-row state lives in the header; aliased here for tests/e2e.
+    property alias toolsOpen: mainPage.toolsOpen
+    property alias pmodeOpen: mainPage.pmodeOpen
+    property alias toolsReveal: mainPage.toolsReveal
+    property alias pmodeReveal: mainPage.pmodeReveal
+
+    // Test/e2e surface (tests/e2e/QuickSettingsIpcDriver.qml,
+    // tests/qml/tst_quicksettings_motion.qml).
+    readonly property int page: mainPage.page
+    readonly property int pageCount: mainPage.pageCount
+    readonly property Item tileArea: mainPage.tileArea
+    readonly property Item volumeRow: mainPage.volumeRow
+    readonly property real headerOpacityProbe: mainPage.headerOpacityProbe
+    readonly property real pagerOpacityProbe: mainPage.pagerOpacityProbe
+    readonly property Item tileTrackProbe: mainPage.tileTrackProbe
+    readonly property real compactContentHeight: mainPage.compactContentHeight
+    // Slide probes read the stack items' transform (StackView drives x/opacity).
+    readonly property real mainSlideProbe: mainPage.x
+    readonly property real detailSlideProbe: (stack.depth > 1 && stack.currentItem) ? stack.currentItem.x : 0
+
+    function setPage(page: int) {
+        mainPage.setPage(page);
+    }
+
+    // Detail name -> page component (add a panel = new DetailPage + one entry).
+    readonly property var detailMap: ({
+            "wifi": wifiComp,
+            "bluetooth": btComp,
+            "output": outputComp,
+            "kbd": kbdComp
+        })
+
+    Component {
+        id: wifiComp
+
+        WifiDetailPage {}
+    }
+
+    Component {
+        id: btComp
+
+        BluetoothDetailPage {}
+    }
+
+    Component {
+        id: outputComp
+
+        OutputDetailPage {}
+    }
+
+    Component {
+        id: kbdComp
+
+        KbdDetailPage {}
+    }
+
+    // Reconcile the stack to match `detail` (idempotent so it composes with the
+    // back button's direct pop() + the stack->detail sync below without looping).
+    function reconcileStack() {
+        const cur = (stack.depth > 1 && stack.currentItem) ? (stack.currentItem.detailName ?? "") : "";
+        if (cur === detail) {
+            return;
+        }
+        if (detail === "") {
+            stack.pop(null);
+            return;
+        }
+        const comp = detailMap[detail];
+        if (!comp) {
+            return;
+        }
+        // Lock the compact height and drop the session card before the detail
+        // page replaces the main view 1:1 (prototype collapseRowsInstant).
+        mainPage.collapseRowsInstant();
+        sessionMenuOpen = false;
+        if (stack.depth > 1) {
+            stack.replace(comp);
+        } else {
+            stack.push(comp);
+        }
+    }
+
+    function syncDetailFromStack() {
+        const name = (stack.depth > 1 && stack.currentItem) ? (stack.currentItem.detailName ?? "") : "";
+        if (detail !== name) {
+            detail = name;
+        }
+    }
+
+    onDetailChanged: reconcileStack()
+
+    implicitWidth: contentWidth + pad * 2
+    implicitHeight: pad * 2 + (detail !== "" ? compactContentHeight : mainPage.implicitHeight)
 
     // Refresh process-backed state whenever the panel becomes visible.
     onVisibleChanged: {
@@ -54,284 +144,120 @@ Item {
             DoNotDisturb.refresh();
         } else {
             detail = "";
-            shownDetail = "";
-            header.toolsOpen = false;
-            header.pmodeOpen = false;
+            mainPage.toolsOpen = false;
+            mainPage.pmodeOpen = false;
             sessionMenuOpen = false;
-            pager.setPage(0);
+            mainPage.setPage(0);
         }
     }
 
-    onOpenChanged: if (open)
-        riseAnim.restart()
-
-    onDetailChanged: {
-        if (detail !== "") {
-            // Lock the compact height before the detail view replaces the
-            // main view 1:1 (prototype collapseRowsInstant + height lock).
-            header.collapseRowsInstant();
-            sessionMenuOpen = false;
-            shownDetail = detail;
-            detailUnload.stop();
-        } else {
-            detailUnload.restart();
-        }
+    // Wi-Fi scanning only while the network detail is open (kept here so it
+    // outlives the pushed page's lifecycle).
+    Binding {
+        target: SystemStatus.wifiDevice
+        property: "scannerEnabled"
+        value: root.detail === "wifi"
+        when: SystemStatus.wifiDevice !== null
     }
-
-    // Keeps the outgoing detail page mounted through the exit slide.
-    Timer {
-        id: detailUnload
-
-        interval: 250
-
-        onTriggered: root.shownDetail = ""
-    }
-
-    // Test-only surface (tests/e2e/QuickSettingsIpcDriver.qml and
-    // tests/qml/tst_quicksettings_motion.qml).
-    readonly property int page: pager.page
-    readonly property int pageCount: pager.pageCount
-    readonly property Item tileArea: pager
-    readonly property Item volumeRow: volumeSlider
-    readonly property real headerOpacityProbe: header.opacity
-    readonly property real pagerOpacityProbe: pager.opacity
-    readonly property real mainSlideProbe: mainTx.x
-    readonly property real detailSlideProbe: detailView.slideX
-    readonly property Item tileTrackProbe: pager.trackItem
-
-    function setPage(page: int) {
-        pager.setPage(page);
-    }
-
-    // Detail pages keep exactly the compact main-view height (expandable
-    // rows collapsed), so navigation never resizes the panel.
-    readonly property real compactContentHeight: 32 + sectionGap + slidersCol.implicitHeight + sectionGap + pager.height + (dotsRow.visible ? sectionGap + dotsRow.height : 0)
-
-    implicitWidth: contentWidth + pad * 2
-    implicitHeight: pad * 2 + (detail !== "" ? compactContentHeight : mainColumn.implicitHeight)
 
     // ======================================================================
-    // Main view
+    // Navigation stack: MainPage (initial) + pushed DetailPages
     // ======================================================================
-    Item {
-        id: mainArea
+    MD.StackView {
+        id: stack
 
         x: root.pad
         y: root.pad
         width: root.contentWidth
-        height: mainColumn.implicitHeight
-        // Prototype #qs.detail #viewMain: slide 28px left and fade out. NOT
-        // gated with `enabled`: disabling would flip every MD control into its
-        // greyed disabled palette and animate it back, a flash the CSS
-        // crossfade never has. Input is blocked by the detail view's cover
-        // (DetailView catcher) while it is up.
-        opacity: root.detail === "" ? 1 : 0
+        // Detail pages lock the compact height; main drives it otherwise.
+        height: root.detail !== "" ? root.compactContentHeight : mainPage.implicitHeight
 
-        transform: Translate {
-            id: mainTx
+        initialItem: mainPage
 
-            x: root.detail === "" ? 0 : -28
+        // Keep the back button's pop() and setDetail() as one source of truth.
+        onCurrentItemChanged: root.syncDetailFromStack()
 
-            Behavior on x {
-                MotionAnimation {
-                    spring: Motion.spatialDefault
-                }
-            }
-        }
-
-        Behavior on opacity {
+        // Prototype crossfade: incoming detail slides in from +44, the outgoing
+        // main slides to -28, opacity crosses on the effects spring; reversed on
+        // pop. Same offsets/springs as the hand-rolled version it replaces.
+        pushEnter: Transition {
             MotionAnimation {
-                spring: Motion.effectsDefault
-            }
-        }
-
-        Column {
-            id: mainColumn
-
-            width: parent.width
-            spacing: root.sectionGap
-
-            PanelHeader {
-                id: header
-
-                width: parent.width
-                sectionGap: root.sectionGap
-
-                transform: Translate {
-                    id: headerRise
-                }
-
-                powerMenuOpen: root.sessionMenuOpen
-
-                onCloseRequested: root.closeRequested()
-                onPowerRequested: root.sessionMenuOpen = !root.sessionMenuOpen
-            }
-
-            // --- sliders ----------------------------------------------------
-            Column {
-                id: slidersCol
-
-                width: parent.width
-                // Prototype .sliders gap.
-                spacing: 8
-
-                transform: Translate {
-                    id: slidersRise
-                }
-
-                QuickSlider {
-                    id: volumeSlider
-
-                    width: parent.width
-                    iconName: StatusIcons.volumeIcon(Audio.volume, Audio.muted)
-                    iconReactive: true
-                    iconChecked: Audio.muted
-                    iconTooltipKey: Audio.muted ? "quickSettings.unmute" : "quickSettings.mute"
-                    value: Audio.volume
-                    dimmed: Audio.muted
-                    hasDetail: Audio.hasSink
-                    visible: Audio.hasSink
-
-                    onMoved: newValue => Audio.setVolume(newValue)
-                    onIconClicked: Audio.toggleMuted()
-                    onDetailRequested: root.detail = "output"
-                }
-
-                QuickSlider {
-                    width: parent.width
-                    iconName: Audio.inputMuted ? "mic_off" : "mic"
-                    iconReactive: true
-                    iconChecked: Audio.inputMuted
-                    iconTooltipKey: Audio.inputMuted ? "quickSettings.unmute" : "quickSettings.mute"
-                    value: Audio.inputVolume
-                    dimmed: Audio.inputMuted
-                    visible: Audio.hasSource && Audio.microphoneInUse
-
-                    onMoved: newValue => Audio.setInputVolume(newValue)
-                    onIconClicked: Audio.toggleInputMuted()
-                }
-
-                QuickSlider {
-                    width: parent.width
-                    // Plain level readout (prototype briIco); night light
-                    // lives on its own tile.
-                    iconName: StatusIcons.brightnessIcon(Brightness.percent)
-                    value: Brightness.percent
-                    visible: Brightness.available
-
-                    onMoved: newValue => Brightness.setPercent(newValue)
-                }
-            }
-
-            TilePager {
-                id: pager
-
-                width: parent.width
-
-                transform: Translate {
-                    id: pagerRise
-                }
-
-                onDetailRequested: name => root.detail = name
-            }
-
-            PageDots {
-                id: dotsRow
-
-                width: parent.width
-                visible: pager.pageCount > 1
-                page: pager.page
-                pageCount: pager.pageCount
-
-                transform: Translate {
-                    id: dotsRise
-                }
-
-                onPageRequested: page => pager.setPage(page)
-            }
-        }
-    }
-
-    // Staggered entrance (prototype rise keyframes + nth-child delays):
-    // geometry on the spatial spring, opacity on the effects spring.
-    SequentialAnimation {
-        id: riseAnim
-
-        ScriptAction {
-            script: {
-                for (const [item, ty] of [[header, headerRise], [slidersCol, slidersRise], [pager, pagerRise], [dotsRow, dotsRise]]) {
-                    item.opacity = 0;
-                    ty.y = -10;
-                }
-            }
-        }
-
-        ParallelAnimation {
-            RiseSeq {
-                delay: 20
-                riseItem: header
-                riseTranslate: headerRise
-            }
-
-            RiseSeq {
-                delay: 110
-                riseItem: slidersCol
-                riseTranslate: slidersRise
-            }
-
-            RiseSeq {
-                delay: 140
-                riseItem: pager
-                riseTranslate: pagerRise
-            }
-
-            RiseSeq {
-                delay: 0
-                riseItem: dotsRow
-                riseTranslate: dotsRise
-            }
-        }
-    }
-
-    component RiseSeq: SequentialAnimation {
-        property int delay: 0
-        required property Item riseItem
-        required property Translate riseTranslate
-
-        PauseAnimation {
-            duration: delay
-        }
-
-        ParallelAnimation {
-            MotionAnimation {
-                target: riseTranslate
-                property: "y"
+                property: "x"
+                from: 44
                 to: 0
+                spring: Motion.spatialDefault
             }
 
             MotionAnimation {
-                target: riseItem
                 property: "opacity"
+                from: 0
                 to: 1
                 spring: Motion.effectsDefault
             }
         }
+
+        pushExit: Transition {
+            MotionAnimation {
+                property: "x"
+                from: 0
+                to: -28
+                spring: Motion.spatialDefault
+            }
+
+            MotionAnimation {
+                property: "opacity"
+                from: 1
+                to: 0
+                spring: Motion.effectsDefault
+            }
+        }
+
+        popEnter: Transition {
+            MotionAnimation {
+                property: "x"
+                from: -28
+                to: 0
+                spring: Motion.spatialDefault
+            }
+
+            MotionAnimation {
+                property: "opacity"
+                from: 0
+                to: 1
+                spring: Motion.effectsDefault
+            }
+        }
+
+        popExit: Transition {
+            MotionAnimation {
+                property: "x"
+                from: 0
+                to: 44
+                spring: Motion.spatialDefault
+            }
+
+            MotionAnimation {
+                property: "opacity"
+                from: 1
+                to: 0
+                spring: Motion.effectsDefault
+            }
+        }
+
+        replaceEnter: stack.pushEnter
+        replaceExit: stack.pushExit
     }
 
-    // ======================================================================
-    // Detail view (slides in over the locked-height panel)
-    // ======================================================================
-    DetailView {
-        id: detailView
+    MainPage {
+        id: mainPage
 
-        x: root.pad
-        y: root.pad
-        width: root.contentWidth
-        height: root.compactContentHeight
-        detail: root.detail
-        shownDetail: root.shownDetail
+        sectionGap: root.sectionGap
+        open: root.open
+        powerMenuOpen: root.sessionMenuOpen
 
-        onBackRequested: root.detail = ""
+        onCloseRequested: root.closeRequested()
+        onDetailRequested: name => root.detail = name
+        onPowerRequested: root.sessionMenuOpen = !root.sessionMenuOpen
     }
 
     // ======================================================================

@@ -37,7 +37,8 @@ QS_FILES = [
     QS_DIR / "Widgets" / "SessionMenu.qml",
     QS_DIR / "Widgets" / "TilePager.qml",
     QS_DIR / "Widgets" / "PageDots.qml",
-    QS_DIR / "Widgets" / "DetailView.qml",
+    QS_DIR / "Widgets" / "MainPage.qml",
+    QS_DIR / "Widgets" / "DetailPage.qml",
     QS_DIR / "Widgets" / "DetailRow.qml",
     QS_DIR / "Widgets" / "DetailEmpty.qml",
     QS_DIR / "Widgets" / "WifiDetailPage.qml",
@@ -160,7 +161,7 @@ def main() -> None:
     assert 'I18n.t("app.name")' not in bar, "pill placeholder must be replaced"
     assert "QuickSettingsButton {" in bar, "Bar must instantiate QuickSettingsButton"
     assert "import qs.Modules.Bar.Widgets" in bar
-    assert "systemTray.expanded || quickSettings.expanded" in bar, (
+    assert "quickSettingsLoader.item.expanded" in bar, (
         "window expansion must cover the quick-settings panel"
     )
     assert "mask: overlayExpanded ? null : barMask" in bar
@@ -311,16 +312,23 @@ def main() -> None:
     assert "toolsOpen" in panel and "ToolChip" in panel, (
         "the tools button expands the tools row"
     )
-    # Detail pages slide in over the locked compact height; the main view
-    # slides out (prototype #viewMain/#viewDetail motion).
-    assert 'enabled: root.detail === ""' in panel, "main view goes inert on detail pages"
+    # Detail navigation is an MD.StackView: it owns page visibility/input, so
+    # switching views never greys a control. Gating a still-visible view with
+    # `enabled` (the disabled-palette flash bug) is forbidden — this locks the
+    # fix in so future detail pages can't reintroduce it.
+    assert "MD.StackView" in panel, "detail navigation uses a StackView"
+    assert "enabled: root.detail" not in panel, (
+        "views must not be enabled-gated (greys MD controls mid-transition); "
+        "StackView owns visibility"
+    )
+    assert "DetailPage {" in panel, "detail pages extend the shared DetailPage chrome"
     assert "compactContentHeight" in panel, "detail pages keep the compact main height"
     assert "pageCount" in panel and "pager.page" in panel, "tile grid is paged with dots"
     assert "wheelNotches" in panel and "onWheel" in panel, (
         "wheel/touchpad over the tile area flips pages"
     )
     assert "WheelHandler {" not in panel, "WheelHandler is dead on the live compositor"
-    assert "DragHandler {" in panel, "pointer drag swipes between tile pages"
+    assert "SwipeView {" in panel, "tile pages use a SwipeView (native drag swipe)"
     assert "VerticalFlickable" in panel, "overlong detail lists scroll inside the card"
     assert 'name: "check"' in panel, "the active detail row shows a trailing check"
     assert "MD.Switch" in panel, "wifi/bt detail headers carry the radio switch"

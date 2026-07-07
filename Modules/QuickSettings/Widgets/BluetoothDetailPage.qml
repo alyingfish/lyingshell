@@ -3,40 +3,57 @@ import qs.Commons.I18n
 import qs.Services
 import "../../../Commons/Icons/StatusIcons.js" as StatusIcons
 
-// Bluetooth device list: paired/bonded/connected devices only.
-Column {
-    id: page
+// Bluetooth detail page: header switch gates the adapter; the body lists
+// paired/bonded/connected devices only.
+DetailPage {
+    id: root
 
-    property real viewportHeight: 0
-
-    spacing: 5
-
-    DetailEmpty {
-        visible: !SystemStatus.btEnabled
-        name: I18n.t("quickSettings.bluetooth")
-        viewportHeight: page.viewportHeight
+    detailName: "bluetooth"
+    title: I18n.t("quickSettings.bluetooth")
+    showSwitch: true
+    switchChecked: SystemStatus.btEnabled
+    onSwitchToggled: checked => {
+        if (SystemStatus.btAdapter !== null) {
+            SystemStatus.btAdapter.enabled = checked;
+        }
     }
 
-    Repeater {
-        model: SystemStatus.btEnabled && SystemStatus.btAdapter ? SystemStatus.btAdapter.devices.values.filter(device => device !== null && (device.paired || device.bonded || device.connected)) : []
+    bodyContent: Component {
+        Column {
+            id: page
 
-        DetailRow {
-            id: btRow
+            property real viewportHeight: 0
 
-            required property var modelData
-            required property int index
+            spacing: 5
 
-            order: index
-            text: btRow.modelData.name.length > 0 ? btRow.modelData.name : btRow.modelData.address
-            current: btRow.modelData.connected
-            leadingIcon: StatusIcons.btDeviceIcon(btRow.modelData.icon)
-            subText: btRow.modelData.connected ? I18n.t("quickSettings.btConnected") : I18n.t("quickSettings.btNotConnected")
+            DetailEmpty {
+                visible: !SystemStatus.btEnabled
+                name: I18n.t("quickSettings.bluetooth")
+                viewportHeight: page.viewportHeight
+            }
 
-            onClicked: {
-                if (btRow.modelData.connected) {
-                    btRow.modelData.disconnect();
-                } else {
-                    btRow.modelData.connect();
+            Repeater {
+                model: SystemStatus.btEnabled && SystemStatus.btAdapter ? SystemStatus.btAdapter.devices.values.filter(device => device !== null && (device.paired || device.bonded || device.connected)) : []
+
+                DetailRow {
+                    id: btRow
+
+                    required property var modelData
+                    required property int index
+
+                    order: index
+                    text: btRow.modelData.name.length > 0 ? btRow.modelData.name : btRow.modelData.address
+                    current: btRow.modelData.connected
+                    leadingIcon: StatusIcons.btDeviceIcon(btRow.modelData.icon)
+                    subText: btRow.modelData.connected ? I18n.t("quickSettings.btConnected") : I18n.t("quickSettings.btNotConnected")
+
+                    onClicked: {
+                        if (btRow.modelData.connected) {
+                            btRow.modelData.disconnect();
+                        } else {
+                            btRow.modelData.connect();
+                        }
+                    }
                 }
             }
         }
