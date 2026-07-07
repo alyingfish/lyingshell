@@ -116,6 +116,12 @@ Item {
         // Lock the compact height and drop the session card before the detail
         // page replaces the main view 1:1 (prototype collapseRowsInstant).
         mainPage.collapseRowsInstant();
+        // Freeze the compact height now, while MainPage is still visible: once
+        // the StackView puts the detail on top it sets mainPage.visible=false,
+        // which cascades to descendants (e.g. the page dots), collapsing any
+        // live measurement of MainPage and shrinking the panel. Prototype:
+        // qs.style.height = getBoundingClientRect().height.
+        detailHeight = mainPage.compactContentHeight;
         sessionMenuOpen = false;
         if (stack.depth > 1) {
             stack.replace(comp);
@@ -133,8 +139,14 @@ Item {
 
     onDetailChanged: reconcileStack()
 
+    // Frozen compact height used while a detail is shown. Snapshotted in
+    // reconcileStack() before the StackView hides MainPage, so navigation never
+    // resizes the panel. Live-bound (and thus correct) until the first push
+    // reassigns it to a constant.
+    property real detailHeight: mainPage.compactContentHeight
+
     implicitWidth: contentWidth + pad * 2
-    implicitHeight: pad * 2 + (detail !== "" ? compactContentHeight : mainPage.implicitHeight)
+    implicitHeight: pad * 2 + (detail !== "" ? detailHeight : mainPage.implicitHeight)
 
     // Refresh process-backed state whenever the panel becomes visible.
     onVisibleChanged: {
@@ -169,8 +181,8 @@ Item {
         x: root.pad
         y: root.pad
         width: root.contentWidth
-        // Detail pages lock the compact height; main drives it otherwise.
-        height: root.detail !== "" ? root.compactContentHeight : mainPage.implicitHeight
+        // Detail pages lock the frozen compact height; main drives it otherwise.
+        height: root.detail !== "" ? root.detailHeight : mainPage.implicitHeight
 
         initialItem: mainPage
 
