@@ -97,6 +97,7 @@ Item {
                 iconReactive: true
                 iconChecked: Audio.muted
                 iconTooltipKey: Audio.muted ? "quickSettings.unmute" : "quickSettings.mute"
+                detailTooltipKey: "quickSettings.outputDevice"
                 value: Audio.volume
                 dimmed: Audio.muted
                 hasDetail: Audio.hasSink

@@ -20,6 +20,8 @@ Item {
     property bool iconChecked: false
     // I18n token for the leading icon-button hover tooltip.
     property string iconTooltipKey: ""
+    // I18n token for the trailing detail-button hover tooltip.
+    property string detailTooltipKey: ""
     property bool hasDetail: false
     // Muted: prototype `.srow.muted` — the whole slider fades to 45%, its
     // active track/handle/dot turn outline, and it stops taking input; the
@@ -236,7 +238,23 @@ Item {
             icon.width: 18
             icon.height: 18
             scale: down ? 0.88 : 1
-            onClicked: control.detailRequested()
+            // Hide the tooltip on click (pointer stays over the button as the
+            // detail page opens); reset once the pointer leaves.
+            onClicked: {
+                tooltipSuppressed = true;
+                control.detailRequested();
+            }
+            onHoveredChanged: if (!hovered)
+                tooltipSuppressed = false
+
+            property bool tooltipSuppressed: false
+
+            MD.ToolTip {
+                // Below the button, like bar-tray tooltips (library default is above).
+                y: parent.height + 4
+                text: control.detailTooltipKey.length > 0 ? I18n.t(control.detailTooltipKey) : ""
+                visible: detailArrow.hovered && !detailArrow.tooltipSuppressed && text.length > 0
+            }
 
             Behavior on scale {
                 MotionAnimation {
