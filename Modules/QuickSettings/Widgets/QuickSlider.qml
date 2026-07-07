@@ -126,6 +126,10 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         implicitHeight: 38
         mdState.handleHeight: 24
+        // Prototype `.sh` keeps a constant 4px width and only grows in height
+        // while dragging; pin the line so MD3's pressed 4->2 narrowing (which
+        // thinned the handle mid-drag) doesn't fire.
+        mdState.handleLineWidth: 4
         // Muted rows keep rendering (the prototype greys them, it does not
         // use the MD3 disabled treatment) but take no track/wheel input.
         enabled: !control.dimmed
@@ -285,11 +289,15 @@ Item {
         onWheel: function(wheel) {
             // Touchpad left-right roll moves the slider too: take whichever axis
             // dominates. Base orientation is scroll-up / roll-right = increase;
-            // Settings.quickSettings.sliders.reverseScroll (default true) flips
+            // Settings.quickSettings.sliders.reverseScroll (default false) flips
             // both axes to scroll-down / roll-right = increase.
+            // wheel.inverted is set when the platform reports natural scrolling
+            // (touchpad), so the same physical direction agrees with the mouse
+            // wheel instead of moving the opposite way.
             const dir = Settings.options.quickSettings.sliders.reverseScroll ? -1 : 1;
-            const angle = dir * (Math.abs(wheel.angleDelta.x) > Math.abs(wheel.angleDelta.y) ? -wheel.angleDelta.x : wheel.angleDelta.y);
-            const pixel = dir * (Math.abs(wheel.pixelDelta.x) > Math.abs(wheel.pixelDelta.y) ? -wheel.pixelDelta.x : wheel.pixelDelta.y);
+            const invert = wheel.inverted ? -1 : 1;
+            const angle = dir * invert * (Math.abs(wheel.angleDelta.x) > Math.abs(wheel.angleDelta.y) ? -wheel.angleDelta.x : wheel.angleDelta.y);
+            const pixel = dir * invert * (Math.abs(wheel.pixelDelta.x) > Math.abs(wheel.pixelDelta.y) ? -wheel.pixelDelta.x : wheel.pixelDelta.y);
             const result = Wheel.wheelNotches(acc, angle, pixel);
             acc = result.acc;
             if (result.steps !== 0) {

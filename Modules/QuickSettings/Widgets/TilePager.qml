@@ -162,8 +162,11 @@ Item {
         property real acc: 0
 
         onWheel: function (wheel) {
-            const angle = Math.abs(wheel.angleDelta.x) > Math.abs(wheel.angleDelta.y) ? wheel.angleDelta.x : wheel.angleDelta.y;
-            const pixel = Math.abs(wheel.pixelDelta.x) > Math.abs(wheel.pixelDelta.y) ? wheel.pixelDelta.x : wheel.pixelDelta.y;
+            // wheel.inverted normalizes touchpad natural scrolling so page flips
+            // agree with the mouse wheel direction.
+            const invert = wheel.inverted ? -1 : 1;
+            const angle = invert * (Math.abs(wheel.angleDelta.x) > Math.abs(wheel.angleDelta.y) ? wheel.angleDelta.x : wheel.angleDelta.y);
+            const pixel = invert * (Math.abs(wheel.pixelDelta.x) > Math.abs(wheel.pixelDelta.y) ? wheel.pixelDelta.x : wheel.pixelDelta.y);
             const result = Wheel.wheelNotches(acc, angle, pixel);
             acc = result.acc;
             if (result.steps !== 0) {
