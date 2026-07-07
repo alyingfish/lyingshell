@@ -120,8 +120,11 @@ Item {
         y: root.pad
         width: root.contentWidth
         height: mainColumn.implicitHeight
-        // Prototype #qs.detail #viewMain: slide 28px left and fade out.
-        enabled: root.detail === ""
+        // Prototype #qs.detail #viewMain: slide 28px left and fade out. NOT
+        // gated with `enabled`: disabling would flip every MD control into its
+        // greyed disabled palette and animate it back, a flash the CSS
+        // crossfade never has. Input is blocked by the detail view's cover
+        // (DetailView catcher) while it is up.
         opacity: root.detail === "" ? 1 : 0
 
         transform: Translate {

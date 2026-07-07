@@ -14,6 +14,7 @@ TEST_FILES = (
     ROOT / "tests" / "qml" / "tst_connected_group_pointer.qml",
     ROOT / "tests" / "qml" / "tst_quicksettings_motion.qml",
     ROOT / "tests" / "qml" / "tst_powermode_matrix.qml",
+    ROOT / "tests" / "qml" / "tst_wifi_detail_refresh.qml",
 )
 MOCKS = ROOT / "tests" / "qml" / "mocks"
 

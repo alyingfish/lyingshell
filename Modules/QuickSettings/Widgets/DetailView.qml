@@ -25,8 +25,19 @@ Item {
     readonly property real slideX: detailTx.x
 
     visible: shownDetail !== ""
-    enabled: detail !== ""
+    // Input is gated by pointer-events (detailCatch below), NOT `enabled`:
+    // disabling would grey the back button / switch during the fade, a flash
+    // the prototype's pure crossfade never has.
     opacity: detail !== "" ? 1 : 0
+
+    // Prototype #viewDetail pointer-events: swallow stray input over the covered
+    // main view while the detail is active; its own controls sit above this.
+    MouseArea {
+        anchors.fill: parent
+        enabled: root.detail !== ""
+        acceptedButtons: Qt.AllButtons
+        onWheel: wheel => wheel.accepted = true
+    }
 
     transform: Translate {
         id: detailTx
@@ -199,6 +210,14 @@ Item {
             Loader {
                 id: detailLoader
 
+                // Incubate the page (and the Wi-Fi list's up-to-10 rows) across
+                // frames instead of in one synchronous burst, so the detail
+                // slide starts on the click frame and the list fills in behind
+                // it rather than the transition waiting on the build.
+                asynchronous: true
+                // Never (async-)load an empty source; unload once the exit
+                // slide has released the mounted page.
+                active: root.shownDetail !== ""
                 width: parent.width
                 source: {
                     if (root.shownDetail === "wifi") {
