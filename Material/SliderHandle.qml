@@ -31,7 +31,7 @@ Item {
     // Dwell before hovering the handle reveals the indicator (ms).
     property int hoverDelay: 500
     // Distance from the handle's resting top edge up to the indicator's
-    // bottom edge; QuickSlider passes the prototype's 6px above the row.
+    // bottom edge; QuickSlider passes 6px so the pill tucks above the handle.
     property real bubbleGap: 10
 
     readonly property var control: parent
@@ -50,7 +50,7 @@ Item {
     }
 
     // The value indicator: prototype `.sval` — a flat inverse-surface pill
-    // 6px above the row that pops from scale .6 / +4px (origin bottom).
+    // 6px above the handle that pops from scale .6 / +4px (origin bottom).
     Rectangle {
         id: bubble
 

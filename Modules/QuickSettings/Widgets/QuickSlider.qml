@@ -188,7 +188,7 @@ Item {
         }
 
         // Prototype handle: 4x24 line growing to 30 while dragged, with the
-        // flat value pill 6px above the row (13px above the resting handle).
+        // flat value pill tucked 6px above the resting handle.
         handle: SliderHandle {
             x: slider.leftPadding + slider.visualPosition * (slider.availableWidth - width)
             y: slider.topPadding + (slider.availableHeight - height) / 2
@@ -203,7 +203,9 @@ Item {
             handleWidth: slider.mdState.handleWidth
             handleHeight: slider.mdState.handleHeight
             handleLineWidth: slider.mdState.handleLineWidth
-            bubbleGap: (slider.height - handleHeight) / 2 + 6
+            // 6px above the handle's resting top edge (was 6px above the whole
+            // 38px row, which floated the pill too far off the thin handle).
+            bubbleGap: 6
         }
 
     }
