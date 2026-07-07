@@ -4,10 +4,13 @@ import QtTest
 import Quickshell.Networking
 import qs.Modules.QuickSettings.Widgets
 
-// WifiDetailPage stops rebuilding the whole delegate list on every scan tick:
-// the cached networkList (and its signature) only change when the visible
-// order or membership changes, so sub-bar signal jitter leaves the array
-// reference — and thus the delegates — untouched.
+// WifiDetailPage feeds its sorted top-10 list through a ScriptModel, which
+// diffs by network identity: a re-sort MOVES the affected row's delegate
+// instead of rebuilding the whole list. Reassigning a plain-array model (the
+// old approach) reset the Repeater and recreated every delegate; when a
+// scan-driven re-sort landed while a row was mid state-transition (scrolling),
+// destroying it crashed the shell in Qt's animation timer. This test guards
+// that the delegate is reused, not recreated.
 Window {
     id: root
 
@@ -26,36 +29,43 @@ Window {
 
         name: "WifiDetailRefresh"
 
-        function test_signature_gate() {
+        function rowFor(name) {
+            for (var i = 0; i < page.rows.count; i++) {
+                var it = page.rows.itemAt(i);
+                if (it && it.modelData && it.modelData.name === name) {
+                    return it;
+                }
+            }
+            return null;
+        }
+
+        function test_list_and_reuse() {
             // Top 10, connected network first.
-            compare(page.networkList.length, 10, "top-10 networks listed");
-            compare(page.networkList[0].name, "Homelab-5G", "connected network sorts first");
+            compare(page.rows.count, 10, "top-10 networks listed");
+            compare(page.rows.itemAt(0).modelData.name, "Homelab-5G", "connected network sorts first");
 
-            // A no-op refresh keeps the same array (no delegate churn).
-            var ref = page.networkList;
-            var sig = page._signature;
+            // Sub-bar jitter changes nothing: same delegate instance.
+            var five = rowFor("Homelab-5G");
+            verify(five !== null, "Homelab-5G row present");
+            Networking.wifiNets[0].signalStrength = 0.88; // 0.9 -> 0.88, still bar 4
             page.refresh();
-            verify(page.networkList === ref, "unchanged data keeps the same list reference");
-            compare(page._signature, sig, "unchanged data keeps the same signature");
+            verify(rowFor("Homelab-5G") === five, "sub-bar jitter keeps the delegate");
 
-            // Jitter within the same signal bar: still no churn.
-            Networking.wifiNets[1].signalStrength = 0.82; // Homelab 0.85 -> 0.82, still bar 4
+            // Crossing a signal bar reorders the list. The moved row keeps its
+            // delegate instance (a move, not a rebuild) -- the crash guard.
+            var homelab = rowFor("Homelab");
+            verify(homelab !== null, "Homelab row present");
+            Networking.wifiNets[1].signalStrength = 0.5; // bar 4 -> bar 2, drops down
             page.refresh();
-            verify(page.networkList === ref, "sub-bar jitter keeps the same list reference");
-
-            // Crossing a signal bar changes order -> new list.
-            Networking.wifiNets[1].signalStrength = 0.5; // Homelab -> bar 2
-            page.refresh();
-            verify(page.networkList !== ref, "bar crossing rebuilds the list");
-            verify(page.networkList[1].name !== "Homelab", "weakened network dropped down the list");
+            verify(rowFor("Homelab") === homelab, "reordered row keeps its delegate instance");
 
             // Toggling wifi off empties the list; back on repopulates.
             Networking.wifiEnabled = false;
             page.refresh();
-            compare(page.networkList.length, 0, "disabled wifi clears the list");
+            compare(page.rows.count, 0, "disabled wifi clears the list");
             Networking.wifiEnabled = true;
             page.refresh();
-            compare(page.networkList.length, 10, "re-enabled wifi repopulates the list");
+            compare(page.rows.count, 10, "re-enabled wifi repopulates the list");
 
             console.log("PASS: wifi detail refresh");
         }

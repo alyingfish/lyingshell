@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import Quickshell.Networking
 import Qcm.Material as MD
 import qs.Commons.I18n
@@ -14,22 +15,29 @@ Column {
     // Which network shows the inline password field.
     property var pendingNetwork: null
     property real viewportHeight: 0
-
-    // Cached, order-stable network list driving the Repeater. Recomputed
-    // imperatively (refresh()) off structural changes and a coarse timer
-    // instead of a live sort binding: a live binding re-ran on every scan tick
-    // and every signal-strength jitter, producing a fresh array that tore down
-    // and re-animated all 10 delegates each time (open lag + periodic
-    // full-list refresh). Now the same delegates persist and update their
-    // icons in place; the list is only reassigned when the visible order or
-    // membership actually changes.
-    property var networkList: []
-    property string _signature: ""
+    // Row delegates, for tests asserting reuse across a re-sort.
+    readonly property alias rows: netRepeater
 
     spacing: 5
 
+    // Order-stable network list driving the Repeater via a ScriptModel.
+    // Recomputed imperatively (refresh()) off structural changes and a coarse
+    // timer instead of a live sort binding, and fed through ScriptModel so the
+    // Repeater reuses row delegates: unchanged networks keep their delegate,
+    // re-sorts move them, and only a network leaving the list destroys its row.
+    //
+    // Reassigning a plain-array model (the previous approach) reset the
+    // Repeater and rebuilt ALL 10 rows on every re-sort. A scan-driven re-sort
+    // while scrolling then destroyed a row mid MState state-transition
+    // (press/hover), and Qt's animation timer later dereferenced the freed
+    // delegate (QQuickTransitionManager::complete -> setBinding) -> shell
+    // SIGSEGV. Identity-diffing the list keeps the interacted row alive.
+    ScriptModel {
+        id: wifiModel
+    }
+
     // Signal bar level (0..4), matching StatusIcons.wifiSignalIcon thresholds,
-    // so ordering and the change-signature ignore sub-bar jitter.
+    // so ordering ignores sub-bar jitter.
     function _level(strength) {
         var n = strength > 1 ? strength / 100 : strength;
         return n > 0.8 ? 4 : n > 0.55 ? 3 : n > 0.3 ? 2 : n > 0.05 ? 1 : 0;
@@ -38,13 +46,12 @@ Column {
     function refresh() {
         var dev = SystemStatus.wifiDevice;
         if (!Networking.wifiEnabled || !dev) {
-            if (page.networkList.length !== 0) {
-                page.networkList = [];
-                page._signature = "";
-            }
+            wifiModel.values = [];
             return;
         }
-        var nets = dev.networks.values.slice().sort((a, b) => {
+        // ScriptModel diffs by object identity and no-ops on an unchanged
+        // list, so reassigning every refresh is cheap.
+        wifiModel.values = dev.networks.values.slice().sort((a, b) => {
             if (a.connected !== b.connected) {
                 return a.connected ? -1 : 1;
             }
@@ -55,12 +62,6 @@ Column {
             }
             return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
         }).slice(0, 10);
-        var sig = nets.map(n => n.name + "|" + n.connected + "|" + page._level(n.signalStrength)).join("~");
-        if (sig === page._signature) {
-            return; // order + membership unchanged: keep the existing delegates
-        }
-        page._signature = sig;
-        page.networkList = nets;
     }
 
     // Re-sort on structural changes only: wifi on/off, the device appearing,
@@ -79,8 +80,8 @@ Column {
     }
 
     // Coarse re-sort cadence: catches APs crossing a signal bar or the scanner
-    // dropping/adding networks. The signature gate above keeps ticks that
-    // change nothing from churning delegates.
+    // dropping/adding networks. ScriptModel no-ops on ticks that change
+    // nothing, so this never churns delegates on its own.
     // ponytail: 4s poll; drop it if networks.values gains a per-AP change signal.
     Timer {
         interval: 4000
@@ -97,11 +98,13 @@ Column {
 
     MD.LinearIndicator {
         width: parent.width
-        visible: Networking.wifiEnabled && SystemStatus.wifiDevice !== null && page.networkList.length === 0
+        visible: Networking.wifiEnabled && SystemStatus.wifiDevice !== null && wifiModel.values.length === 0
     }
 
     Repeater {
-        model: page.networkList
+        id: netRepeater
+
+        model: wifiModel
 
         Column {
             id: wifiRow
