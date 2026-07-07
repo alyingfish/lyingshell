@@ -180,8 +180,11 @@ MD.Button {
 
             MD.BusyIndicator {
                 anchors.centerIn: parent
-                visible: detailRow.busy
-                running: visible
+                // Drive it via running only. The control writes its own
+                // `visible` imperatively in onRunningChanged, which clobbers a
+                // `visible:` binding and strands the spinner on-screen after
+                // busy clears (the "Connected but still spinning" bug).
+                running: detailRow.busy
                 implicitWidth: 18
                 implicitHeight: 18
             }
