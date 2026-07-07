@@ -40,9 +40,15 @@ PanelWindow {
 
     readonly property bool overlayExpanded: (systemTrayLoader.item ? systemTrayLoader.item.expanded : false) || (quickSettingsLoader.item ? quickSettingsLoader.item.expanded : false)
     implicitHeight: overlayExpanded && root.screen ? root.screen.height : barSurface.config.margin + barSurface.barHeight + Math.max(barSurface.shadowBuffer, barSurface.reversedTarget + 4, systemTrayLoader.item ? systemTrayLoader.item.collapsedReserve : 0)
-    // Reserve from the settled target, not animMargin: an animated zone repushes
-    // every frame and re-tiles windows on every morph frame.
-    exclusiveZone: barSurface.isHidden ? 0 : Math.round(barSurface.config.margin + barSurface.barHeight)
+    // Keep the reserve constant even while hidden. Dropping it to 0 on hide
+    // (e.g. overview) makes niri re-tile every window in one step, and that
+    // reflow fights the overview zoom → the stutter. The bar slides away
+    // visually via barSurface.revealOffset; the reserved strip stays put so
+    // tiles never move. reserveMargin (not config.margin) excludes floating's
+    // detached margin so empty↔populated workspace switches don't re-tile
+    // either. Reserve from the settled target, not animMargin: an animated zone
+    // repushes every frame and re-tiles on every morph frame.
+    exclusiveZone: Math.round(barSurface.reserveMargin + barSurface.barHeight)
 
     // Restrict input to the visible surface; margins/shadow/hidden stay
     // click-through. While the tray popover/drag is active the whole window

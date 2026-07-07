@@ -37,6 +37,14 @@ Item {
     readonly property string activeShape: isHidden ? lastVisibleShape : shape
     readonly property var config: shapeOptions[activeShape] || shapeOptions.fullWidth
 
+    // Reserve margin excludes floating: floating shows only on empty workspaces
+    // (AutoShape.noWindowShape), so its detached margin has no tiled window to
+    // push. Counting it would step the exclusive zone on every floating↔docked
+    // switch and re-tile the whole output. Docked shapes reserve their own
+    // margin (0 by default). The window still SIZES off config.margin so the
+    // floating surface draws fully — this only trims what gets reserved.
+    readonly property real reserveMargin: activeShape === "floating" ? 0 : config.margin
+
     readonly property real reversedTarget: activeShape === "hug" ? config.radius : 0
 
     // Settled radius for content insets; consumers animate it. Clamping the eased
