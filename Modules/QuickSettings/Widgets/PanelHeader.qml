@@ -127,7 +127,7 @@ Item {
                 MD.ToolTip {
                     y: parent.height + 4
                     text: I18n.t("quickSettings.tools")
-                    visible: toolsButton.hovered
+                    visible: toolsButton.hovered && !header.toolsOpen
                 }
             }
 
@@ -233,7 +233,7 @@ Item {
                 MD.ToolTip {
                     y: parent.height + 4
                     text: I18n.t("quickSettings.powerMode")
-                    visible: battPill.hovered
+                    visible: battPill.hovered && !header.pmodeOpen
                 }
             }
         }
