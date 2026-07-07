@@ -62,7 +62,6 @@
       "screenshot": "Screenshot",
       "calculator": "Calculator"
     },
-    "back": "Back",
     "timeLeft": "{hours}h {minutes}m left",
     "timeUntilFull": "{hours}h {minutes}m until full",
     "detailOffTitle": "{name} is off",

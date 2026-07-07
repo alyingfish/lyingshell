@@ -62,7 +62,6 @@
       "screenshot": "截图",
       "calculator": "计算器"
     },
-    "back": "返回",
     "timeLeft": "剩余 {hours} 小时 {minutes} 分钟",
     "timeUntilFull": "{hours} 小时 {minutes} 分钟后充满",
     "detailOffTitle": "{name}已关闭",

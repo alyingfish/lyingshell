@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Controls as QC
 import Qcm.Material as MD
-import qs.Commons.I18n
 import qs.Commons.Theme
 import qs.Material
 
@@ -59,12 +58,6 @@ Item {
                 }
 
                 onClicked: root.QC.StackView.view.pop()
-
-                MD.ToolTip {
-                    y: parent.height + 4
-                    text: I18n.t("quickSettings.back")
-                    visible: backButton.hovered
-                }
             }
 
             MD.Text {
