@@ -287,18 +287,16 @@ Item {
         // Wheel is dead while muted, matching the disabled slider.
         enabled: !control.dimmed
         onWheel: function(wheel) {
-            // Touchpad left-right roll moves the slider too: take whichever axis
-            // dominates. Base orientation is scroll-up / roll-right = increase;
-            // Settings.quickSettings.sliders.reverseScroll (default false) flips
-            // both axes to scroll-down / roll-right = increase.
-            // wheel.inverted is set when the platform reports natural scrolling
-            // (touchpad), so the same physical direction agrees with the mouse
-            // wheel instead of moving the opposite way.
+            // Vertical axis only, matching the Bar Workspaces widget proven on
+            // the live compositor. The old dominant-axis handling took whichever
+            // of x/y was larger per event, so a touchpad's sideways jitter kept
+            // flipping the delta's sign and tripping wheelNotches' reversal reset
+            // -- two-finger scrolls never accumulated a full notch, while a mouse
+            // wheel (pure, exact 120 on y) always worked. Base: scroll-up =
+            // increase; Settings.quickSettings.sliders.reverseScroll (default
+            // true) flips to scroll-down = increase.
             const dir = Settings.options.quickSettings.sliders.reverseScroll ? -1 : 1;
-            const invert = wheel.inverted ? -1 : 1;
-            const angle = dir * invert * (Math.abs(wheel.angleDelta.x) > Math.abs(wheel.angleDelta.y) ? -wheel.angleDelta.x : wheel.angleDelta.y);
-            const pixel = dir * invert * (Math.abs(wheel.pixelDelta.x) > Math.abs(wheel.pixelDelta.y) ? -wheel.pixelDelta.x : wheel.pixelDelta.y);
-            const result = Wheel.wheelNotches(acc, angle, pixel);
+            const result = Wheel.wheelNotches(acc, dir * wheel.angleDelta.y, dir * wheel.pixelDelta.y);
             acc = result.acc;
             if (result.steps !== 0) {
                 // Wheel has no press/focus, so reveal the value indicator for a
