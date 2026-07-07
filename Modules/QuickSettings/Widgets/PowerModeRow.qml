@@ -11,40 +11,40 @@ import qs.Services
 Rectangle {
     id: root
 
-    function hm(seconds) {
-        return {
-            "hours": Math.floor(seconds / 3600),
-            "minutes": Math.floor(seconds % 3600 / 60)
-        };
+    // Estimate text: "5h 12m" with an hour, else minutes only ("30m", "1m")
+    // floored to 1 so a live estimate never renders a dead "0h" or "0h 0m".
+    function estimate(seconds, hoursToken, minutesToken) {
+        if (seconds >= 3600) {
+            return I18n.t(hoursToken, {
+                "hours": Math.floor(seconds / 3600),
+                "minutes": Math.floor(seconds % 3600 / 60)
+            });
+        }
+        return I18n.t(minutesToken, {
+            "minutes": Math.max(1, Math.floor(seconds / 60))
+        });
     }
 
     // Battery first: while a battery exists the row describes it, never a
     // power-profile name. Profile name / "AC" is only the no-battery fallback.
     readonly property string label: {
         if (SystemStatus.hasBattery) {
-            // batteryCharging stays true at FullyCharged, so name the full
-            // state before the estimate.
             if (SystemStatus.batteryFull) {
                 return I18n.t("quickSettings.batteryFull");
             }
-            // A sub-60s estimate rounds to "0h 0m", so split the window: past
-            // 60s show "Xh Ym", 1..60s show "< 1m", and a bare 0 (UPower has no
-            // estimate yet) falls through to the raw percentage.
-            if (SystemStatus.batteryCharging) {
-                if (SystemStatus.battery.timeToFull > 60) {
-                    return I18n.t("quickSettings.timeUntilFull", hm(SystemStatus.battery.timeToFull));
-                }
-                if (SystemStatus.battery.timeToFull > 0) {
-                    return I18n.t("quickSettings.underMinuteUntilFull");
-                }
-            } else {
-                if (SystemStatus.battery.timeToEmpty > 60) {
-                    return I18n.t("quickSettings.timeLeft", hm(SystemStatus.battery.timeToEmpty));
-                }
-                if (SystemStatus.battery.timeToEmpty > 0) {
-                    return I18n.t("quickSettings.underMinuteLeft");
-                }
+            // Plugged in but held below full (charge limit / hysteresis wait).
+            if (SystemStatus.batteryNotCharging) {
+                return I18n.t("quickSettings.batteryNotCharging");
             }
+            // Active charge/discharge: show the time estimate, or "Estimating…"
+            // until UPower computes one.
+            if (SystemStatus.batteryCharging) {
+                return SystemStatus.battery.timeToFull > 0 ? estimate(SystemStatus.battery.timeToFull, "quickSettings.timeUntilFull", "quickSettings.minutesUntilFull") : I18n.t("quickSettings.estimating");
+            }
+            if (SystemStatus.battery.state === UPowerDeviceState.Discharging) {
+                return SystemStatus.battery.timeToEmpty > 0 ? estimate(SystemStatus.battery.timeToEmpty, "quickSettings.timeLeft", "quickSettings.minutesLeft") : I18n.t("quickSettings.estimating");
+            }
+            // Empty / Unknown: no estimate applies, read the raw percentage.
             return I18n.t("quickSettings.batteryPercent", {
                 "percent": SystemStatus.batteryPercent
             });

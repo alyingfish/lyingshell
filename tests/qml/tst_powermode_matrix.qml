@@ -82,40 +82,46 @@ Window {
             verify(!row.groupVisibleProbe, "2: dead profile group is hidden");
             verify(row.noticeVisibleProbe, "2: soft 'no power profile' notice shows");
 
-            // 2b: battery + no daemon + no time estimate -> percent, never a
-            // bogus default profile name.
+            // 2b: battery + no daemon + no estimate yet -> "Estimating…",
+            // never a bogus default profile name.
             apply(true, false, true);
             UPower.timeToEmpty = 0;
             wait(10);
-            compare(row.label, "87%", "2b: no estimate falls back to percent, not a profile");
+            compare(row.label, "Estimating…", "2b: no estimate reads 'Estimating…', not a profile");
 
-            // 2c: sub-minute discharge -> "< 1m left", not "0h 0m" or a bare %.
+            // 2c: sub-hour discharge -> minute-only "30m left", no dead "0h".
+            apply(true, false, true);
+            UPower.state = 2; // Discharging
+            UPower.timeToEmpty = 30 * 60;
+            wait(10);
+            compare(row.label, "30m left", "2c: sub-hour discharge drops the '0h' prefix");
+
+            // 2d: sub-minute discharge -> floors to "1m left", not "0h 0m".
             apply(true, false, true);
             UPower.state = 2; // Discharging
             UPower.timeToEmpty = 45;
             wait(10);
-            compare(row.label, "< 1m left", "2c: sub-minute discharge reads '< 1m left'");
+            compare(row.label, "1m left", "2d: sub-minute discharge floors to '1m left'");
 
-            // 2d: sub-minute charge -> "< 1m until full".
+            // 2e: sub-minute charge -> "1m until full".
             apply(true, false, true);
             UPower.state = 1; // Charging (87% < 100, so not full)
             UPower.timeToFull = 45;
             wait(10);
-            compare(row.label, "< 1m until full", "2d: sub-minute charge reads '< 1m until full'");
+            compare(row.label, "1m until full", "2e: sub-minute charge floors to '1m until full'");
 
-            // 2e: UPower reports FullyCharged at 99% (charge threshold /
-            // rounding) -> the percent, never "Fully charged" beside a 99% pill.
+            // 2f: plugged in but held below full (PendingCharge) -> "Not charging".
             apply(true, false, true);
-            UPower.state = 4; // FullyCharged
-            UPower.percentage = 0.99;
+            UPower.state = 5; // PendingCharge
+            wait(10);
+            compare(row.label, "Not charging", "2f: held-below-full reads 'Not charging'");
+
+            // 2g: charging with no estimate yet -> "Estimating…".
+            apply(true, false, true);
+            UPower.state = 1; // Charging
             UPower.timeToFull = 0;
             wait(10);
-            compare(row.label, "99%", "2e: FullyCharged at 99% reads the percent, not 'Fully charged'");
-
-            // 2f: genuinely at 100% -> "Fully charged".
-            UPower.percentage = 1.0;
-            wait(10);
-            compare(row.label, "Fully charged", "2f: 100% reads 'Fully charged'");
+            compare(row.label, "Estimating…", "2g: charging with no estimate reads 'Estimating…'");
 
             // 3: no battery (PC) + daemon -> AC readout, full profile selector.
             apply(false, true, true);
