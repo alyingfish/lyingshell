@@ -89,6 +89,20 @@ Window {
             wait(10);
             compare(row.label, "87%", "2b: no estimate falls back to percent, not a profile");
 
+            // 2c: sub-minute discharge -> "< 1m left", not "0h 0m" or a bare %.
+            apply(true, false, true);
+            UPower.state = 2; // Discharging
+            UPower.timeToEmpty = 45;
+            wait(10);
+            compare(row.label, "< 1m left", "2c: sub-minute discharge reads '< 1m left'");
+
+            // 2d: sub-minute charge -> "< 1m until full".
+            apply(true, false, true);
+            UPower.state = 1; // Charging (87% < 100, so not full)
+            UPower.timeToFull = 45;
+            wait(10);
+            compare(row.label, "< 1m until full", "2d: sub-minute charge reads '< 1m until full'");
+
             // 3: no battery (PC) + daemon -> AC readout, full profile selector.
             apply(false, true, true);
             verify(header.pillVisibleProbe, "3: pill shows for the daemon");

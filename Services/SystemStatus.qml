@@ -41,7 +41,9 @@ Singleton {
     readonly property bool hasBattery: battery !== null && battery.ready && battery.isLaptopBattery
     readonly property int batteryPercent: hasBattery ? Math.round(battery.percentage * 100) : 0
     readonly property bool batteryCharging: hasBattery && (battery.state === UPowerDeviceState.Charging || battery.state === UPowerDeviceState.PendingCharge || battery.state === UPowerDeviceState.FullyCharged)
-    readonly property bool batteryFull: hasBattery && battery.state === UPowerDeviceState.FullyCharged
+    // UPower often lingers in Charging at 100% (time-to-full a few seconds)
+    // before flipping to FullyCharged; treat both as full, matching the icon.
+    readonly property bool batteryFull: hasBattery && (battery.state === UPowerDeviceState.FullyCharged || (batteryCharging && batteryPercent >= 100))
     // Low == the battery_alert icon threshold (StatusIcons.batteryCritical).
     readonly property bool batteryLow: hasBattery && StatusIcons.batteryCritical(batteryPercent, batteryCharging)
 }

@@ -11,27 +11,47 @@ import qs.Services
 Rectangle {
     id: root
 
-    // Row label: remaining battery estimate when one exists, otherwise the
-    // current profile name.
+    function hm(seconds) {
+        return {
+            "hours": Math.floor(seconds / 3600),
+            "minutes": Math.floor(seconds % 3600 / 60)
+        };
+    }
+
+    // Battery first: while a battery exists the row describes it, never a
+    // power-profile name. Profile name / "AC" is only the no-battery fallback.
     readonly property string label: {
-        if (SystemStatus.hasBattery && !SystemStatus.batteryCharging && SystemStatus.battery.timeToEmpty > 0) {
-            return I18n.t("quickSettings.timeLeft", {
-                "hours": Math.floor(SystemStatus.battery.timeToEmpty / 3600),
-                "minutes": Math.floor(SystemStatus.battery.timeToEmpty % 3600 / 60)
-            });
-        }
-        if (SystemStatus.hasBattery && SystemStatus.batteryCharging && SystemStatus.battery.timeToFull > 0) {
-            return I18n.t("quickSettings.timeUntilFull", {
-                "hours": Math.floor(SystemStatus.battery.timeToFull / 3600),
-                "minutes": Math.floor(SystemStatus.battery.timeToFull % 3600 / 60)
-            });
-        }
-        // No daemon: there is no profile to name, so read out the battery
-        // instead of a bogus default profile.
-        if (!PowerMode.available) {
-            return SystemStatus.hasBattery ? I18n.t("quickSettings.batteryPercent", {
+        if (SystemStatus.hasBattery) {
+            // batteryCharging stays true at FullyCharged, so name the full
+            // state before the estimate.
+            if (SystemStatus.batteryFull) {
+                return I18n.t("quickSettings.batteryFull");
+            }
+            // A sub-60s estimate rounds to "0h 0m", so split the window: past
+            // 60s show "Xh Ym", 1..60s show "< 1m", and a bare 0 (UPower has no
+            // estimate yet) falls through to the raw percentage.
+            if (SystemStatus.batteryCharging) {
+                if (SystemStatus.battery.timeToFull > 60) {
+                    return I18n.t("quickSettings.timeUntilFull", hm(SystemStatus.battery.timeToFull));
+                }
+                if (SystemStatus.battery.timeToFull > 0) {
+                    return I18n.t("quickSettings.underMinuteUntilFull");
+                }
+            } else {
+                if (SystemStatus.battery.timeToEmpty > 60) {
+                    return I18n.t("quickSettings.timeLeft", hm(SystemStatus.battery.timeToEmpty));
+                }
+                if (SystemStatus.battery.timeToEmpty > 0) {
+                    return I18n.t("quickSettings.underMinuteLeft");
+                }
+            }
+            return I18n.t("quickSettings.batteryPercent", {
                 "percent": SystemStatus.batteryPercent
-            }) : I18n.t("quickSettings.acPower");
+            });
+        }
+        // No battery: read out AC, or the current profile when a daemon exists.
+        if (!PowerMode.available) {
+            return I18n.t("quickSettings.acPower");
         }
         if (PowerMode.profile === PowerProfile.Performance) {
             return I18n.t("quickSettings.powerProfile.performance");
