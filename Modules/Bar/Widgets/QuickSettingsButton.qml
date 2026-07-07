@@ -30,6 +30,32 @@ Item {
     readonly property string showBatteryValue: Settings.options.bar.widgets.quickSettingsButton.showBatteryValue
     readonly property bool showBatteryText: SystemStatus.hasBattery && (showBatteryValue === "always" || (showBatteryValue !== "never" && SystemStatus.batteryLow))
 
+    // Network tooltip: the wired label, the live SSID, or a plain "Wi-Fi".
+    readonly property string networkTip: SystemStatus.wiredConnected ? I18n.t("quickSettings.wired") : (SystemStatus.activeWifiNetwork ? SystemStatus.activeWifiNetwork.name : I18n.t("quickSettings.wifi"))
+
+    // Each pill indicator names itself on hover (GNOME status-area style). The
+    // pill is a single Button, so per-icon HoverHandlers drive per-icon
+    // tooltips the whole-button hover can't.
+    component StatusIcon: MD.Icon {
+        id: statusIcon
+
+        property string tip: ""
+
+        anchors.verticalCenter: parent.verticalCenter
+        size: 16
+
+        HoverHandler {
+            id: statusHover
+        }
+
+        MD.ToolTip {
+            // Below the icon, like the bar-tray tooltips (default is above).
+            y: parent.height + 4
+            text: statusIcon.tip
+            visible: statusHover.hovered && text.length > 0
+        }
+    }
+
     implicitWidth: pillButton.implicitWidth
     implicitHeight: pillButton.implicitHeight
 
@@ -177,75 +203,68 @@ Item {
                 spacing: 6
 
                 // Privacy indicators first, GNOME-style.
-                MD.Icon {
-                    anchors.verticalCenter: parent.verticalCenter
+                StatusIcon {
                     visible: Audio.cameraInUse
                     name: "videocam"
-                    size: 16
                     color: MD.Token.color.tertiary
+                    tip: I18n.t("quickSettings.cameraInUse")
                 }
 
-                MD.Icon {
-                    anchors.verticalCenter: parent.verticalCenter
+                StatusIcon {
                     visible: Audio.microphoneInUse
                     name: "mic"
-                    size: 16
                     color: MD.Token.color.tertiary
+                    tip: I18n.t("quickSettings.microphoneInUse")
                 }
 
-                MD.Icon {
-                    anchors.verticalCenter: parent.verticalCenter
+                StatusIcon {
                     visible: Airplane.enabled
                     name: "airplanemode_active"
-                    size: 16
                     color: pillButton.mdState.textColor
+                    tip: I18n.t("quickSettings.airplaneMode")
                 }
 
-                MD.Icon {
-                    anchors.verticalCenter: parent.verticalCenter
+                StatusIcon {
                     visible: SystemStatus.wifiDevice !== null || SystemStatus.wiredConnected
                     name: SystemStatus.networkIconName
-                    size: 16
                     color: pillButton.mdState.textColor
+                    tip: root.networkTip
                 }
 
-                MD.Icon {
-                    anchors.verticalCenter: parent.verticalCenter
+                StatusIcon {
                     visible: SystemStatus.btEnabled
                     name: "bluetooth"
-                    size: 16
                     color: pillButton.mdState.textColor
+                    tip: I18n.t("quickSettings.bluetooth")
                 }
 
-                MD.Icon {
-                    anchors.verticalCenter: parent.verticalCenter
+                StatusIcon {
                     visible: DoNotDisturb.enabled
                     name: "do_not_disturb_on"
-                    size: 16
                     color: pillButton.mdState.textColor
+                    tip: I18n.t("quickSettings.doNotDisturb")
                 }
 
-                MD.Icon {
-                    anchors.verticalCenter: parent.verticalCenter
+                StatusIcon {
                     visible: PowerMode.available && PowerMode.profile !== PowerProfile.Balanced
                     name: PowerMode.iconName
-                    size: 16
                     color: pillButton.mdState.textColor
+                    tip: PowerMode.profile === PowerProfile.Performance ? I18n.t("quickSettings.powerProfile.performance") : I18n.t("quickSettings.powerProfile.powerSaver")
                 }
 
-                MD.Icon {
-                    anchors.verticalCenter: parent.verticalCenter
+                StatusIcon {
                     name: StatusIcons.volumeIcon(Audio.volume, Audio.muted)
-                    size: 16
                     color: pillButton.mdState.textColor
+                    tip: Audio.muted ? I18n.t("quickSettings.muted") : I18n.t("quickSettings.volume")
                 }
 
-                MD.Icon {
-                    anchors.verticalCenter: parent.verticalCenter
+                StatusIcon {
                     visible: SystemStatus.hasBattery
                     name: StatusIcons.batteryIcon(SystemStatus.batteryPercent, SystemStatus.batteryCharging, SystemStatus.batteryFull)
-                    size: 16
                     color: root.batteryColor
+                    tip: I18n.t("quickSettings.batteryPercent", {
+                        "percent": SystemStatus.batteryPercent
+                    })
                 }
 
                 MD.Text {
