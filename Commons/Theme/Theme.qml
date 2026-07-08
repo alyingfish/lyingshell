@@ -118,17 +118,22 @@ Singleton {
             if (running) {
                 running = false;
             }
-            // Two sequential phases in one script so ordering is guaranteed:
-            //   1. matugen regenerates the per-app themes on disk (kitty/gtk/…).
+            // Three sequential phases in one script, ordered so nautilus flips ASAP:
+            //   1. matugen regenerates the GTK CSS on disk.
             //   2. THEN flip freedesktop color-scheme + adw-gtk3 gtk-theme so
             //      portal/libadwaita apps (nautilus) re-read the fresh
             //      lyingshell.css and legacy GTK3 follows. The scheme flip MUST
             //      come after step 1 — libadwaita re-reads the pinned @define-color
             //      set on the color-scheme change, so flipping it before the css
             //      is rewritten makes open apps latch the old mode and stick.
-            // A preempted run (running=false on a rapid re-trigger) dies before
-            // step 2, so only a completed regen flips the scheme — no early flip,
-            // no white flash (the scheme goes straight to the target, no bounce).
+            //   3. THEN the terminals (kitty/ghostty/alacritty/niri). They ignore
+            //      color-scheme; kitty live-reloads via its matugen post_hook
+            //      SIGUSR1. Doing GTK first is why nautilus no longer waits behind
+            //      ~5 serial terminal matugen spawns before its only reload trigger.
+            // A preempted run (running=false on a rapid re-trigger) killed during
+            // the GTK regen dies before the flip, so only a completed GTK regen
+            // flips the scheme — no early flip, no white flash (scheme goes
+            // straight to the target, no bounce).
             // ponytail: gsettings/dconf only; standard theme dirs only.
             command = ["sh", "-c", `
 ACCENT="$1"; MODE="$2"; DIR="$3"; IFACE=org.gnome.desktop.interface;
@@ -139,12 +144,10 @@ else
   SCHEME=prefer-light; GTK=adw-gtk3;
   ANSI='{"red":"#d20f39","green":"#40a02b","yellow":"#df8e1d","blue":"#1e66f5","magenta":"#ea76cb","cyan":"#179299"}';
 fi;
+MATUGEN=0;
 if command -v matugen >/dev/null 2>&1 && cd "$DIR" 2>/dev/null; then
+  MATUGEN=1;
   gen() { matugen color hex "$ACCENT" -m "$MODE" -t scheme-tonal-spot -q -c "$1" --import-json-string "$ANSI"; };
-  command -v kitty >/dev/null 2>&1 && gen kitty.toml;
-  command -v ghostty >/dev/null 2>&1 && gen ghostty.toml;
-  command -v alacritty >/dev/null 2>&1 && gen alacritty.toml;
-  command -v niri >/dev/null 2>&1 && gen niri.toml;
   [ -d "$HOME/.config/gtk-3.0" ] && { gen gtk3.toml; sh gtk-import.sh "$HOME/.config/gtk-3.0"; };
   [ -d "$HOME/.config/gtk-4.0" ] && { gen gtk4.toml; sh gtk-import.sh "$HOME/.config/gtk-4.0"; };
 fi;
@@ -155,6 +158,12 @@ if command -v gsettings >/dev/null 2>&1; then
 elif command -v dconf >/dev/null 2>&1; then
   dconf write /org/gnome/desktop/interface/color-scheme "'$SCHEME'";
   have_theme "$GTK" && dconf write /org/gnome/desktop/interface/gtk-theme "'$GTK'";
+fi;
+if [ "$MATUGEN" = 1 ]; then
+  command -v kitty >/dev/null 2>&1 && gen kitty.toml;
+  command -v ghostty >/dev/null 2>&1 && gen ghostty.toml;
+  command -v alacritty >/dev/null 2>&1 && gen alacritty.toml;
+  command -v niri >/dev/null 2>&1 && gen niri.toml;
 fi
 `, "sh", accent, mode, dir];
             running = true;
