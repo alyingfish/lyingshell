@@ -200,16 +200,40 @@ Item {
     MD.Button {
         id: pillButton
 
-        // Bar strip metrics: same 24px pill height as the tray buttons.
+        // Bar strip metrics: same 24px pill height as the tray buttons, and
+        // 12px side padding to match the workspaces pill (the MD3 XS button's
+        // own 16px leading/trailing space is too wide for this collapsed strip).
         implicitHeight: 24
         topInset: 0
         bottomInset: 0
         leftInset: 0
         rightInset: 0
+        leftPadding: 12
+        rightPadding: 12
 
         mdState.size: MD.Enum.XS
         mdState.type: MD.Enum.BtText
         mdState.textColor: mdState.ctx.color.on_surface
+
+        // Re-tint the state layer neutral while keeping the expanding ripple.
+        // The stock BtText ripple is `primary`, but our status glyphs are
+        // on_surface (neutral), so MD3 wants the state layer neutral too. This
+        // mirrors Button.qml's background but forces the ripple to
+        // on_surface_variant to match the workspaces pill.
+        background: MD.ElevationRectangle {
+            color: "transparent"
+            corners: pillButton.mdState.corners
+
+            MD.Ripple {
+                anchors.fill: parent
+                corners: parent.corners
+                pressX: pillButton.pressX
+                pressY: pillButton.pressY
+                pressed: pillButton.pressed
+                stateOpacity: pillButton.mdState.stateLayerOpacity
+                color: MD.Token.color.on_surface_variant
+            }
+        }
 
         onClicked: root.panelOpen = !root.panelOpen
 
@@ -222,7 +246,7 @@ Item {
                 id: pillRow
 
                 anchors.centerIn: parent
-                spacing: 6
+                spacing: 8
 
                 // Privacy indicators first, GNOME-style.
                 StatusIcon {
