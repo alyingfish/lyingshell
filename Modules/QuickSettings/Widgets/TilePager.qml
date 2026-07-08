@@ -268,9 +268,8 @@ Item {
         QuickToggle {
             width: pager.cellWidth
             labelKey: "quickSettings.nightLight"
-            // wb_twilight_2 at rest, wb_twilight when on; filled glyphs.
-            icon.name: "wb_twilight"
-            offIconName: "wb_twilight_2"
+            icon.name: "nightlight"
+            offIconName: "wb_twilight"
             alwaysFill: true
             checked: NightLight.enabled
 
