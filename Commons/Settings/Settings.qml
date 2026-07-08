@@ -204,10 +204,9 @@ Singleton {
                         // Item ids in display order for the overflow popover;
                         // unlisted items follow in service order.
                         property var overflowOrder: []
-                        // Recolor tray icons to the theme foreground (on_surface) so
-                        // dark/monochrome app icons stay legible on the dark bar.
-                        // Flattens colored logos to silhouettes; turn off to keep
-                        // original icon colors.
+                        // Auto-recolor only freedesktop *-symbolic tray icons to the
+                        // theme foreground (on_surface); colored logos render raw and
+                        // keep their hue. Turn off to never recolor.
                         property bool recolorIcons: true
                     }
                     property JsonObject workspaces: JsonObject {

@@ -1,5 +1,6 @@
 import QtQml
 import "../../Modules/Bar/Widgets/SystemTray/TrayPinning.js" as TrayPinning
+import "../../Modules/Bar/Widgets/SystemTray/TrayIcon.js" as TrayIcon
 
 QtObject {
     id: root
@@ -122,6 +123,13 @@ QtObject {
             verifyEqual(drop.zone, "blocked", "empty space blocks");
             drop = TrayPinning.classifyDrag(150, 20, geo(true));
             verifyEqual(drop.zone, "pinned", "pinned item over pinned row reorders");
+
+            // --- symbolic-icon detection (recolor gate) ---
+            verify(TrayIcon.isSymbolicIcon("image://icon/network-wireless-symbolic"), "named -symbolic icon recolors");
+            verify(TrayIcon.isSymbolicIcon("image://icon/audio-volume-high-symbolic?path=/usr/share/icons"), "-symbolic with ?path recolors");
+            verify(!TrayIcon.isSymbolicIcon("image://icon/fcitx-rime"), "named colored logo keeps color");
+            verify(!TrayIcon.isSymbolicIcon("image://qsimage/0x55f/0"), "raw pixmap keeps color");
+            verify(!TrayIcon.isSymbolicIcon(""), "empty icon keeps color");
 
             console.log("tst_tray_pinning: all assertions passed");
             Qt.exit(0);

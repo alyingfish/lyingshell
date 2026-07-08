@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Window
 import QtQuick.Effects
 import Qcm.Material as MD
+import "TrayIcon.js" as TrayIcon
 
 // One tray item: a single hit-test target rendering the app icon.
 // Duck-typed (id + icon source only) and Quickshell-free so offscreen
@@ -11,9 +12,11 @@ MD.IconButton {
 
     property string trayItemId
     property url iconSource
-    // Recolor the icon to the theme foreground so dark/monochrome app icons
-    // stay legible on the dark bar. Off = render the raw icon (keeps colors).
+    // Master enable for auto-recoloring. Only freedesktop *-symbolic icons are
+    // ever recolored (they ship expecting it); colored logos always keep their
+    // hue. Off = never recolor.
     property bool recolorIcons: false
+    readonly property bool recolor: recolorIcons && TrayIcon.isSymbolicIcon(iconSource)
     // Drag origin placeholder: keep layout, fade the icon.
     property bool ghosted: false
     // Insert pulse: bound to SystemTray's pulse state; the just-dropped item
@@ -66,12 +69,11 @@ MD.IconButton {
             fillMode: Image.PreserveAspectFit
             asynchronous: true
 
-            // Flatten the icon to a solid on_surface silhouette: brightness lifts
-            // near-black ink so colorization (luma-weighted) reaches full target
-            // instead of staying dark. ponytail: pure-MultiEffect, no per-icon
-            // dominant-color sampling; add a ColorQuantizer lift only if colored
-            // logos need to keep internal shading.
-            layer.enabled: root.recolorIcons
+            // Only symbolic icons get an effect: flatten to a solid on_surface
+            // silhouette (brightness lifts near-black ink so luma-weighted
+            // colorization reaches full target). Colored logos render raw —
+            // no layer, no recolor, no halo.
+            layer.enabled: root.recolor
             layer.effect: MultiEffect {
                 brightness: 1
                 colorization: 1
