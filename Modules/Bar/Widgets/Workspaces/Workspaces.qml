@@ -17,7 +17,7 @@ Item {
     property bool wheelCooldown: false
 
     readonly property int horizontalPadding: 8
-    readonly property int controlHeight: 28
+    readonly property int controlHeight: 24
     readonly property int dotGap: 6
     readonly property int workspaceCount: workspaceModel && workspaceModel.length !== undefined ? workspaceModel.length : 0
     readonly property bool hasWorkspaces: workspaceCount > 0

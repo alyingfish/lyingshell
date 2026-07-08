@@ -200,8 +200,8 @@ Item {
     MD.Button {
         id: pillButton
 
-        // Bar strip metrics: same 28px pill height as the tray buttons.
-        implicitHeight: 28
+        // Bar strip metrics: same 24px pill height as the tray buttons.
+        implicitHeight: 24
         topInset: 0
         bottomInset: 0
         leftInset: 0
