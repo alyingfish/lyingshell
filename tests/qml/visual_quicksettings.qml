@@ -67,8 +67,9 @@ Window {
                 panel.toolsOpen = true;
             }],
         ["pmode-open", () => {
-                panel.toolsOpen = false;
+                // Open the new row before clearing the old (as the buttons do).
                 panel.pmodeOpen = true;
+                panel.toolsOpen = false;
             }],
         ["tiles-page2", () => {
                 panel.pmodeOpen = false;

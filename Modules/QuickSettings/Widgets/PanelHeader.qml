@@ -37,11 +37,15 @@ Item {
         revealAnimated = true;
     }
 
-    // Expandable-row reveals (prototype grid-template-rows 0fr -> 1fr on the
-    // soft spring; each open row also restores its preceding section gap).
-    property real toolsReveal: toolsOpen ? 1 : 0
+    // Expandable rows are one clipped viewport holding a two-slide track.
+    // Open/close is a height reveal (prototype grid-template-rows 0fr -> 1fr on
+    // the soft spring, restoring the preceding section gap). Switching
+    // tool<->power while open slides the track vertically instead (MD3 shared
+    // axis): both slides move up together (tools->power) or down together
+    // (power->tools), viewport height unchanged.
+    property real switchReveal: (toolsOpen || pmodeOpen) ? 1 : 0
 
-    Behavior on toolsReveal {
+    Behavior on switchReveal {
         enabled: header.revealAnimated
 
         MotionAnimation {
@@ -49,20 +53,22 @@ Item {
         }
     }
 
-    property real pmodeReveal: pmodeOpen ? 1 : 0
+    readonly property real switchSpace: switchReveal * (sectionGap + 40)
 
-    Behavior on pmodeReveal {
-        enabled: header.revealAnimated
+    // Latched index of the shown row (0 tools, 1 pmode); retains its value
+    // while collapsed so reopening the same row never slides and open-from-
+    // closed to the other row snaps (see the track's Behavior gate). Latching
+    // on the *open* edge tracks both button clicks and the e2e/harness direct
+    // sets of toolsOpen/pmodeOpen.
+    property int switchIndex: 0
+    onToolsOpenChanged: if (toolsOpen) switchIndex = 0
+    onPmodeOpenChanged: if (pmodeOpen) switchIndex = 1
 
-        MotionAnimation {
-            spring: Motion.spatialSlow
-        }
-    }
+    implicitHeight: 32 + switchSpace
 
-    readonly property real toolsSpace: toolsReveal * (sectionGap + 40)
-    readonly property real pmodeSpace: pmodeReveal * (sectionGap + 40)
-
-    implicitHeight: 32 + toolsSpace + pmodeSpace
+    // Switcher track offset (0 tools .. -(gap+40) pmode); the motion test reads
+    // it to prove tool<->power is a slide, not a height morph.
+    readonly property real switchSlideProbe: switchTrack.y
 
     // Test-only surface (tests/qml/tst_powermode_matrix.qml).
     readonly property bool pillVisibleProbe: battPill.visible
@@ -122,8 +128,15 @@ Item {
                 }
 
                 onClicked: {
-                    header.pmodeOpen = false;
-                    header.toolsOpen = !header.toolsOpen;
+                    // Set the newly-open row before clearing the other so the
+                    // reveal never dips false mid-switch (keeps the slide gate
+                    // enabled -> clean slide instead of a reveal flicker).
+                    if (header.toolsOpen) {
+                        header.toolsOpen = false;
+                    } else {
+                        header.toolsOpen = true;
+                        header.pmodeOpen = false;
+                    }
                 }
 
                 MD.ToolTip {
@@ -184,8 +197,13 @@ Item {
                 }
 
                 onClicked: {
-                    header.toolsOpen = false;
-                    header.pmodeOpen = !header.pmodeOpen;
+                    // See toolsButton: open the new row before clearing the old.
+                    if (header.pmodeOpen) {
+                        header.pmodeOpen = false;
+                    } else {
+                        header.pmodeOpen = true;
+                        header.toolsOpen = false;
+                    }
                 }
 
                 contentItem: Row {
@@ -333,16 +351,18 @@ Item {
         }
     }
 
-    // --- tools row (prototype #rowTools) ------------------------------------
+    // --- expandable-row switcher (prototype #rowSwitch) ---------------------
+    // One clipped viewport below the 32px header row; the track holds both
+    // slides stacked and translates to switch. Height + opacity reveal on
+    // open/close (opacity is the fast standard fade, decoupled from the reveal
+    // spring); the track slides only while fully open, so open/close stays a
+    // pure reveal (the track snaps under the growing/shrinking clip).
     Item {
         y: 32
         width: parent.width
-        height: header.toolsSpace
+        height: header.switchSpace
         clip: true
-        // Prototype .xrow: opacity is a fast standard fade (.25s), decoupled
-        // from the .45s grid-rows reveal; the content is top-anchored below
-        // the section gap and wipes in top-first (clip from the bottom).
-        opacity: header.toolsOpen ? 1 : 0
+        opacity: (header.toolsOpen || header.pmodeOpen) ? 1 : 0
 
         Behavior on opacity {
             enabled: header.revealAnimated
@@ -352,36 +372,48 @@ Item {
             }
         }
 
-        ToolsRow {
-            anchors.top: parent.top
-            anchors.topMargin: header.sectionGap
+        Item {
+            id: switchTrack
+
             width: parent.width
+            // 0 -> tools slide, -(gap+40) -> pmode slide.
+            y: -header.switchIndex * (header.sectionGap + 40)
 
-            onCollapseRequested: header.toolsOpen = false
-            onCloseRequested: header.closeRequested()
-        }
-    }
+            Behavior on y {
+                enabled: header.revealAnimated && header.switchReveal > 0.99
 
-    // --- power-mode row (prototype #rowPmode) --------------------------------
-    Item {
-        y: 32 + header.toolsSpace
-        width: parent.width
-        height: header.pmodeSpace
-        clip: true
-        opacity: header.pmodeOpen ? 1 : 0
-
-        Behavior on opacity {
-            enabled: header.revealAnimated
-
-            MotionAnimation {
-                spring: Motion.effectsSlow
+                MotionAnimation {
+                    spring: Motion.spatialSlow
+                }
             }
-        }
 
-        PowerModeRow {
-            anchors.top: parent.top
-            anchors.topMargin: header.sectionGap
-            width: parent.width
+            // tools slide (its own preceding section gap on top).
+            Item {
+                width: parent.width
+                height: header.sectionGap + 40
+
+                ToolsRow {
+                    anchors.top: parent.top
+                    anchors.topMargin: header.sectionGap
+                    width: parent.width
+
+                    onCollapseRequested: header.toolsOpen = false
+                    onCloseRequested: header.closeRequested()
+                }
+            }
+
+            // power-mode slide.
+            Item {
+                y: header.sectionGap + 40
+                width: parent.width
+                height: header.sectionGap + 40
+
+                PowerModeRow {
+                    anchors.top: parent.top
+                    anchors.topMargin: header.sectionGap
+                    width: parent.width
+                }
+            }
         }
     }
 }

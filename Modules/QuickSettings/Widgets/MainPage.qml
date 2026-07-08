@@ -26,10 +26,11 @@ Item {
     // Expandable-row state; the panel aliases these for tests/e2e.
     property alias toolsOpen: header.toolsOpen
     property alias pmodeOpen: header.pmodeOpen
-    property alias toolsReveal: header.toolsReveal
-    property alias pmodeReveal: header.pmodeReveal
+    // Unified reveal (0 closed, 1 open) driving the row-switcher height.
+    property alias switchReveal: header.switchReveal
 
     // Probes/handles the panel forwards (tests + e2e wheel targets).
+    readonly property real switchSlideProbe: header.switchSlideProbe
     readonly property real headerOpacityProbe: header.opacity
     readonly property real pagerOpacityProbe: pager.opacity
     readonly property Item tileArea: pager

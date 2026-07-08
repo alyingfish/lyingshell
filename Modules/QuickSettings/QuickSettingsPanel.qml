@@ -45,8 +45,8 @@ Item {
     // Expandable-row state lives in the header; aliased here for tests/e2e.
     property alias toolsOpen: mainPage.toolsOpen
     property alias pmodeOpen: mainPage.pmodeOpen
-    property alias toolsReveal: mainPage.toolsReveal
-    property alias pmodeReveal: mainPage.pmodeReveal
+    // Unified reveal (0 closed, 1 open) driving the row-switcher height.
+    property alias switchReveal: mainPage.switchReveal
 
     // Test/e2e surface (tests/e2e/QuickSettingsIpcDriver.qml,
     // tests/qml/tst_quicksettings_motion.qml).
@@ -54,6 +54,7 @@ Item {
     readonly property int pageCount: mainPage.pageCount
     readonly property Item tileArea: mainPage.tileArea
     readonly property Item volumeRow: mainPage.volumeRow
+    readonly property real switchSlideProbe: mainPage.switchSlideProbe
     readonly property real headerOpacityProbe: mainPage.headerOpacityProbe
     readonly property real pagerOpacityProbe: mainPage.pagerOpacityProbe
     readonly property Item tileTrackProbe: mainPage.tileTrackProbe

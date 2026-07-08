@@ -49,14 +49,43 @@ Window {
         function test_tools_reveal_spring() {
             panel.toolsOpen = true;
             wait(100);
-            const mid = panel.toolsReveal;
+            const mid = panel.switchReveal;
             verify(mid > 0.1 && mid < 0.98, "tools reveal animates through midflight, got " + mid);
             wait(600);
-            verify(Math.abs(panel.toolsReveal - 1) < 0.01, "tools reveal settles open");
+            verify(Math.abs(panel.switchReveal - 1) < 0.01, "tools reveal settles open");
             // The open row adds its gap + 40px row to the panel height.
             panel.toolsOpen = false;
             wait(600);
-            verify(Math.abs(panel.toolsReveal) < 0.01, "tools reveal settles closed");
+            verify(Math.abs(panel.switchReveal) < 0.01, "tools reveal settles closed");
+        }
+
+        // Switching tool<->power while open is a vertical slide of the track,
+        // not a height morph: the reveal stays open (~1, no dip -> no accordion
+        // bulge) while the track offset animates 0 -> -(gap+40) and back.
+        function test_switch_slide() {
+            panel.toolsOpen = true;
+            wait(700);
+            compare(Math.round(panel.switchSlideProbe), 0, "track starts on the tools slide");
+            // tools -> power: both slide up together (track offset goes negative).
+            // Set the new row before clearing the old (as the buttons do) so the
+            // reveal never dips and the slide gate stays enabled.
+            panel.pmodeOpen = true;
+            panel.toolsOpen = false;
+            wait(120);
+            const slideMid = panel.switchSlideProbe;
+            verify(slideMid < -3 && slideMid > -47, "track slides mid-flight, got " + slideMid);
+            verify(panel.switchReveal > 0.99, "reveal stays open during the switch (no bulge), got " + panel.switchReveal);
+            wait(600);
+            compare(Math.round(panel.switchSlideProbe), -50, "track settles on the power slide");
+            // power -> tools: both slide back down.
+            panel.toolsOpen = true;
+            panel.pmodeOpen = false;
+            wait(120);
+            verify(panel.switchSlideProbe < -3, "track slides back mid-flight, got " + panel.switchSlideProbe);
+            wait(600);
+            compare(Math.round(panel.switchSlideProbe), 0, "track settles back on the tools slide");
+            panel.toolsOpen = false;
+            wait(600);
         }
 
         function test_detail_slide() {
