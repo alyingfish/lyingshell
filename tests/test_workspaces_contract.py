@@ -105,7 +105,6 @@ def main() -> None:
     assert "readonly property int horizontalPadding: 8" in workspaces
     assert "readonly property int controlHeight: 28" in workspaces
     assert "readonly property int dotGap: 6" in workspaces
-    assert "Settings.options.bar.widgets.workspaces.reverseScroll" in workspaces
     assert "Settings.options.bar.widgets.workspaces.scrollLoop" in workspaces
     assert "Settings.options.bar.widgets.workspaces.urgentPulse" in workspaces
     assert "Workspaces {" in workspaces_pointer_test

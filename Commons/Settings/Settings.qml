@@ -211,19 +211,12 @@ Singleton {
                         property bool recolorIcons: true
                     }
                     property JsonObject workspaces: JsonObject {
-                        property bool reverseScroll: false
                         property bool scrollLoop: true
                         property bool urgentPulse: true
                     }
                 }
             }
             property JsonObject quickSettings: JsonObject {
-                property JsonObject sliders: JsonObject {
-                    // Volume/brightness scroll direction. false (default) =
-                    // scroll-up / roll-right increases, matching the mainstream
-                    // volume-slider convention; true flips to scroll-down.
-                    property bool reverseScroll: false
-                }
                 property JsonObject widgets: JsonObject {
                     property JsonObject nightLight: JsonObject {
                         // Manual quick-settings toggle; Services/NightLight.qml

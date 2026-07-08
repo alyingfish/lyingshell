@@ -8,7 +8,7 @@ Item {
     property bool pulseEnabled: true
 
     signal activated(string workspaceId)
-    signal wheelRequested(real delta)
+    signal wheelRequested(real delta, bool isTouchpad)
 
     readonly property int dotSize: 8
     readonly property int activeWidth: 24
@@ -156,8 +156,10 @@ Item {
 
         onClicked: root.activated(root.workspace.id)
         onWheel: function(wheel) {
-            var delta = wheel.angleDelta.y !== 0 ? wheel.angleDelta.y : wheel.pixelDelta.y;
-            root.wheelRequested(delta);
+            // Sum both axes (see Workspaces.qml); a pixelDelta means touchpad.
+            var angle = wheel.angleDelta.x + wheel.angleDelta.y;
+            var pixel = wheel.pixelDelta.x + wheel.pixelDelta.y;
+            root.wheelRequested(angle !== 0 ? angle : pixel * 8, pixel !== 0);
             wheel.accepted = true;
         }
     }

@@ -78,6 +78,8 @@ Window {
 
                 root.requestedWorkspaceId = "";
                 root.requestCount = 0;
+                // One switch per cooldown (150ms): wait it out before the next.
+                tester.wait(220);
                 tester.mouseWheel(workspaces, 2, workspaces.height / 2, 0, 120);
                 root.verifyEqual(root.requestedWorkspaceId, "1", "wheel up over pill padding should request previous workspace");
                 root.verifyEqual(root.requestCount, 1, "wheel up should emit one focus request");

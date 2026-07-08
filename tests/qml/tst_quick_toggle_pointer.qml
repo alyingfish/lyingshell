@@ -109,7 +109,8 @@ Window {
             verify(root.menuToggleClicks === 1, "arrow click must not toggle");
 
             // QuickSlider: wheel over the row nudges the value by the
-            // prototype's coarse step of 5 (0.25 -> 0.30).
+            // prototype's coarse step of 5. niri owns scroll-direction, so
+            // scroll up = increase (0.25 -> 0.30).
             mouseWheel(slider, slider.width / 2, slider.height / 2, 0, 120, Qt.NoButton);
             wait(20);
             verify(Math.abs(root.movedValue - 0.3) < 0.001, "wheel up should step +5, got " + root.movedValue);

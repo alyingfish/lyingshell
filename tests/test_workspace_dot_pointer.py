@@ -32,7 +32,6 @@ QtObject {
     readonly property QtObject options: QtObject {
         readonly property QtObject bar: QtObject {
             readonly property QtObject workspaces: QtObject {
-                property bool reverseScroll: false
                 property bool scrollLoop: true
                 property bool urgentPulse: true
             }

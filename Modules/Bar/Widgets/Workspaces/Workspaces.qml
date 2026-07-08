@@ -10,6 +10,12 @@ Item {
 
     signal focusRequested(string workspaceId)
 
+    // Wheel scroll handling. Shared by the pill background and every dot so a
+    // scroll reads as one surface. See handleWheel: accumulate to a threshold,
+    // switch exactly one workspace, then gate input for a cooldown.
+    property real wheelAccumulator: 0
+    property bool wheelCooldown: false
+
     readonly property int horizontalPadding: 8
     readonly property int controlHeight: 28
     readonly property int dotGap: 6
@@ -80,8 +86,11 @@ Item {
         cursorShape: Qt.PointingHandCursor
 
         onWheel: function(wheel) {
-            var delta = wheel.angleDelta.y !== 0 ? wheel.angleDelta.y : wheel.pixelDelta.y;
-            root.handleWheelDelta(delta);
+            // Sum both axes so a touchpad's perpendicular wobble can't flip the
+            // sign; a pixelDelta means it's a touchpad (higher threshold).
+            var angle = wheel.angleDelta.x + wheel.angleDelta.y;
+            var pixel = wheel.pixelDelta.x + wheel.pixelDelta.y;
+            root.handleWheel(angle !== 0 ? angle : pixel * 8, pixel !== 0);
             wheel.accepted = true;
         }
     }
@@ -121,8 +130,8 @@ Item {
                     root.focusRequested(workspaceId);
                 }
 
-                onWheelRequested: function(delta) {
-                    root.handleWheelDelta(delta);
+                onWheelRequested: function(delta, isTouchpad) {
+                    root.handleWheel(delta, isTouchpad);
                 }
             }
         }
@@ -178,15 +187,46 @@ Item {
         }
     }
 
-    function handleWheelDelta(delta) {
-        var workspaceId = workspaceIdForWheel(delta);
+    // Resets the cooldown gate once niri has had time to apply the focus.
+    Timer {
+        id: wheelCooldownTimer
+
+        interval: 150
+        onTriggered: {
+            root.wheelCooldown = false;
+            root.wheelAccumulator = 0;
+        }
+    }
+
+    function handleWheel(delta, isTouchpad) {
+        // Accumulate to a threshold, switch exactly ONE workspace, then gate
+        // further input for a short cooldown. Niri applies focus asynchronously,
+        // so without this a fast touchpad swipe stacks several notches before
+        // the active workspace updates -- overshooting by two or misfiring.
+        // Pattern from dank-material-shell / noctalia workspace switchers.
+        if (wheelCooldown) {
+            return;
+        }
+        wheelAccumulator += delta;
+        // Touchpads stream far more (smaller) events than a mouse notch (120);
+        // both thresholds are calibration knobs -- raise for less sensitivity.
+        var threshold = isTouchpad ? 500 : 120;
+        if (Math.abs(wheelAccumulator) < threshold) {
+            return;
+        }
+        // Positive delta = up/left = previous workspace.
+        var steps = wheelAccumulator > 0 ? 1 : -1;
+        wheelAccumulator = 0;
+        wheelCooldown = true;
+        wheelCooldownTimer.restart();
+        var workspaceId = workspaceIdForSteps(steps);
         if (workspaceId.length > 0) {
             focusRequested(workspaceId);
         }
     }
 
-    function workspaceIdForWheel(delta) {
-        if (delta === 0 || workspaceCount === 0) {
+    function workspaceIdForSteps(steps) {
+        if (steps === 0 || workspaceCount === 0) {
             return "";
         }
 
@@ -198,14 +238,10 @@ Item {
             return "";
         }
 
-        var step = delta < 0 ? 1 : -1;
-        if (Settings.options.bar.widgets.workspaces.reverseScroll) {
-            step = -step;
-        }
-
-        var nextIndex = currentIndex + step;
+        // Positive steps = up/left = previous workspace (lower index).
+        var nextIndex = currentIndex - steps;
         nextIndex = Settings.options.bar.widgets.workspaces.scrollLoop
-            ? (nextIndex + workspaceCount) % workspaceCount
+            ? ((nextIndex % workspaceCount) + workspaceCount) % workspaceCount
             : MD.Util.clamp(nextIndex, 0, workspaceCount - 1);
 
         if (nextIndex === currentIndex) {

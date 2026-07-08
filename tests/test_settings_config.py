@@ -96,7 +96,6 @@ def main() -> None:
     assert "property real blur: 8.0" in settings_qml
     assert "property real opacity: 1.0" in settings_qml
     assert "property real blur: 0.0" in settings_qml
-    assert "property bool reverseScroll: false" in settings_qml
     assert "property bool scrollLoop: true" in settings_qml
     assert "property bool urgentPulse: true" in settings_qml
     appearance_body = handler_body(settings_qml, "property JsonObject appearance")

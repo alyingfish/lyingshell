@@ -1,7 +1,6 @@
 import QtQuick
 import Qcm.Material as MD
 import qs.Commons.I18n
-import qs.Commons.Settings
 import qs.Material
 import "../../../Material/Wheel.js" as Wheel
 
@@ -287,16 +286,12 @@ Item {
         // Wheel is dead while muted, matching the disabled slider.
         enabled: !control.dimmed
         onWheel: function(wheel) {
-            // Vertical axis only, matching the Bar Workspaces widget proven on
-            // the live compositor. The old dominant-axis handling took whichever
-            // of x/y was larger per event, so a touchpad's sideways jitter kept
-            // flipping the delta's sign and tripping wheelNotches' reversal reset
-            // -- two-finger scrolls never accumulated a full notch, while a mouse
-            // wheel (pure, exact 120 on y) always worked. Base: scroll-up =
-            // increase; Settings.quickSettings.sliders.reverseScroll (default
-            // true) flips to scroll-down = increase.
-            const dir = Settings.options.quickSettings.sliders.reverseScroll ? -1 : 1;
-            const result = Wheel.wheelNotches(acc, dir * wheel.angleDelta.y, dir * wheel.pixelDelta.y);
+            // niri owns scroll-direction (natural scroll); take the wheel at
+            // face value. Dominant axis so a horizontal wheel or two-finger
+            // swipe adjusts too: scroll up/left = increase, down/right = decrease.
+            const angle = Math.abs(wheel.angleDelta.x) > Math.abs(wheel.angleDelta.y) ? wheel.angleDelta.x : wheel.angleDelta.y;
+            const pixel = Math.abs(wheel.pixelDelta.x) > Math.abs(wheel.pixelDelta.y) ? wheel.pixelDelta.x : wheel.pixelDelta.y;
+            const result = Wheel.wheelNotches(acc, angle, pixel);
             acc = result.acc;
             if (result.steps !== 0) {
                 // Wheel has no press/focus, so reveal the value indicator for a
