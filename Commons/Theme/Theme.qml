@@ -37,6 +37,31 @@ Singleton {
     Component.onCompleted: {
         // FileView won't create the parent dir; ensure it before any write.
         ensureCacheDir.running = true;
+        // Don't theme off a not-yet-loaded mode. Settings load asynchronously;
+        // until they land, appearance.mode falls back to the adapter default
+        // ("light"). Acting on that stale mode makes accentPush regenerate every
+        // app theme (kitty/ghostty/gtk…) in LIGHT and SIGUSR1-reload the apps,
+        // flashing the whole desktop before mode flips to dark. So the first
+        // apply/push is deferred to onIsLoadedChanged below. blockLoading on the
+        // Settings FileView does NOT help — cross-singleton init runs this
+        // handler before that load populates the adapter.
+        if (Settings.isLoaded) {
+            applyAll();
+        }
+    }
+
+    // Fires the initial apply/push exactly once, when settings are loaded and the
+    // real persisted mode is known.
+    Connections {
+        target: Settings
+        function onIsLoadedChanged() {
+            if (Settings.isLoaded) {
+                root.applyAll();
+            }
+        }
+    }
+
+    function applyAll() {
         apply();
         pushSystemMode();
         pushAccentColor();
@@ -48,13 +73,17 @@ Singleton {
     }
 
     onEffectiveModeChanged: {
-        apply();
-        pushSystemMode();
-        pushAccentColor();
-        // Primary differs per mode; re-extract if wallpaper colors are on.
-        maybeExtractFromWallpaper();
+        // Skip the load-time "light"→persisted transition; onIsLoadedChanged owns
+        // the first push. Only real, post-load mode changes reach here.
+        if (!Settings.isLoaded) {
+            return;
+        }
+        applyAll();
     }
     onRequestedAccentColorChanged: {
+        if (!Settings.isLoaded) {
+            return;
+        }
         apply();
         pushAccentColor();
     }
@@ -107,12 +136,17 @@ Singleton {
             if (running) {
                 running = false;
             }
-            // Running GTK apps read gtk.css once at startup, so rewriting
-            // lyingshell.css alone changes nothing on screen. Bounce gtk-theme
-            // (GTK3) and color-scheme (GTK4/libadwaita, e.g. nautilus) to force
-            // a stylesheet reload — only when the generated css actually
-            // changed, so shell restarts don't flash every open GTK app.
-            command = ["sh", "-c", 'ACCENT="$1"; MODE="$2"; DIR="$3"; ' + "command -v matugen >/dev/null 2>&1 || exit 0; " + 'cd "$DIR" 2>/dev/null || exit 0; ' + 'if [ "$MODE" = "dark" ]; then ' + 'ANSI=\'{"red":"#f38ba8","green":"#a6e3a1","yellow":"#f9e2af","blue":"#89b4fa","magenta":"#f5c2e7","cyan":"#94e2d5"}\'; ' + 'else ' + 'ANSI=\'{"red":"#d20f39","green":"#40a02b","yellow":"#df8e1d","blue":"#1e66f5","magenta":"#ea76cb","cyan":"#179299"}\'; ' + 'fi; ' + 'gen() { matugen color hex "$ACCENT" -m "$MODE" -t scheme-tonal-spot -q -c "$1" --import-json-string "$ANSI"; }; ' + "command -v kitty >/dev/null 2>&1 && gen kitty.toml; " + "command -v ghostty >/dev/null 2>&1 && gen ghostty.toml; " + "command -v alacritty >/dev/null 2>&1 && gen alacritty.toml; " + "command -v niri >/dev/null 2>&1 && gen niri.toml; " + 'G4="$HOME/.config/gtk-4.0/lyingshell.css"; OLD=$(cksum "$G4" 2>/dev/null); ' + '[ -d "$HOME/.config/gtk-3.0" ] && { gen gtk3.toml; sh gtk-import.sh "$HOME/.config/gtk-3.0"; }; ' + '[ -d "$HOME/.config/gtk-4.0" ] && { gen gtk4.toml; sh gtk-import.sh "$HOME/.config/gtk-4.0"; }; ' + 'NEW=$(cksum "$G4" 2>/dev/null); ' + 'if [ "$NEW" != "$OLD" ] && command -v gsettings >/dev/null 2>&1; then ' + 'IFACE=org.gnome.desktop.interface; ' + 'CUR=$(gsettings get "$IFACE" gtk-theme | tr -d "\'"); ' + '[ -n "$CUR" ] && { gsettings set "$IFACE" gtk-theme ""; gsettings set "$IFACE" gtk-theme "$CUR"; }; ' + 'if [ "$MODE" = "dark" ]; then OPP=prefer-light; else OPP=prefer-dark; fi; ' + 'gsettings set "$IFACE" color-scheme "$OPP"; sleep 0.1; gsettings set "$IFACE" color-scheme "prefer-$MODE"; ' + "fi; " + "exit 0", "sh", accent, mode, dir];
+            // Regenerate the on-disk GTK css only; do NOT force-reload running
+            // apps. Open GTK apps read gtk.css once, so they keep the old accent
+            // until their next launch — like noctalia/caelestia/end-4. Mode
+            // changes are handled by pushSystemMode() (correct color-scheme +
+            // gtk-theme, no bounce).
+            // ponytail: dropped live accent-recolor of already-open apps. The old
+            // trick bounced color-scheme to the opposite value (prefer-light on
+            // dark) for 100ms to trigger a libadwaita reload, flashing the whole
+            // desktop white on every dark start. A flash-free live reload isn't
+            // possible via gsettings; add per-app D-Bus/SIGHUP if ever needed.
+            command = ["sh", "-c", 'ACCENT="$1"; MODE="$2"; DIR="$3"; ' + "command -v matugen >/dev/null 2>&1 || exit 0; " + 'cd "$DIR" 2>/dev/null || exit 0; ' + 'if [ "$MODE" = "dark" ]; then ' + 'ANSI=\'{"red":"#f38ba8","green":"#a6e3a1","yellow":"#f9e2af","blue":"#89b4fa","magenta":"#f5c2e7","cyan":"#94e2d5"}\'; ' + 'else ' + 'ANSI=\'{"red":"#d20f39","green":"#40a02b","yellow":"#df8e1d","blue":"#1e66f5","magenta":"#ea76cb","cyan":"#179299"}\'; ' + 'fi; ' + 'gen() { matugen color hex "$ACCENT" -m "$MODE" -t scheme-tonal-spot -q -c "$1" --import-json-string "$ANSI"; }; ' + "command -v kitty >/dev/null 2>&1 && gen kitty.toml; " + "command -v ghostty >/dev/null 2>&1 && gen ghostty.toml; " + "command -v alacritty >/dev/null 2>&1 && gen alacritty.toml; " + "command -v niri >/dev/null 2>&1 && gen niri.toml; " + '[ -d "$HOME/.config/gtk-3.0" ] && { gen gtk3.toml; sh gtk-import.sh "$HOME/.config/gtk-3.0"; }; ' + '[ -d "$HOME/.config/gtk-4.0" ] && { gen gtk4.toml; sh gtk-import.sh "$HOME/.config/gtk-4.0"; }; ' + "exit 0", "sh", accent, mode, dir];
             running = true;
         }
     }
