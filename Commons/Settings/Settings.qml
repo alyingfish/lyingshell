@@ -127,10 +127,10 @@ Singleton {
                 // Derive the runtime accent from the wallpaper via matugen.
                 // The derived color stays in memory (Theme.wallpaperAccent);
                 // it never overwrites accentColor in this file.
-                property bool useWallpaperColor: false
+                property bool useWallpaperColor: true
             }
             property JsonObject bar: JsonObject {
-                property string currentShape: "floating"
+                property string currentShape: "autoShape"
                 // Per-shape fields; `radius` applied per shape by BarSurface.
                 // height + exclusiveZone are per-shape: the bar reserves exactly
                 // exclusiveZone from the top edge.
@@ -238,7 +238,7 @@ Singleton {
                 property string fillMode: "crop"
                 property string fillColor: "#000000"
                 // Pool to pick from on each change; random when >1, "none" = instant.
-                property var transitionType: ["fade"]
+                property var transitionType: ["disc"]
                 property int transitionDuration: 1000
                 property real transitionEdgeSmoothness: 0.05
                 // Niri overview backdrop (needs a place-within-backdrop layer rule).

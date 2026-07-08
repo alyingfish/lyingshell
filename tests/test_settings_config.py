@@ -86,7 +86,7 @@ def main() -> None:
 
     assert 'property string language: "en"' in settings_qml
     assert "property real height: 32" in settings_qml
-    assert 'property string currentShape: "floating"' in settings_qml
+    assert 'property string currentShape: "autoShape"' in settings_qml
     assert "property int margin: 8" in settings_qml
     assert "property int radius: 16" in settings_qml
     assert "property int radius: 0" in settings_qml
@@ -103,7 +103,7 @@ def main() -> None:
     assert 'property string mode: "light"' in appearance_body
     assert 'property string accentColor: "#4F6357"' in appearance_body
     assert 'property string font: "Noto Sans"' in appearance_body
-    assert "property bool useWallpaperColor: false" in appearance_body
+    assert "property bool useWallpaperColor: true" in appearance_body
 
     # Missing-file branch creates the file; corrupt/IO error branch must not
     # overwrite the bad file, only fall back to in-memory defaults.
