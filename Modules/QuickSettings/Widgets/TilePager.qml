@@ -162,11 +162,11 @@ Item {
         property real acc: 0
 
         onWheel: function (wheel) {
-            // wheel.inverted normalizes touchpad natural scrolling so page flips
-            // agree with the mouse wheel direction.
-            const invert = wheel.inverted ? -1 : 1;
-            const angle = invert * (Math.abs(wheel.angleDelta.x) > Math.abs(wheel.angleDelta.y) ? wheel.angleDelta.x : wheel.angleDelta.y);
-            const pixel = invert * (Math.abs(wheel.pixelDelta.x) > Math.abs(wheel.pixelDelta.y) ? wheel.pixelDelta.x : wheel.pixelDelta.y);
+            // niri owns scroll-direction (natural scroll); take the wheel at
+            // face value. Dominant axis so a horizontal wheel or two-finger
+            // swipe pages too: up/left = previous page, down/right = next page.
+            const angle = Math.abs(wheel.angleDelta.x) > Math.abs(wheel.angleDelta.y) ? wheel.angleDelta.x : wheel.angleDelta.y;
+            const pixel = Math.abs(wheel.pixelDelta.x) > Math.abs(wheel.pixelDelta.y) ? wheel.pixelDelta.x : wheel.pixelDelta.y;
             const result = Wheel.wheelNotches(acc, angle, pixel);
             acc = result.acc;
             if (result.steps !== 0) {
@@ -252,11 +252,10 @@ Item {
         QuickToggle {
             width: pager.cellWidth
             labelKey: "quickSettings.darkStyle"
-            // Prototype tile-dark: sun at rest, moon when on, outline glyphs
-            // that fill on hover.
+            // Prototype tile-dark: sun at rest, moon when on; filled glyphs.
             icon.name: "dark_mode"
             offIconName: "light_mode"
-            fillOnHover: true
+            alwaysFill: true
             checked: Settings.options.appearance.mode === "dark"
 
             onClicked: Settings.options.appearance.mode = checked ? "light" : "dark"
@@ -269,7 +268,10 @@ Item {
         QuickToggle {
             width: pager.cellWidth
             labelKey: "quickSettings.nightLight"
-            icon.name: "wb_twilight"
+            // wb_twilight at rest, nightlight (moon) when on; filled glyphs.
+            icon.name: "nightlight"
+            offIconName: "wb_twilight"
+            alwaysFill: true
             checked: NightLight.enabled
 
             onClicked: NightLight.toggle()

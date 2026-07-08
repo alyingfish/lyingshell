@@ -23,8 +23,8 @@ MD.Button {
     // Optional unchecked glyph (prototype ico-off/ico-on cross-fade, e.g.
     // wifi slashed <-> solid); empty means the single icon.name renders.
     property string offIconName: ""
-    // Prototype dark tile: outline glyph fills on hover ("both support fill").
-    property bool fillOnHover: false
+    // Dark/night tiles render both glyphs filled at all times (no hover fill).
+    property bool alwaysFill: false
     // Cross-fade the selection colors on the M3E effects spring (critically
     // damped, never overshoots) so the fill animates in step with the shape
     // morph instead of snapping. `checked` is outside StateButton's state
@@ -112,9 +112,9 @@ MD.Button {
                 name: control.icon.name
                 size: control.icon.width
                 color: control.mdState.textColor
-                // fillOnHover tiles (dark): on-glyph is outline at rest, fills
-                // on hover like the off-glyph. Others: solid whenever selected.
-                fill: control.fillOnHover ? control.hovered : control.checked
+                // alwaysFill tiles (dark/night): glyph stays filled. Others:
+                // solid whenever selected.
+                fill: control.alwaysFill || control.checked
                 // Prototype ico-on/ico-off cross-fade (effects easing).
                 opacity: control.offIconName.length === 0 || control.checked ? 1 : 0
 
@@ -133,7 +133,7 @@ MD.Button {
                 name: control.offIconName
                 size: control.icon.width
                 color: control.mdState.textColor
-                fill: control.fillOnHover && control.hovered
+                fill: control.alwaysFill
                 opacity: control.checked ? 0 : 1
 
                 Behavior on opacity {
