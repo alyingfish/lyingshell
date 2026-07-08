@@ -142,10 +142,13 @@ Item {
         width: parent.width
         height: parent.height - y
 
-        MD.VerticalFlickable {
+        // Base flickable (MD.VerticalFlickable minus its glued-to-edge
+        // scrollbar) so we can attach a floating overlay bar instead.
+        MD.Flickable {
             id: detailFlick
 
             anchors.fill: parent
+            contentHeight: contentItem.childrenRect.height
 
             Loader {
                 id: bodyLoader
@@ -164,6 +167,54 @@ Item {
                 property: "viewportHeight"
                 value: detailListArea.height
                 when: bodyLoader.item !== null
+            }
+
+            // Floating overlay scrollbar: a thin pill inset from the edge that
+            // fades in while scrolling and auto-hides, so rows stay full-width
+            // and centered. Mirrors MD.ScrollBar's hold-then-fade.
+            QC.ScrollBar.vertical: QC.ScrollBar {
+                id: detailScroll
+
+                rightPadding: 3
+                policy: QC.ScrollBar.AsNeeded
+                opacity: 0
+
+                contentItem: Rectangle {
+                    implicitWidth: 4
+                    radius: width / 2
+                    color: MD.Util.transparent(MD.Token.color.on_surface, detailScroll.pressed ? 0.7 : 0.38)
+                }
+
+                states: State {
+                    name: "shown"
+                    when: detailScroll.active && detailScroll.size < 1
+                }
+
+                transitions: [
+                    Transition {
+                        to: "shown"
+                        NumberAnimation {
+                            target: detailScroll
+                            property: "opacity"
+                            to: 1
+                            duration: 150
+                        }
+                    },
+                    Transition {
+                        from: "shown"
+                        SequentialAnimation {
+                            PauseAnimation {
+                                duration: 1200
+                            }
+                            NumberAnimation {
+                                target: detailScroll
+                                property: "opacity"
+                                to: 0
+                                duration: 400
+                            }
+                        }
+                    }
+                ]
             }
         }
 
