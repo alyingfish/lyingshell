@@ -67,10 +67,18 @@ Item {
 
             // Prototype #qs entrance: translateY(-16) + scale(.9) around a
             // transform origin at 85% / -10%, opening on the bouncy spatial
-            // spring and closing on the quicker standard curve; opacity runs
-            // on the effects timing both ways.
+            // spring and closing on the quicker standard curve.
             property real slideY: -16
             property real cardScale: 0.9
+
+            // Prototype `#qs.open { transition: transform .55s var(--spring) }`:
+            // the literal cubic-bezier(.34,1.56,.64,1) at .55s as one Bezier
+            // segment (control-y 1.56 = overshoot). Same technique as
+            // TilePager.springSoft; an MD3 spatial token settles ~2x faster.
+            readonly property var entranceSpring: ({
+                    "duration": 550,
+                    "curve": [0.34, 1.56, 0.64, 1.0, 1.0, 1.0]
+                })
 
             states: State {
                 name: "open"
@@ -89,11 +97,14 @@ Item {
 
                     MotionAnimation {
                         properties: "slideY,cardScale"
+                        spring: panelCard.entranceSpring
                     }
 
-                    MotionAnimation {
+                    // Prototype opacity .15s linear (not the effects spring).
+                    NumberAnimation {
                         property: "opacity"
-                        spring: Motion.effectsDefault
+                        duration: 150
+                        easing.type: Easing.Linear
                     }
                 },
                 Transition {

@@ -1,7 +1,6 @@
 import QtQuick
 import qs.Material
 import qs.Services
-import "../../../Material/Motion.js" as Motion
 import "../../../Commons/Icons/StatusIcons.js" as StatusIcons
 
 // Main quick-settings page (prototype #viewMain): the StackView's initial item.
@@ -163,8 +162,17 @@ Item {
         }
     }
 
-    // Staggered entrance (prototype rise keyframes + nth-child delays):
-    // geometry on the spatial spring, opacity on the effects spring.
+    // Prototype `@keyframes rise` runs on `--spring` over .55s, so opacity
+    // (0->1) and translateY(-10)->0 share the one eased progress -- geometry
+    // AND opacity trace the same curve/duration here (encoded once below).
+    readonly property var riseSpring: ({
+            "duration": 550,
+            "curve": [0.34, 1.56, 0.64, 1.0, 1.0, 1.0]
+        })
+
+    // Staggered entrance (prototype rise keyframes + nth-child delays). The
+    // collapsed #rowSwitch (child 2, .05s) is merged into `header`, so the four
+    // visible rows take the delays of #viewMain children 1,3,4,5.
     SequentialAnimation {
         id: riseAnim
 
@@ -185,19 +193,19 @@ Item {
             }
 
             RiseSeq {
-                delay: 110
+                delay: 80
                 riseItem: slidersCol
                 riseTranslate: slidersRise
             }
 
             RiseSeq {
-                delay: 140
+                delay: 110
                 riseItem: pager
                 riseTranslate: pagerRise
             }
 
             RiseSeq {
-                delay: 0
+                delay: 140
                 riseItem: dotsRow
                 riseTranslate: dotsRise
             }
@@ -218,13 +226,14 @@ Item {
                 target: riseTranslate
                 property: "y"
                 to: 0
+                spring: root.riseSpring
             }
 
             MotionAnimation {
                 target: riseItem
                 property: "opacity"
                 to: 1
-                spring: Motion.effectsDefault
+                spring: root.riseSpring
             }
         }
     }
