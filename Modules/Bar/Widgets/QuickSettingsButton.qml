@@ -30,8 +30,17 @@ Item {
     readonly property string showBatteryValue: Settings.options.bar.widgets.quickSettingsButton.showBatteryValue
     readonly property bool showBatteryText: SystemStatus.hasBattery && (showBatteryValue === "always" || (showBatteryValue !== "never" && SystemStatus.batteryLow))
 
-    // Network tooltip: the wired label, the live SSID, or a plain "Wi-Fi".
-    readonly property string networkTip: SystemStatus.wiredConnected ? I18n.t("quickSettings.wired") : (SystemStatus.activeWifiNetwork ? SystemStatus.activeWifiNetwork.name : I18n.t("quickSettings.wifi"))
+    // Network tooltip: wired, hosting a hotspot, the live SSID (flagged when
+    // there's no real internet), or a plain "Wi-Fi".
+    readonly property string networkTip: {
+        if (SystemStatus.wiredConnected)
+            return I18n.t("quickSettings.wired");
+        if (SystemStatus.hotspotActive)
+            return I18n.t("quickSettings.hotspotActive");
+        if (SystemStatus.activeWifiNetwork)
+            return SystemStatus.wifiNoInternet ? SystemStatus.activeWifiNetwork.name + " · " + I18n.t("quickSettings.noInternet") : SystemStatus.activeWifiNetwork.name;
+        return I18n.t("quickSettings.wifi");
+    }
 
     // Each pill indicator names itself on hover (GNOME status-area style). The
     // pill is a single Button, so per-icon HoverHandlers drive per-icon

@@ -18,6 +18,7 @@ Singleton {
     readonly property var workspacesByOutput: _state.workspacesByOutput
     readonly property string focusedOutputName: _state.focusedOutputName
     readonly property var windowsById: _state.windowsById
+    readonly property var activeWindowByOutput: _state.activeWindowByOutput
     readonly property bool overviewOpen: _state.overviewOpen
 
     property var _state: NiriState.initialState()

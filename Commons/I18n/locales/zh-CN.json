@@ -32,6 +32,8 @@
     "power": "电源",
     "wifi": "Wi-Fi",
     "wired": "有线网络",
+    "hotspotActive": "热点已开启",
+    "noInternet": "无法连接互联网",
     "bluetooth": "蓝牙",
     "bluetoothConnectedCount": "已连接 {count} 台设备",
     "powerMode": "电源模式",

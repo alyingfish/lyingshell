@@ -32,6 +32,8 @@
     "power": "Power",
     "wifi": "Wi-Fi",
     "wired": "Wired",
+    "hotspotActive": "Hotspot active",
+    "noInternet": "No internet",
     "bluetooth": "Bluetooth",
     "bluetoothConnectedCount": "{count} connected",
     "powerMode": "Power Mode",

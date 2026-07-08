@@ -6,7 +6,8 @@
 // free (BarSurface scalars all have Behaviors).
 //
 // `niri` is the Niri singleton (or any object with the same readonly props):
-//   overviewOpen, focusedOutputName, workspacesByOutput, windowsById.
+//   overviewOpen, focusedOutputName, activeWindowByOutput. The active-window
+//   walk lives in NiriState.derive(); this reads the derived result.
 // `outputWidth` is this output's logical width (the bar spans the whole
 // output, so the caller passes its own width). niri's event stream does not
 // emit OutputsChanged at connect, so outputsByName is unreliable for geometry.
@@ -29,8 +30,8 @@ function resolve(autoShape, niri, outputName, locked, outputWidth) {
         if (u) return u;
     }
 
-    // Window state on THIS output's active workspace.
-    var window = activeWindowFor(niri, outputName);
+    // Window state on THIS output's active workspace (derived by the Niri singleton).
+    var window = (niri && niri.activeWindowByOutput) ? (niri.activeWindowByOutput[outputName] || null) : null;
 
     if (!window) {
         var nw = pick(autoShape.noWindowShape);
@@ -49,20 +50,6 @@ function resolve(autoShape, niri, outputName, locked, outputWidth) {
 
     // Nothing matched (all relevant fields null) — last resort.
     return pick(autoShape.hasWindowShape) || "fullWidth";
-}
-
-function activeWindowFor(niri, outputName) {
-    if (!niri || !niri.workspacesByOutput || !niri.windowsById) {
-        return null;
-    }
-    var list = niri.workspacesByOutput[outputName] || [];
-    for (var i = 0; i < list.length; i += 1) {
-        if (list[i].active) {
-            var id = list[i].activeWindowId;
-            return id ? (niri.windowsById[id] || null) : null;
-        }
-    }
-    return null;
 }
 
 // ponytail: width-ratio heuristic; niri 26.04 IPC has no maximized flag, so a
