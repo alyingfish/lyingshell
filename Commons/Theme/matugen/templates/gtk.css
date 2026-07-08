@@ -65,11 +65,17 @@
 
   --headerbar-bg-color: {{colors.surface_container.default.hex}};
   --headerbar-fg-color: {{colors.on_surface.default.hex}};
+  --headerbar-backdrop-color: {{colors.surface.default.hex}};
 
   --sidebar-bg-color: {{colors.surface_container.default.hex}};
   --sidebar-fg-color: {{colors.on_surface.default.hex}};
+  /* Unfocused sidebar: libadwaita >=1.6 uses this (NOT @define-color
+     sidebar_backdrop_color), so without it an inactive window falls back to
+     libadwaita's default light backdrop — a cream sidebar in dark mode. */
+  --sidebar-backdrop-color: {{colors.surface.default.hex}};
   --secondary-sidebar-bg-color: {{colors.surface.default.hex}};
   --secondary-sidebar-fg-color: {{colors.on_surface.default.hex}};
+  --secondary-sidebar-backdrop-color: {{colors.surface.default.hex}};
 
   --card-bg-color: {{colors.surface_container.default.hex}};
   --card-fg-color: {{colors.on_surface.default.hex}};
