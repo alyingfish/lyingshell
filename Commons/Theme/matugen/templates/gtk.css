@@ -19,17 +19,21 @@
 @define-color headerbar_fg_color {{colors.on_surface.default.hex}};
 @define-color headerbar_backdrop_color @window_bg_color;
 
-@define-color sidebar_bg_color {{colors.surface_container.default.hex}};
+/* MD3 surface ladder (dimmest→brightest): surface < …_low < …container <
+   …_high. nav drawer = _low, elevated card = _low, menu = container, dialog =
+   _high (see MD3 component specs). Matches libadwaita's own dark hierarchy
+   where dialogs sit above headerbars. */
+@define-color sidebar_bg_color {{colors.surface_container_low.default.hex}};
 @define-color sidebar_fg_color {{colors.on_surface.default.hex}};
 @define-color sidebar_backdrop_color @window_bg_color;
-@define-color secondary_sidebar_bg_color {{colors.surface.default.hex}};
+@define-color secondary_sidebar_bg_color {{colors.surface_container_low.default.hex}};
 @define-color secondary_sidebar_fg_color {{colors.on_surface.default.hex}};
 
-@define-color card_bg_color {{colors.surface_container.default.hex}};
+@define-color card_bg_color {{colors.surface_container_low.default.hex}};
 @define-color card_fg_color {{colors.on_surface.default.hex}};
 @define-color popover_bg_color {{colors.surface_container.default.hex}};
 @define-color popover_fg_color {{colors.on_surface.default.hex}};
-@define-color dialog_bg_color {{colors.surface_container.default.hex}};
+@define-color dialog_bg_color {{colors.surface_container_high.default.hex}};
 @define-color dialog_fg_color {{colors.on_surface.default.hex}};
 @define-color overview_bg_color {{colors.surface_container.default.hex}};
 @define-color overview_fg_color {{colors.on_surface.default.hex}};
@@ -67,21 +71,21 @@
   --headerbar-fg-color: {{colors.on_surface.default.hex}};
   --headerbar-backdrop-color: {{colors.surface.default.hex}};
 
-  --sidebar-bg-color: {{colors.surface_container.default.hex}};
+  --sidebar-bg-color: {{colors.surface_container_low.default.hex}};
   --sidebar-fg-color: {{colors.on_surface.default.hex}};
   /* Unfocused sidebar: libadwaita >=1.6 uses this (NOT @define-color
      sidebar_backdrop_color), so without it an inactive window falls back to
      libadwaita's default light backdrop — a cream sidebar in dark mode. */
   --sidebar-backdrop-color: {{colors.surface.default.hex}};
-  --secondary-sidebar-bg-color: {{colors.surface.default.hex}};
+  --secondary-sidebar-bg-color: {{colors.surface_container_low.default.hex}};
   --secondary-sidebar-fg-color: {{colors.on_surface.default.hex}};
   --secondary-sidebar-backdrop-color: {{colors.surface.default.hex}};
 
-  --card-bg-color: {{colors.surface_container.default.hex}};
+  --card-bg-color: {{colors.surface_container_low.default.hex}};
   --card-fg-color: {{colors.on_surface.default.hex}};
   --popover-bg-color: {{colors.surface_container.default.hex}};
   --popover-fg-color: {{colors.on_surface.default.hex}};
-  --dialog-bg-color: {{colors.surface_container.default.hex}};
+  --dialog-bg-color: {{colors.surface_container_high.default.hex}};
   --dialog-fg-color: {{colors.on_surface.default.hex}};
   --overview-bg-color: {{colors.surface_container.default.hex}};
   --overview-fg-color: {{colors.on_surface.default.hex}};
