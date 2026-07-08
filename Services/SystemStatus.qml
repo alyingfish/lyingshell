@@ -18,18 +18,10 @@ Singleton {
     readonly property var wiredDevice: Networking.devices.values.find(device => device !== null && device.type === DeviceType.Wired) || null
     readonly property var activeWifiNetwork: wifiDevice ? wifiDevice.networks.values.find(network => network !== null && network.connected) || null : null
     readonly property bool wiredConnected: wiredDevice !== null && wiredDevice.connected
-    readonly property string networkIconName: {
-        if (wiredConnected) {
-            return "lan";
-        }
-        if (!Networking.wifiEnabled) {
-            return "signal_wifi_off";
-        }
-        if (activeWifiNetwork) {
-            return StatusIcons.wifiSignalIcon(activeWifiNetwork.signalStrength);
-        }
-        return "signal_wifi_0_bar";
-    }
+    // Unknown = connectivity checking is off/pending, so never downgrade the
+    // glyph on it; only a measured Portal/Limited/None means "no internet".
+    readonly property bool wifiNoInternet: Networking.connectivity !== NetworkConnectivity.Full && Networking.connectivity !== NetworkConnectivity.Unknown
+    readonly property string networkIconName: StatusIcons.networkIcon(wiredConnected, Networking.wifiEnabled, wifiDevice !== null && wifiDevice.mode === WifiDeviceMode.AccessPoint, activeWifiNetwork ? activeWifiNetwork.signalStrength : null, wifiNoInternet)
 
     // --- bluetooth ---------------------------------------------------------
     readonly property var btAdapter: Bluetooth.defaultAdapter

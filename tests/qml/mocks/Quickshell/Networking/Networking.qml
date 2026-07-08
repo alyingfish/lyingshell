@@ -8,6 +8,8 @@ QtObject {
     id: root
 
     property bool wifiEnabled: true
+    // Healthy client connection: full internet, not hosting a hotspot.
+    property int connectivity: NetworkConnectivity.Full
 
     component MockNetwork: QtObject {
         property string name
@@ -45,6 +47,7 @@ QtObject {
     readonly property QtObject wifiDevice: QtObject {
         readonly property int type: 1
         readonly property bool connected: true
+        readonly property int mode: WifiDeviceMode.Station
         property bool scannerEnabled: false
         readonly property QtObject networks: QtObject {
             readonly property var values: root.wifiNets

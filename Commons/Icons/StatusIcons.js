@@ -115,3 +115,23 @@ function wifiSignalIcon(strength) {
     }
     return "signal_wifi_0_bar";
 }
+
+// The bar's single network glyph, in priority order. apMode = this machine is
+// hosting a hotspot (WifiDevice AccessPoint mode). noInternet = connected but
+// NetworkManager reports captive-portal / limited / no-route connectivity.
+// activeStrength is null when no wifi network is active.
+function networkIcon(wiredConnected, wifiEnabled, apMode, activeStrength, noInternet) {
+    if (wiredConnected) {
+        return "lan";
+    }
+    if (!wifiEnabled) {
+        return "signal_wifi_off";
+    }
+    if (apMode) {
+        return "wifi_tethering";
+    }
+    if (activeStrength !== null && activeStrength !== undefined) {
+        return noInternet ? "signal_wifi_bad" : wifiSignalIcon(activeStrength);
+    }
+    return "signal_wifi_0_bar";
+}

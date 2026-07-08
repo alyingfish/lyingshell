@@ -112,6 +112,14 @@ assert(context.wifiSignalIcon(40) === "network_wifi_2_bar", "fair signal");
 assert(context.wifiSignalIcon(10) === "network_wifi_1_bar", "weak signal");
 assert(context.wifiSignalIcon(0) === "signal_wifi_0_bar", "no signal");
 
+// networkIcon(wiredConnected, wifiEnabled, apMode, activeStrength, noInternet)
+assert(context.networkIcon(true, true, false, 0.9, false) === "lan", "wired wins");
+assert(context.networkIcon(false, false, false, 0.9, false) === "signal_wifi_off", "wifi off");
+assert(context.networkIcon(false, true, true, null, false) === "wifi_tethering", "hosting hotspot");
+assert(context.networkIcon(false, true, false, 0.9, true) === "signal_wifi_bad", "connected no internet");
+assert(context.networkIcon(false, true, false, 0.9, false) === "signal_wifi_4_bar", "connected healthy");
+assert(context.networkIcon(false, true, false, null, false) === "signal_wifi_0_bar", "enabled, no network");
+
 // Wheel accumulator: one step per 120 angle units (a mouse notch), pixel
 // deltas scaled by Qt's ~8x convention, direction reversal resets.
 let w = context.wheelNotches(0, 120, 0);
