@@ -273,19 +273,10 @@ function derive(state) {
     // windowsById, so consumers (e.g. Bar autoShape) read window state without
     // re-walking workspacesByOutput + windowsById themselves.
     next.activeWindowByOutput = {};
-    var outKeys = Object.keys(next.workspacesByOutput);
-    for (var a = 0; a < outKeys.length; a += 1) {
-        var wsList = next.workspacesByOutput[outKeys[a]];
-        var win = null;
-        for (var b = 0; b < wsList.length; b += 1) {
-            if (wsList[b].active) {
-                var wid = wsList[b].activeWindowId;
-                win = wid ? (next.windowsById[wid] || null) : null;
-                break;
-            }
-        }
-        next.activeWindowByOutput[outKeys[a]] = win;
-    }
+    Object.keys(next.workspacesByOutput).forEach(function(out) {
+        var ws = next.workspacesByOutput[out].find(function(w) { return w.active; });
+        next.activeWindowByOutput[out] = (ws && ws.activeWindowId) ? (next.windowsById[ws.activeWindowId] || null) : null;
+    });
 
     return next;
 }

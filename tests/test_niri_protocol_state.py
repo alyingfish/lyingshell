@@ -129,6 +129,8 @@ reduced = state.applyEventLine(current, JSON.stringify({
 assert(reduced.changed && reduced.error === "", "windows event applies");
 current = reduced.state;
 assert(current.windowsById["43"].outputName === "HDMI-A-1", "window output derives through workspace");
+assert(current.activeWindowByOutput["eDP-1"].id === "42", "active window per output derives");
+assert(current.activeWindowByOutput["HDMI-A-1"] === null, "no active window when workspace has none");
 
 reduced = state.applyEventLine(current, JSON.stringify({ FutureEvent: { value: true } }));
 assert(!reduced.changed && reduced.error === "", "unknown events are ignored");

@@ -84,15 +84,10 @@ function _demo() {
         var n = {
             overviewOpen: false,
             focusedOutputName: "DP-1",
-            outputsByName: {
-                "DP-1": { logical: { width: 2000 } },
-                "DP-2": { logical: { width: 2000 } }
-            },
-            workspacesByOutput: {
-                "DP-1": [{ active: true, activeWindowId: "" }],
-                "DP-2": [{ active: true, activeWindowId: "" }]
-            },
-            windowsById: {}
+            activeWindowByOutput: {
+                "DP-1": null,
+                "DP-2": null
+            }
         };
         for (var k in extra) n[k] = extra[k];
         return n;
@@ -101,8 +96,7 @@ function _demo() {
     var withWindow = function(w, output) {
         output = output || "DP-1";
         var n = niri({});
-        n.workspacesByOutput[output][0].activeWindowId = "1";
-        n.windowsById["1"] = w;
+        n.activeWindowByOutput[output] = w;
         return n;
     };
 
