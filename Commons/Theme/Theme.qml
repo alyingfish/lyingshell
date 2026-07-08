@@ -63,7 +63,13 @@ Singleton {
 
     function applyAll() {
         apply();
-        pushSystemMode();
+        // pushAccentColor() regenerates the app themes AND then flips
+        // color-scheme/gtk-theme, in that order, in ONE script. Open libadwaita
+        // apps (nautilus) re-read lyingshell.css on the color-scheme change, so
+        // the css must be rewritten first — otherwise they re-read the old mode's
+        // pinned colors and stick. Two racing processes can't guarantee that
+        // order (a preempted regen fires the scheme flip early), so the scheme
+        // flip lives at the tail of accentPush, not in a separate process.
         pushAccentColor();
         // No matugen on the boot path: the wallpaperAccent binding already
         // supplies the cached color. This is a no-op unless the cache is stale
@@ -96,30 +102,6 @@ Singleton {
         MD.Token.color.mode = effectiveMode === "dark" ? MD.Enum.Dark : MD.Enum.Light;
     }
 
-    // Push mode onto the freedesktop color-scheme + adw-gtk3 theme name so
-    // portal apps and legacy GTK3 follow. light maps to "prefer-light".
-    // ponytail: gsettings/dconf only. Qt-non-portal and KDE are later phases.
-    function pushSystemMode() {
-        systemModePush.run(effectiveMode === "dark");
-    }
-
-    Process {
-        id: systemModePush
-
-        function run(dark) {
-            const scheme = dark ? "prefer-dark" : "prefer-light";
-            const gtk = dark ? "adw-gtk3-dark" : "adw-gtk3";
-            if (running) {
-                running = false;
-            }
-            // Only set gtk-theme when it is actually installed, else GTK3 apps
-            // fall back to a broken/missing theme.
-            // ponytail: standard theme dirs only (skip the XDG_DATA_DIRS walk).
-            command = ["sh", "-c", 'SCHEME="$1"; GTK="$2"; IFACE=org.gnome.desktop.interface; ' + 'have_theme() { [ -d "$HOME/.local/share/themes/$1" ] || [ -d "$HOME/.themes/$1" ] || [ -d "/usr/share/themes/$1" ]; }; ' + "if command -v gsettings >/dev/null 2>&1; then " + 'gsettings set "$IFACE" color-scheme "$SCHEME"; ' + 'have_theme "$GTK" && gsettings set "$IFACE" gtk-theme "$GTK"; ' + "elif command -v dconf >/dev/null 2>&1; then " + 'dconf write /org/gnome/desktop/interface/color-scheme "\'$SCHEME\'"; ' + 'have_theme "$GTK" && dconf write /org/gnome/desktop/interface/gtk-theme "\'$GTK\'"; ' + "fi", "sh", scheme, gtk];
-            running = true;
-        }
-    }
-
     // Push the accent to external apps via matugen, run once per installed app
     // (no conditional templates) with the mode's ANSI hues injected as JSON.
     function pushAccentColor() {
@@ -136,17 +118,45 @@ Singleton {
             if (running) {
                 running = false;
             }
-            // Regenerate the on-disk GTK css only; do NOT force-reload running
-            // apps. Open GTK apps read gtk.css once, so they keep the old accent
-            // until their next launch — like noctalia/caelestia/end-4. Mode
-            // changes are handled by pushSystemMode() (correct color-scheme +
-            // gtk-theme, no bounce).
-            // ponytail: dropped live accent-recolor of already-open apps. The old
-            // trick bounced color-scheme to the opposite value (prefer-light on
-            // dark) for 100ms to trigger a libadwaita reload, flashing the whole
-            // desktop white on every dark start. A flash-free live reload isn't
-            // possible via gsettings; add per-app D-Bus/SIGHUP if ever needed.
-            command = ["sh", "-c", 'ACCENT="$1"; MODE="$2"; DIR="$3"; ' + "command -v matugen >/dev/null 2>&1 || exit 0; " + 'cd "$DIR" 2>/dev/null || exit 0; ' + 'if [ "$MODE" = "dark" ]; then ' + 'ANSI=\'{"red":"#f38ba8","green":"#a6e3a1","yellow":"#f9e2af","blue":"#89b4fa","magenta":"#f5c2e7","cyan":"#94e2d5"}\'; ' + 'else ' + 'ANSI=\'{"red":"#d20f39","green":"#40a02b","yellow":"#df8e1d","blue":"#1e66f5","magenta":"#ea76cb","cyan":"#179299"}\'; ' + 'fi; ' + 'gen() { matugen color hex "$ACCENT" -m "$MODE" -t scheme-tonal-spot -q -c "$1" --import-json-string "$ANSI"; }; ' + "command -v kitty >/dev/null 2>&1 && gen kitty.toml; " + "command -v ghostty >/dev/null 2>&1 && gen ghostty.toml; " + "command -v alacritty >/dev/null 2>&1 && gen alacritty.toml; " + "command -v niri >/dev/null 2>&1 && gen niri.toml; " + '[ -d "$HOME/.config/gtk-3.0" ] && { gen gtk3.toml; sh gtk-import.sh "$HOME/.config/gtk-3.0"; }; ' + '[ -d "$HOME/.config/gtk-4.0" ] && { gen gtk4.toml; sh gtk-import.sh "$HOME/.config/gtk-4.0"; }; ' + "exit 0", "sh", accent, mode, dir];
+            // Two sequential phases in one script so ordering is guaranteed:
+            //   1. matugen regenerates the per-app themes on disk (kitty/gtk/…).
+            //   2. THEN flip freedesktop color-scheme + adw-gtk3 gtk-theme so
+            //      portal/libadwaita apps (nautilus) re-read the fresh
+            //      lyingshell.css and legacy GTK3 follows. The scheme flip MUST
+            //      come after step 1 — libadwaita re-reads the pinned @define-color
+            //      set on the color-scheme change, so flipping it before the css
+            //      is rewritten makes open apps latch the old mode and stick.
+            // A preempted run (running=false on a rapid re-trigger) dies before
+            // step 2, so only a completed regen flips the scheme — no early flip,
+            // no white flash (the scheme goes straight to the target, no bounce).
+            // ponytail: gsettings/dconf only; standard theme dirs only.
+            command = ["sh", "-c", `
+ACCENT="$1"; MODE="$2"; DIR="$3"; IFACE=org.gnome.desktop.interface;
+if [ "$MODE" = "dark" ]; then
+  SCHEME=prefer-dark; GTK=adw-gtk3-dark;
+  ANSI='{"red":"#f38ba8","green":"#a6e3a1","yellow":"#f9e2af","blue":"#89b4fa","magenta":"#f5c2e7","cyan":"#94e2d5"}';
+else
+  SCHEME=prefer-light; GTK=adw-gtk3;
+  ANSI='{"red":"#d20f39","green":"#40a02b","yellow":"#df8e1d","blue":"#1e66f5","magenta":"#ea76cb","cyan":"#179299"}';
+fi;
+if command -v matugen >/dev/null 2>&1 && cd "$DIR" 2>/dev/null; then
+  gen() { matugen color hex "$ACCENT" -m "$MODE" -t scheme-tonal-spot -q -c "$1" --import-json-string "$ANSI"; };
+  command -v kitty >/dev/null 2>&1 && gen kitty.toml;
+  command -v ghostty >/dev/null 2>&1 && gen ghostty.toml;
+  command -v alacritty >/dev/null 2>&1 && gen alacritty.toml;
+  command -v niri >/dev/null 2>&1 && gen niri.toml;
+  [ -d "$HOME/.config/gtk-3.0" ] && { gen gtk3.toml; sh gtk-import.sh "$HOME/.config/gtk-3.0"; };
+  [ -d "$HOME/.config/gtk-4.0" ] && { gen gtk4.toml; sh gtk-import.sh "$HOME/.config/gtk-4.0"; };
+fi;
+have_theme() { [ -d "$HOME/.local/share/themes/$1" ] || [ -d "$HOME/.themes/$1" ] || [ -d "/usr/share/themes/$1" ]; };
+if command -v gsettings >/dev/null 2>&1; then
+  gsettings set "$IFACE" color-scheme "$SCHEME";
+  have_theme "$GTK" && gsettings set "$IFACE" gtk-theme "$GTK";
+elif command -v dconf >/dev/null 2>&1; then
+  dconf write /org/gnome/desktop/interface/color-scheme "'$SCHEME'";
+  have_theme "$GTK" && dconf write /org/gnome/desktop/interface/gtk-theme "'$GTK'";
+fi
+`, "sh", accent, mode, dir];
             running = true;
         }
     }
