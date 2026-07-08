@@ -78,11 +78,13 @@ Item {
         Row {
             anchors.left: parent.left
             // XS icon buttons carry 4px transparent insets; -4 flushes the
-            // first circle with the content edge and -2 spacing keeps
-            // visible gaps at the prototype 6px.
+            // first circle with the content edge. The pill (next item) zeroes
+            // its insets, so +2 spacing keeps the tools->pill gap at the
+            // prototype 6px (4 tools-inset + 2), not the -2 used between two
+            // inset-carrying icon buttons.
             anchors.leftMargin: -4
             anchors.verticalCenter: parent.verticalCenter
-            spacing: -2
+            spacing: 2
 
             MD.IconButton {
                 id: toolsButton
