@@ -112,13 +112,19 @@ assert(context.wifiSignalIcon(40) === "network_wifi_2_bar", "fair signal");
 assert(context.wifiSignalIcon(10) === "network_wifi_1_bar", "weak signal");
 assert(context.wifiSignalIcon(0) === "signal_wifi_0_bar", "no signal");
 
+// Connecting sweep: pill feeds connectingBar/4 (0..4) into wifiSignalIcon.
+assert(context.wifiSignalIcon(1/4) === "network_wifi_1_bar", "sweep bar 1");
+assert(context.wifiSignalIcon(2/4) === "network_wifi_2_bar", "sweep bar 2");
+assert(context.wifiSignalIcon(3/4) === "network_wifi_3_bar", "sweep bar 3");
+assert(context.wifiSignalIcon(4/4) === "signal_wifi_4_bar", "sweep bar 4");
+
 // networkIcon(wiredConnected, wifiEnabled, apMode, activeStrength, noInternet)
 assert(context.networkIcon(true, true, false, 0.9, false) === "lan", "wired wins");
 assert(context.networkIcon(false, false, false, 0.9, false) === "signal_wifi_off", "wifi off");
 assert(context.networkIcon(false, true, true, null, false) === "wifi_tethering", "hosting hotspot");
 assert(context.networkIcon(false, true, false, 0.9, true) === "signal_wifi_bad", "connected no internet");
 assert(context.networkIcon(false, true, false, 0.9, false) === "signal_wifi_4_bar", "connected healthy");
-assert(context.networkIcon(false, true, false, null, false) === "signal_wifi_0_bar", "enabled, no network");
+assert(context.networkIcon(false, true, false, null, false) === "signal_wifi_statusbar_not_connected", "enabled, no network");
 
 // Wheel accumulator: one step per 120 angle units (a mouse notch), pixel
 // deltas scaled by Qt's ~8x convention, direction reversal resets.

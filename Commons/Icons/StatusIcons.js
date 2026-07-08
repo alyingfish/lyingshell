@@ -133,5 +133,7 @@ function networkIcon(wiredConnected, wifiEnabled, apMode, activeStrength, noInte
     if (activeStrength !== null && activeStrength !== undefined) {
         return noInternet ? "signal_wifi_bad" : wifiSignalIcon(activeStrength);
     }
-    return "signal_wifi_0_bar";
+    // Enabled but not attached to any network (distinct from a connected
+    // 0-bar link).
+    return "signal_wifi_statusbar_not_connected";
 }

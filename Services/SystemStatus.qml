@@ -22,6 +22,7 @@ Singleton {
     // glyph on it; only a measured Portal/Limited/None means "no internet".
     readonly property bool wifiNoInternet: Networking.connectivity !== NetworkConnectivity.Full && Networking.connectivity !== NetworkConnectivity.Unknown
     readonly property bool hotspotActive: wifiDevice !== null && wifiDevice.mode === WifiDeviceMode.AccessPoint
+    readonly property bool wifiConnecting: wifiDevice !== null && wifiDevice.networks.values.some(network => network !== null && network.state === ConnectionState.Connecting)
     readonly property string networkIconName: StatusIcons.networkIcon(wiredConnected, Networking.wifiEnabled, hotspotActive, activeWifiNetwork ? activeWifiNetwork.signalStrength : null, wifiNoInternet)
 
     // --- bluetooth ---------------------------------------------------------

@@ -18,6 +18,7 @@ QtObject {
         property int security: 1
         property real signalStrength: 0.5
         property bool stateChanging: false
+        property int state: connected ? ConnectionState.Connected : ConnectionState.Disconnected
 
         function connect() {
             root.wifiNets.forEach(n => n.connected = false);

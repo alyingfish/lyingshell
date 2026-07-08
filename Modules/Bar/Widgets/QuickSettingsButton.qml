@@ -35,11 +35,24 @@ Item {
     readonly property string networkTip: {
         if (SystemStatus.wiredConnected)
             return I18n.t("quickSettings.wired");
+        if (SystemStatus.wifiConnecting)
+            return I18n.t("quickSettings.wifiConnecting");
         if (SystemStatus.hotspotActive)
             return I18n.t("quickSettings.hotspotActive");
         if (SystemStatus.activeWifiNetwork)
             return SystemStatus.wifiNoInternet ? SystemStatus.activeWifiNetwork.name + " · " + I18n.t("quickSettings.noInternet") : SystemStatus.activeWifiNetwork.name;
         return I18n.t("quickSettings.wifi");
+    }
+
+    // Connecting sweep: cycle the fan bars while a wifi network is activating,
+    // matching macOS/GNOME/Windows. Only runs while wifiConnecting is true.
+    property int connectingBar: 0
+    Timer {
+        running: SystemStatus.wifiConnecting
+        interval: 350
+        repeat: true
+        onRunningChanged: if (!running) root.connectingBar = 0
+        onTriggered: root.connectingBar = (root.connectingBar + 1) % 5
     }
 
     // Each pill indicator names itself on hover (GNOME status-area style). The
@@ -235,7 +248,7 @@ Item {
 
                 StatusIcon {
                     visible: SystemStatus.wifiDevice !== null || SystemStatus.wiredConnected
-                    name: SystemStatus.networkIconName
+                    name: SystemStatus.wifiConnecting ? StatusIcons.wifiSignalIcon(root.connectingBar / 4) : SystemStatus.networkIconName
                     color: pillButton.mdState.textColor
                     tip: root.networkTip
                 }
