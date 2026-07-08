@@ -14,10 +14,12 @@ Singleton {
     readonly property string requestedMode: Settings.options.appearance.mode
     readonly property string effectiveMode: requestedMode === "dark" ? "dark" : "light"
 
-    // Wallpaper-derived accent is runtime-only: appearance.useWallpaperColor
-    // selects which source drives the theme, and the matugen seed must never
-    // overwrite the user's accentColor in settings.json.
-    property string wallpaperAccent: ""
+    // Wallpaper-derived accent, reactive on the persisted per-mode cache. This is
+    // the source of truth at startup AND after a fresh extraction, so the correct
+    // color is present on the very first frame with no matugen on the boot path.
+    // useWallpaperColor selects whether it drives the theme; the matugen seed
+    // never overwrites the user's accentColor in settings.json.
+    readonly property string wallpaperAccent: effectiveMode === "dark" ? accentCacheData.dark : accentCacheData.light
     readonly property string requestedAccentColor: Settings.options.appearance.useWallpaperColor && wallpaperAccent.length > 0 ? wallpaperAccent : Settings.options.appearance.accentColor
 
     // Source screen for wallpaper-derived accent: first screen.
@@ -28,11 +30,20 @@ Singleton {
     // Shell-owned matugen config + templates live next to this file.
     readonly property string matugenDir: Qt.resolvedUrl("matugen").toString().replace(/^file:\/\//, "")
 
+    // Derived-accent cache dir. Fully regenerable (we re-extract every start), so
+    // it belongs under XDG_CACHE_HOME; falls back to ~/.cache.
+    readonly property string cacheDir: (Quickshell.env("XDG_CACHE_HOME") || ((Quickshell.env("HOME") || "") + "/.cache")) + "/lyingshell"
+
     Component.onCompleted: {
+        // FileView won't create the parent dir; ensure it before any write.
+        ensureCacheDir.running = true;
         apply();
         pushSystemMode();
         pushAccentColor();
-        // The derived accent is not persisted, so re-extract on every start.
+        // No matugen on the boot path: the wallpaperAccent binding already
+        // supplies the cached color. This is a no-op unless the cache is stale
+        // for the current wallpaper+mode (cold first run / wallpaper changed
+        // while the shell was down).
         maybeExtractFromWallpaper();
     }
 
@@ -106,9 +117,9 @@ Singleton {
         }
     }
 
-    // When useWallpaperColor is on, extract the wallpaper's matugen primary
-    // into the runtime wallpaperAccent (which drives apply()/pushAccentColor
-    // through requestedAccentColor). mode stays manual.
+    // On a wallpaper or mode change, re-derive the matugen primary and cache it;
+    // the wallpaperAccent binding then drives apply()/pushAccentColor through
+    // requestedAccentColor. mode stays manual.
     Connections {
         target: Settings.options.appearance
         function onUseWallpaperColorChanged() {
@@ -124,12 +135,46 @@ Singleton {
         }
     }
 
-    function maybeExtractFromWallpaper() {
+    // Derive only when the current wallpaper+mode isn't already cached. This is
+    // what lets every startup signal cascade — settings load flipping
+    // useWallpaperColor, the mode flip, an initial wallpaper event — skip matugen
+    // when the cache is warm, while a real wallpaper change (path differs) still
+    // re-derives.
+    function needsDerive() {
         if (!Settings.options.appearance.useWallpaperColor) {
+            return false;
+        }
+        var wp = Wallpaper.getWallpaper(root.colorSourceScreen);
+        if (!wp) {
+            return false; // wallpaper not known yet; a later wallpaperChanged retries
+        }
+        return !(accentCacheData.path === wp && wallpaperAccent.length > 0);
+    }
+
+    function maybeExtractFromWallpaper() {
+        if (!needsDerive()) {
             return;
         }
         // Debounce: picker drags can fire many wallpaperChanged in a row.
         extractDebounce.restart();
+    }
+
+    // Persist the derived accent for a mode, keyed by the wallpaper it came from.
+    // A new wallpaper invalidates the other mode's entry (derived from the old
+    // image), forcing a re-derive when that mode is next used.
+    function cacheAccent(mode, accent) {
+        var wp = Wallpaper.getWallpaper(root.colorSourceScreen);
+        if (accentCacheData.path !== wp) {
+            accentCacheData.light = "";
+            accentCacheData.dark = "";
+            accentCacheData.path = wp;
+        }
+        if (mode === "dark") {
+            accentCacheData.dark = accent;
+        } else {
+            accentCacheData.light = accent;
+        }
+        accentCache.writeAdapter();
     }
 
     Timer {
@@ -161,8 +206,33 @@ Singleton {
             }
             var accent = root.parseAccent(stdout.text, root.effectiveMode);
             if (accent) {
-                root.wallpaperAccent = accent;
+                // Persist only; the wallpaperAccent binding + apply() pick it up
+                // reactively, and the next start/reload reads it with no matugen.
+                root.cacheAccent(root.effectiveMode, accent);
             }
+        }
+    }
+
+    Process {
+        id: ensureCacheDir
+        command: ["mkdir", "-p", root.cacheDir]
+    }
+
+    // Per-mode derived accent + the wallpaper path it came from, read
+    // synchronously (blockLoading) so the wallpaperAccent binding has the color
+    // before the first frame. We own this file, so no watchChanges. printErrors
+    // off: a cold-cache miss is expected on first run.
+    FileView {
+        id: accentCache
+        path: root.cacheDir + "/wallpaper-accent.json"
+        blockLoading: true
+        printErrors: false
+
+        adapter: JsonAdapter {
+            id: accentCacheData
+            property string path: ""
+            property string light: ""
+            property string dark: ""
         }
     }
 
