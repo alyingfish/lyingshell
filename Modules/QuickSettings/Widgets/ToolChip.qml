@@ -14,6 +14,9 @@ MD.Button {
     // Alternate chips invert the round/square hover rhythm.
     property bool alt: false
     property string tooltipKey: ""
+    // Placeholder tool: dimmed, and its tooltip notes the tool is not wired up
+    // yet. The backend for these lands in a later task.
+    property bool comingSoon: false
 
     readonly property real targetCorner: (alt ? chip.hovered : !chip.hovered) ? 20 : 12
     property real renderCorner: targetCorner
@@ -35,6 +38,8 @@ MD.Button {
     mdState.type: MD.Enum.BtFilledTonal
     mdState.backgroundColor: mdState.ctx.color.surface_container_high
     mdState.textColor: mdState.ctx.color.on_surface_variant
+    // Placeholder chips read as inactive.
+    opacity: comingSoon ? 0.45 : 1
     scale: down ? 0.88 : 1
 
     Behavior on scale {
@@ -80,7 +85,12 @@ MD.Button {
 
     MD.ToolTip {
         y: parent.height + 4
-        text: chip.tooltipKey.length > 0 ? I18n.t(chip.tooltipKey) : ""
+        text: {
+            if (chip.tooltipKey.length === 0)
+                return "";
+            const base = I18n.t(chip.tooltipKey);
+            return chip.comingSoon ? base + " · " + I18n.t("quickSettings.tool.comingSoon") : base;
+        }
         visible: chip.hovered && text.length > 0
     }
 }

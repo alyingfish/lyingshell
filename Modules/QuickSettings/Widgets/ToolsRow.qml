@@ -2,16 +2,22 @@ import QtQuick
 import qs.Services
 import qs.Services.Niri
 
-// Tools row (prototype #rowTools): color picker, screenshot, calculator.
-// Chips fold the row away (`collapseRequested`); tools that hand off to
-// another surface also close the whole panel (`closeRequested`).
+// Tools row (prototype #rowTools): one-shot utility chips packed edge to edge.
+// Colour picker, screenshot and calculator are wired; screen recording,
+// clipboard history and on-screen keyboard are placeholders (dimmed "coming
+// soon" chips) until their backends land in later tasks. Chips fold the row
+// away (`collapseRequested`); tools that hand off to another surface also close
+// the whole panel (`closeRequested`).
 Row {
     id: root
 
     signal collapseRequested
     signal closeRequested
 
-    readonly property real chipWidth: (width - 2 * spacing) / 3
+    // Chip count is fixed here (keep in sync with the chips below); the row
+    // width is split evenly across them.
+    readonly property int chipCount: 6
+    readonly property real chipWidth: (width - (chipCount - 1) * spacing) / chipCount
 
     height: 40
     spacing: 8
@@ -64,5 +70,30 @@ Row {
             root.closeRequested();
             Session.openCalculator();
         }
+    }
+
+    // --- placeholder tools (backends land in later tasks) -------------------
+    ToolChip {
+        width: root.chipWidth
+        icon.name: "screen_record"
+        alt: true
+        tooltipKey: "quickSettings.tool.screenRecord"
+        comingSoon: true
+    }
+
+    ToolChip {
+        width: root.chipWidth
+        icon.name: "content_paste"
+        alt: false
+        tooltipKey: "quickSettings.tool.clipboard"
+        comingSoon: true
+    }
+
+    ToolChip {
+        width: root.chipWidth
+        icon.name: "keyboard"
+        alt: true
+        tooltipKey: "quickSettings.tool.keyboard"
+        comingSoon: true
     }
 }

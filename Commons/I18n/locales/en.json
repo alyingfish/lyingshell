@@ -85,7 +85,11 @@
     "timeUntilFull": "{hours}h {minutes}m until full",
     "tool": {
       "calculator": "Calculator",
+      "clipboard": "Clipboard history",
       "colorPicker": "Color picker",
+      "comingSoon": "Coming soon",
+      "keyboard": "On-screen keyboard",
+      "screenRecord": "Screen recording",
       "screenshot": "Screenshot"
     },
     "tools": "Tools",
