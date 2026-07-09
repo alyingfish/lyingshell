@@ -25,13 +25,15 @@ pick a different task or coordinate; do not create a duplicate. Otherwise
 claim it:
 
 ```bash
-git worktree add ../lyingshell-<slug> -b <type>/<slug> origin/main
+git worktree add ../lyingshell-<slug> -b <type>/<slug> main
 ```
 
 - `<slug>`: short kebab-case task name (e.g. `notification-panel`).
 - `<type>`: `feat`, `fix`, or `refactor`.
-- Branch from `origin/main`, not local HEAD, unless the task explicitly
-  builds on another branch.
+- Branch from local `main` (which may hold commits not yet pushed to
+  `origin`), unless the task explicitly builds on another branch. Bring
+  `main` up to date with `origin` first when practical
+  (`git fetch origin && git merge --ff-only origin/main`).
 
 Work only inside that new worktree from then on.
 
