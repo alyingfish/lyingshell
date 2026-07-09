@@ -61,8 +61,10 @@ Item {
     // on the *open* edge tracks both button clicks and the e2e/harness direct
     // sets of toolsOpen/pmodeOpen.
     property int switchIndex: 0
-    onToolsOpenChanged: if (toolsOpen) switchIndex = 0
-    onPmodeOpenChanged: if (pmodeOpen) switchIndex = 1
+    onToolsOpenChanged: if (toolsOpen)
+        switchIndex = 0
+    onPmodeOpenChanged: if (pmodeOpen)
+        switchIndex = 1
 
     implicitHeight: 32 + switchSpace
 
@@ -316,22 +318,21 @@ Item {
             MD.IconButton {
                 id: powerButton
 
-                // Prototype .ib-err: error-container chip, the one
-                // emphasized header action.
+                // Tonal chip (IBtFilledTonal default: secondary_container);
+                // dropped the prototype .ib-err error red, which clashed with
+                // the blue scheme in dark.
                 mdState.type: MD.Enum.IBtFilledTonal
                 mdState.size: MD.Enum.XS
                 icon.name: "power_settings_new"
-                // Prototype .ib-err glyph reads smaller than the tonal chips'
-                // 18px; the filled power_settings_new symbol is optically
-                // heavier, so 16 matches the prototype's breathing room.
+                // The filled power_settings_new symbol is optically heavier
+                // than the 18px tonal-chip glyphs, so 16 gives it the same
+                // breathing room.
                 icon.width: 16
                 icon.height: 16
                 // flat drops the ElevationRectangle shadow in every state
                 // (IconButton has no `elevation` prop; mdState.elevation
                 // defaults to level1 and the bg only hides it when flat).
                 flat: true
-                mdState.backgroundColor: mdState.ctx.color.error_container
-                mdState.textColor: mdState.ctx.color.on_error_container
                 scale: down ? 0.88 : 1
 
                 Behavior on scale {
