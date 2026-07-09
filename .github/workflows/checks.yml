@@ -1,0 +1,42 @@
+# Runs the same gate as local work: scripts/check.sh (Qt6 qmllint over
+# production QML + the full python test suite). Arch container because the
+# shell targets Arch/Niri and quickshell + qt6 come straight from pacman.
+#
+# If the QmlMaterial build or quickshell package ever breaks in CI, keep the
+# job gating on tests by running the last step with CHECK_SKIP_LINT=1 while
+# the lint half is repaired (the PostToolUse hook still lints locally).
+name: checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - name: Install system packages
+        run: |
+          pacman -Syu --noconfirm --needed \
+            git git-lfs cmake gcc make python \
+            qt6-base qt6-declarative qt6-svg qt6-shadertools quickshell
+
+      - uses: actions/checkout@v4
+
+      - name: Cache QmlMaterial sources and install tree
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/QmlMaterial
+            ~/.local
+          # install.sh does a --ff-only pull on cache hit, so a stale cache
+          # self-updates and cmake rebuilds incrementally.
+          key: qmlmaterial-${{ runner.os }}-v1
+
+      - name: Build QmlMaterial
+        run: scripts/install.sh
+
+      - name: Check gate
+        run: scripts/check.sh
