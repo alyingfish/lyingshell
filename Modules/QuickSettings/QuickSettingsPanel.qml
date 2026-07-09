@@ -1,7 +1,9 @@
 import QtQuick
+import Quickshell
 import Qcm.Material as MD
 import qs.Material
 import qs.Services
+import qs.Services.Niri
 import qs.Modules.QuickSettings.Widgets
 import "../../Material/Motion.js" as Motion
 
@@ -29,9 +31,9 @@ Item {
     // start of the card's open transform.
     property bool open: false
 
-    // "" | "wifi" | "bluetooth" | "output" | "kbd". Settable command AND a
-    // reflection of the stack (the back button pops directly); kept for the
-    // external contract (serializeState / setDetail / e2e).
+    // "" | "wifi" | "bluetooth" | "output" | "kbd" | "color". Settable command
+    // AND a reflection of the stack (the back button pops directly); kept for
+    // the external contract (serializeState / setDetail / e2e).
     property string detail: ""
 
     // Session-menu card (prototype #pmenu) floats over the panel at top-right.
@@ -72,13 +74,20 @@ Item {
             "wifi": wifiComp,
             "bluetooth": btComp,
             "output": outputComp,
-            "kbd": kbdComp
+            "kbd": kbdComp,
+            "color": colorComp
         })
 
     Component {
         id: wifiComp
 
         WifiDetailPage {}
+    }
+
+    Component {
+        id: colorComp
+
+        ColorDetailPage {}
     }
 
     Component {
@@ -171,6 +180,18 @@ Item {
         property: "scannerEnabled"
         value: root.detail === "wifi"
         when: SystemStatus.wifiDevice !== null
+    }
+
+    // A completed color pick reveals its readout page (a cancelled pick never
+    // fires this, so cancelling leaves the main view untouched). The hex also
+    // lands on the clipboard, GNOME-picker style; the page copies other formats.
+    Connections {
+        target: Niri
+
+        function onColorPicked(hex) {
+            Quickshell.clipboardText = hex;
+            root.detail = "color";
+        }
     }
 
     // ======================================================================

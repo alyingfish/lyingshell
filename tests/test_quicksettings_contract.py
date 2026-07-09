@@ -45,6 +45,7 @@ QS_FILES = [
     QS_DIR / "Widgets" / "BluetoothDetailPage.qml",
     QS_DIR / "Widgets" / "OutputDetailPage.qml",
     QS_DIR / "Widgets" / "KbdDetailPage.qml",
+    QS_DIR / "Widgets" / "ColorDetailPage.qml",
     QS_DIR / "Widgets" / "QuickToggle.qml",
     QS_DIR / "Widgets" / "QuickMenuToggle.qml",
     QS_DIR / "Widgets" / "QuickSlider.qml",
@@ -306,7 +307,7 @@ def main() -> None:
         "Niri.takeScreenshot",
     ]:
         assert feature in panel, f"panel missing {feature}"
-    for detail in ['"wifi"', '"bluetooth"', '"output"', '"kbd"']:
+    for detail in ['"wifi"', '"bluetooth"', '"output"', '"kbd"', '"color"']:
         assert detail in panel, f"panel missing detail page {detail}"
     # Power mode lives in the header battery pill + expandable connected
     # group now, not in a detail page or grid tile.

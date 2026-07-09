@@ -29,6 +29,14 @@
     "btNotConnected": "Not connected",
     "cameraInUse": "Camera in use",
     "charging": "Charging",
+    "colorPicker": {
+      "copied": "Copied",
+      "hex": "HEX",
+      "hsv": "HSV",
+      "pickAgain": "Pick again",
+      "prompt": "Click anywhere to pick a color",
+      "rgb": "RGB"
+    },
     "connect": "Connect",
     "darkStyle": "Dark Style",
     "detailOffHint": "Use the switch above to turn it on",

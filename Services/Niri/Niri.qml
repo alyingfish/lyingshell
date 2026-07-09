@@ -112,6 +112,10 @@ Singleton {
     // Picked color as "#rrggbb" (quick-settings color-picker tool).
     signal colorPicked(string hex)
 
+    // Last successful pick, held so the color-picker detail page (pushed after
+    // the pick completes) can read the result; "" until the first pick.
+    property string lastPickedColor: ""
+
     // Starts niri's interactive color pick. Uses a dedicated socket: the
     // reply only arrives after the user clicks, which would block the shared
     // request socket for the whole aim time.
@@ -161,6 +165,7 @@ Singleton {
 
         var hex = NiriProtocol.pickedColorHex(reply.payload);
         if (hex.length > 0) {
+            lastPickedColor = hex;
             colorPicked(hex);
         }
     }

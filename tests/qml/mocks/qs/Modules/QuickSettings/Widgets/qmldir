@@ -17,3 +17,4 @@ WifiDetailPage 1.0 WifiDetailPage.qml
 BluetoothDetailPage 1.0 BluetoothDetailPage.qml
 OutputDetailPage 1.0 OutputDetailPage.qml
 KbdDetailPage 1.0 KbdDetailPage.qml
+ColorDetailPage 1.0 ColorDetailPage.qml

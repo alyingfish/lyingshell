@@ -29,6 +29,14 @@
     "btNotConnected": "未连接",
     "cameraInUse": "正在使用摄像头",
     "charging": "正在充电",
+    "colorPicker": {
+      "copied": "已复制",
+      "hex": "HEX",
+      "hsv": "HSV",
+      "pickAgain": "重新取色",
+      "prompt": "点击任意位置取色",
+      "rgb": "RGB"
+    },
     "connect": "连接",
     "darkStyle": "深色样式",
     "detailOffHint": "使用上方开关开启",

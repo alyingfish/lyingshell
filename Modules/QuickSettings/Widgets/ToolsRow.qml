@@ -1,6 +1,4 @@
 import QtQuick
-import Quickshell
-import Qcm.Material as MD
 import qs.Services
 import qs.Services.Niri
 
@@ -13,25 +11,10 @@ Row {
     signal collapseRequested
     signal closeRequested
 
-    // Last color-picker result, shown as a swatch on the picker chip.
-    property color pickedColor: "transparent"
-    property bool hasPickedColor: false
-
     readonly property real chipWidth: (width - 2 * spacing) / 3
 
     height: 40
     spacing: 8
-
-    Connections {
-        target: Niri
-
-        function onColorPicked(hex) {
-            root.pickedColor = hex;
-            root.hasPickedColor = true;
-            // The picked color lands on the clipboard, GNOME-picker style.
-            Quickshell.clipboardText = hex;
-        }
-    }
 
     // Delays niri's screenshot UI until the panel's close animation cleared
     // the frame it freezes.
@@ -43,6 +26,8 @@ Row {
         onTriggered: Niri.takeScreenshot()
     }
 
+    // Colour picker: niri's interactive pick. The result opens the colour
+    // readout page (wired in QuickSettingsPanel) instead of a dead-end swatch.
     ToolChip {
         width: root.chipWidth
         icon.name: "colorize"
@@ -52,20 +37,6 @@ Row {
         onClicked: {
             root.collapseRequested();
             Niri.pickColor();
-        }
-
-        // Picked-color swatch (prototype .cdot).
-        Rectangle {
-            anchors.right: parent.right
-            anchors.bottom: parent.bottom
-            anchors.margins: 6
-            width: 11
-            height: 11
-            radius: 5.5
-            visible: root.hasPickedColor
-            color: root.pickedColor
-            border.width: 2
-            border.color: MD.Token.color.surface_container_low
         }
     }
 
