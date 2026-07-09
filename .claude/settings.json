@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(qmllint *)",
+      "Bash(scripts/check.sh*)",
+      "Bash(bash scripts/check.sh*)",
+      "Bash(python3 tests/*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git worktree list*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=$(jq -r \".tool_input.file_path // empty\"); case \"$f\" in *.qml) bash scripts/check.sh --file \"$f\" 1>&2 || exit 2;; esac",
+            "statusMessage": "qmllint"
+          }
+        ]
+      }
+    ]
+  }
+}
