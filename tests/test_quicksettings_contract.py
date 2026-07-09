@@ -227,9 +227,10 @@ def main() -> None:
     assert 'icon.name: "tune"' in slider, "the output-device button uses the mixer glyph"
     assert "trailingSlot" in slider, "sliders keep the trailing 32px alignment slot"
     # MouseArea.onWheel, not WheelHandler: WheelHandler gets no wheel events
-    # on the live compositor (Workspaces proves the MouseArea pattern).
-    assert "wheelNotches" in slider and "onWheel" in slider, (
-        "hover + wheel adjusts the slider value"
+    # on the live compositor (Workspaces proves the MouseArea pattern). Scroll
+    # mirrors GNOME (js/ui/slider.js): mouse = fixed notches, touchpad = smooth.
+    assert "onWheel" in slider and "pixelDelta" in slider, (
+        "hover + wheel adjusts the slider value (touchpad smooth, mouse notched)"
     )
     assert "WheelHandler {" not in slider, "WheelHandler is dead on the live compositor"
 

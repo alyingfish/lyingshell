@@ -2,7 +2,6 @@ import QtQuick
 import Qcm.Material as MD
 import qs.Commons.I18n
 import qs.Material
-import "../../../Material/Wheel.js" as Wheel
 
 // Web-prototype expressive slider row: a 38px row of [32px leading icon
 // button | thick-track slider | 32px trailing slot], 10px gaps. The track is
@@ -273,34 +272,49 @@ Item {
     }
 
     // Prototype: hovering anywhere on the row adjusts the value with the
-    // wheel/touchpad in 5% steps per notch. Topmost, button-less MouseArea:
-    // wheel lands here first while presses/drags fall through to the slider
-    // (the MouseArea.onWheel pattern is what the Bar's Workspaces widget
-    // already proves out on the live compositor; WheelHandler does not
-    // receive wheel events there).
+    // wheel/touchpad. Scroll mirrors GNOME Shell's slider (js/ui/slider.js): a
+    // mouse wheel steps in fixed 2% notches, a touchpad scrolls smoothly in
+    // proportion to finger travel. Topmost, button-less MouseArea: wheel lands
+    // here first while presses/drags fall through to the slider (the
+    // MouseArea.onWheel pattern is what the Bar's Workspaces widget already
+    // proves out on the live compositor; WheelHandler does not receive wheel
+    // events there).
     MouseArea {
-        property real acc: 0
-
         anchors.fill: parent
         acceptedButtons: Qt.NoButton
         // Wheel is dead while muted, matching the disabled slider.
         enabled: !control.dimmed
         onWheel: function(wheel) {
-            // niri owns scroll-direction (natural scroll); take the wheel at
-            // face value. Dominant axis so a horizontal wheel or two-finger
-            // swipe adjusts too: scroll up/left = increase, down/right = decrease.
-            const angle = Math.abs(wheel.angleDelta.x) > Math.abs(wheel.angleDelta.y) ? wheel.angleDelta.x : wheel.angleDelta.y;
-            const pixel = Math.abs(wheel.pixelDelta.x) > Math.abs(wheel.pixelDelta.y) ? wheel.pixelDelta.x : wheel.pixelDelta.y;
-            const result = Wheel.wheelNotches(acc, angle, pixel);
-            acc = result.acc;
-            if (result.steps !== 0) {
-                // Wheel has no press/focus, so reveal the value indicator for a
-                // beat after each notch (SliderHandle.revealValue).
-                wheelRevealTimer.restart();
-                const next = Math.max(0, Math.min(100, slider.value + result.steps * 5));
-                if (next !== slider.value)
+            // Device split like GNOME's FLAG_POINTER_EMULATED filter: touchpads
+            // emit pixelDelta (Qt's continuous delta), a plain wheel does not.
+            // Quickshell's WheelEvent doesn't expose the synthesized-event flag,
+            // so pixelDelta presence is the closest test.
+            // ponytail: a hi-res mouse wheel also sends pixelDelta and reads as
+            // a touchpad; no source()/synthesized flag in WheelEvent to do better.
+            // niri owns natural-scroll direction, so deltas are taken at face
+            // value: up/left = increase, down/right = decrease.
+            const stepPct = 2; // GNOME SLIDER_SCROLL_STEP (0.02)
+            let deltaPct;
+            if (wheel.pixelDelta.x !== 0 || wheel.pixelDelta.y !== 0) {
+                // Touchpad: continuous, horizontal axis (GNOME's slider reads
+                // dx). ~3px per 1% preserves the previous touchpad sensitivity;
+                // this is the feel knob.
+                deltaPct = wheel.pixelDelta.x / 3;
+            } else {
+                // Mouse wheel: one 120-unit notch = one 2% step. Dominant axis
+                // so a tilt wheel works too (GNOME's discrete branch is
+                // axis-agnostic).
+                const angle = Math.abs(wheel.angleDelta.x) > Math.abs(wheel.angleDelta.y) ? wheel.angleDelta.x : wheel.angleDelta.y;
+                deltaPct = angle / 120 * stepPct;
+            }
+            if (deltaPct !== 0) {
+                const next = Math.max(0, Math.min(100, slider.value + deltaPct));
+                if (next !== slider.value) {
+                    // Wheel has no press/focus, so reveal the value indicator
+                    // for a beat after each change (SliderHandle.revealValue).
+                    wheelRevealTimer.restart();
                     control.moved(next / 100);
-
+                }
             }
             wheel.accepted = true;
         }
