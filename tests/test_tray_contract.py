@@ -54,8 +54,9 @@ def main() -> None:
     # Single-scene overlay contract with Bar.qml.
     assert "readonly property bool expanded" in tray
     assert "collapsedReserve" in tray
-    assert "systemTray.expanded" in bar
-    assert "systemTray.collapsedReserve" in bar
+    # The tray sits behind a Loader since the startup-latency work.
+    assert "systemTrayLoader.item ? systemTrayLoader.item.expanded : false" in bar
+    assert "systemTrayLoader.item.collapsedReserve" in bar
 
     # e2e control surface: no IpcHandler ships in product QML; the test-only
     # driver is env-gated and lives under tests/.

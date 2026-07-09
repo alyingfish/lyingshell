@@ -101,12 +101,20 @@ def main() -> None:
     # Settled-size window, full-screen while a bar overlay (tray popover/drag
     # or quick-settings panel) is active.
     assert "barSurface.config.margin + barSurface.barHeight" in bar
-    assert "readonly property bool overlayExpanded: systemTray.expanded || quickSettings.expanded" in bar
+    # Tray and quick settings sit behind Loaders since the startup-latency work,
+    # so the overlay contract reads through .item with a collapsed fallback.
+    assert "readonly property bool overlayExpanded:" in bar
+    assert "systemTrayLoader.item ? systemTrayLoader.item.expanded : false" in bar
+    assert "quickSettingsLoader.item ? quickSettingsLoader.item.expanded : false" in bar
     assert "overlayExpanded && root.screen ? root.screen.height" in bar
-    assert "systemTray.collapsedReserve" in bar
-    # Hidden collapses the exclusive zone; otherwise reserves margin + height.
-    assert "barSurface.isHidden" in bar
-    assert "? 0" in bar
+    assert "systemTrayLoader.item.collapsedReserve" in bar
+    # Exclusive zone stays constant across hide/floating to avoid reflow stutter:
+    # Bar delegates to BarSurface, which picks the hidden or active shape's zone.
+    assert "exclusiveZone: barSurface.exclusiveZone" in bar
+    assert (
+        "readonly property int exclusiveZone: isHidden ? shapeOptions.hidden.exclusiveZone : config.exclusiveZone"
+        in surface
+    )
     # Input mask tracks the visible surface; overlay-expanded takes the window.
     assert "mask: overlayExpanded ? null : barMask" in bar
     assert "BackgroundEffect.blurRegion: barSurface.blurEnabled ? blurRegion : null" in bar

@@ -68,7 +68,8 @@ def main() -> None:
     assert "property JsonObject quickSettingsButton" in bar_widgets
     assert "property JsonObject tray" in bar_widgets
     assert "property JsonObject workspaces" in bar_widgets
-    menu_body = handler_body(settings_qml, "property JsonObject quickSettings")
+    # Trailing colon keeps the marker from matching quickSettingsButton above.
+    menu_body = handler_body(settings_qml, "property JsonObject quickSettings:")
     assert "property JsonObject nightLight" in menu_body
     assert "runtimeSettingsFile.writeAdapter()" in settings_qml
     assert "onAdapterUpdated" in settings_qml
@@ -85,7 +86,8 @@ def main() -> None:
     assert "mergeDefaults" not in settings_qml
 
     assert 'property string language: "en"' in settings_qml
-    assert "property real height: 32" in settings_qml
+    # Bar height is per-shape (and int) since the settings-driven shape work.
+    assert "property int height: 32" in settings_qml
     assert 'property string currentShape: "autoShape"' in settings_qml
     assert "property int margin: 8" in settings_qml
     assert "property int radius: 16" in settings_qml
@@ -105,13 +107,17 @@ def main() -> None:
     assert 'property string font: "Noto Sans"' in appearance_body
     assert "property bool useWallpaperColor: true" in appearance_body
 
-    # Missing-file branch creates the file; corrupt/IO error branch must not
+    # Missing-file branch creates the file (via the async config-dir mkdir,
+    # whose onExited writes the defaults); corrupt/IO error branch must not
     # overwrite the bad file, only fall back to in-memory defaults.
     load_failed = handler_body(settings_qml, "onLoadFailed:")
     assert "FileViewError.FileNotFound" in load_failed
-    assert "createRuntimeSettingsFile()" in load_failed
+    assert "createConfigDir.running = true" in load_failed
     assert "ensureLoadedWithDefaults()" in load_failed
     assert "writeAdapter" not in load_failed
+    mkdir_exited = handler_body(settings_qml, "onExited: function(exitCode")
+    assert "createRuntimeSettingsFile()" in mkdir_exited
+    assert "ensureLoadedWithDefaults()" in mkdir_exited
 
     save_failed = handler_body(settings_qml, "onSaveFailed:")
     assert "ensureLoadedWithDefaults()" in save_failed

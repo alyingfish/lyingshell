@@ -102,9 +102,10 @@ def main() -> None:
     assert "readonly property int pulseDuration: MD.Token.duration.long2" in workspace_dot
     assert "loops: 2" in workspace_dot
 
-    assert "readonly property int horizontalPadding: 8" in workspaces
-    assert "readonly property int controlHeight: 28" in workspaces
-    assert "readonly property int dotGap: 6" in workspaces
+    # 12 aligns the workspaces pill with the quick-settings pill (6360cb5).
+    assert "readonly property int horizontalPadding: 12" in workspaces
+    assert "readonly property int controlHeight: 24" in workspaces
+    assert "readonly property int dotGap: 8" in workspaces
     assert "Settings.options.bar.widgets.workspaces.scrollLoop" in workspaces
     assert "Settings.options.bar.widgets.workspaces.urgentPulse" in workspaces
     assert "Workspaces {" in workspaces_pointer_test
