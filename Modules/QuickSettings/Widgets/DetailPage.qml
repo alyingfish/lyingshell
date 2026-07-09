@@ -29,6 +29,14 @@ Item {
     property Component bodyContent: null
     readonly property alias bodyItem: bodyLoader.item
 
+    // The list flickable extends this far past the content, into the card's
+    // right padding, so its floating scrollbar rides in that empty gutter
+    // instead of over the rows. Matches QuickSettingsPanel's `pad` (the content
+    // inset), so the flickable's right edge meets the card edge; the card wraps
+    // the panel in a clip at the full card width, so the bar is not cut off.
+    // The list body keeps the content width, so the rows themselves don't move.
+    readonly property real scrollGutter: 12
+
     // --- detail header (prototype .dv-head) --------------------------------
     Item {
         id: detailHead
@@ -147,16 +155,20 @@ Item {
         MD.Flickable {
             id: detailFlick
 
+            // Stretch the (transparent) viewport into the card's right padding
+            // so the overlay scrollbar sits in that gutter, clear of the rows.
             anchors.fill: parent
+            anchors.rightMargin: -root.scrollGutter
             contentHeight: contentItem.childrenRect.height
 
             Loader {
                 id: bodyLoader
 
                 // Incubate the list across frames so the push slide starts on
-                // the click frame and rows fill in behind it.
+                // the click frame and rows fill in behind it. Pinned to the
+                // content width (not the widened viewport) so rows stay put.
                 asynchronous: true
-                width: parent.width
+                width: detailListArea.width
                 sourceComponent: root.bodyContent
             }
 
@@ -169,13 +181,18 @@ Item {
                 when: bodyLoader.item !== null
             }
 
-            // Floating overlay scrollbar: a thin pill inset from the edge that
-            // fades in while scrolling and auto-hides, so rows stay full-width
-            // and centered. Mirrors MD.ScrollBar's hold-then-fade.
+            // Floating overlay scrollbar: a thin pill riding in the card's
+            // right padding (the viewport is stretched into that gutter), so
+            // rows stay full-width and centered while the bar clears them. It
+            // fades in while scrolling and auto-hides. Mirrors MD.ScrollBar's
+            // hold-then-fade.
             QC.ScrollBar.vertical: QC.ScrollBar {
                 id: detailScroll
 
-                rightPadding: 3
+                // Bias the 4px pill toward the inner side of the card's right
+                // padding so it is not jammed against the outer edge: ~6px shy
+                // of the card edge, still clear of the rows on the left.
+                rightPadding: 6
                 policy: QC.ScrollBar.AsNeeded
                 opacity: 0
 
