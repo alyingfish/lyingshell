@@ -1,5 +1,6 @@
-// Wheel-event normalization shared by slider rows, the tile pager, and any
-// hover-wheel surface.
+// Discrete wheel/touchpad notch accumulation for surfaces that step per notch
+// (the tile pager flips one page per notch). Sliders scroll continuously and
+// do their own delta math, so they don't use this.
 .pragma library
 
 // Prefer angleDelta (a mouse notch is 120), else pixelDelta * 8 (Qt's pixel
