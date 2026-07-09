@@ -30,18 +30,92 @@ Item {
     readonly property string showBatteryValue: Settings.options.bar.widgets.quickSettingsButton.showBatteryValue
     readonly property bool showBatteryText: SystemStatus.hasBattery && (showBatteryValue === "always" || (showBatteryValue !== "never" && SystemStatus.batteryLow))
 
-    // Network tooltip: wired, hosting a hotspot, the live SSID (flagged when
-    // there's no real internet), or a plain "Wi-Fi".
+    // Cap dynamic names (SSID, output-device nickname, BT device) so a long
+    // label can't blow the tooltip wide: elide overflow to an ellipsis, the way
+    // GNOME's menus and KDE's applet bound their labels.
+    readonly property int tipNameMax: 20
+    function elideName(text: string): string {
+        return text.length > tipNameMax ? text.substring(0, tipNameMax - 1).replace(/\s+$/, "") + "…" : text;
+    }
+
+    // Pill tooltips read like Windows 11's quick-settings buttons: a name line
+    // over a state line. Network leads with the SSID (or "Wired") when there is
+    // one — never a bare "Wi-Fi", since the pill's network glyph already names
+    // the radio; radio-only states drop to just the state line.
     readonly property string networkTip: {
         if (SystemStatus.wiredConnected)
-            return I18n.t("quickSettings.wired");
+            return I18n.t("quickSettings.wired") + "\n" + I18n.t("quickSettings.wifiConnected");
+        if (!Networking.wifiEnabled)
+            return I18n.t("quickSettings.wifiOff");
         if (SystemStatus.wifiConnecting)
             return I18n.t("quickSettings.wifiConnecting");
         if (SystemStatus.hotspotActive)
             return I18n.t("quickSettings.hotspotActive");
         if (SystemStatus.activeWifiNetwork)
-            return SystemStatus.wifiNoInternet ? SystemStatus.activeWifiNetwork.name + " · " + I18n.t("quickSettings.noInternet") : SystemStatus.activeWifiNetwork.name;
-        return I18n.t("quickSettings.wifi");
+            return root.elideName(SystemStatus.activeWifiNetwork.name) + "\n" + (SystemStatus.wifiNoInternet ? I18n.t("quickSettings.noInternet") : I18n.t("quickSettings.wifiConnected"));
+        return I18n.t("quickSettings.wifiNotConnected");
+    }
+
+    // Bluetooth: the connected device name(s) over the connection state, never
+    // a bare "Bluetooth" — the pill's bluetooth glyph already names the radio.
+    // With nothing paired-and-connected it drops to just the state line.
+    readonly property string bluetoothTip: {
+        var devices = SystemStatus.btConnectedDevices;
+        if (devices.length === 0)
+            return I18n.t("quickSettings.btNotConnected");
+        var names = devices.map(device => device.name.length > 0 ? device.name : device.address);
+        if (devices.length === 1)
+            return root.elideName(names[0]) + "\n" + I18n.t("quickSettings.btConnected");
+        return root.elideName(names.join(", ")) + "\n" + I18n.t("quickSettings.bluetoothConnectedCount", {
+            "count": devices.length
+        });
+    }
+
+    // Volume: a Windows-style output name — the endpoint type plus the device's
+    // short nickname (e.g. "Speakers · Built-in Audio") — over its level (or
+    // "Muted"). The type comes from the sink's description/name keywords.
+    readonly property string volumeTip: {
+        var device;
+        if (Audio.hasSink) {
+            var typeToken = "quickSettings.outputType." + StatusIcons.audioSinkType(Audio.sink.description + " " + Audio.sink.name);
+            var type = I18n.t(typeToken);
+            var nick = root.elideName(Audio.sink.nickname);
+            device = nick.length > 0 ? type + " · " + nick : type;
+        } else {
+            device = I18n.t("quickSettings.outputDevice");
+        }
+        var level = Audio.muted ? I18n.t("quickSettings.muted") : I18n.t("quickSettings.volumePercent", {
+            "percent": Math.round(Audio.volume * 100)
+        });
+        return device + "\n" + level;
+    }
+
+    // Localized power-profile name, shared by the battery tooltip.
+    readonly property string powerModeName: {
+        if (PowerMode.profile === PowerProfile.Performance)
+            return I18n.t("quickSettings.powerProfile.performance");
+        if (PowerMode.profile === PowerProfile.PowerSaver)
+            return I18n.t("quickSettings.powerProfile.powerSaver");
+        return I18n.t("quickSettings.powerProfile.balanced");
+    }
+
+    // Battery: the active power mode over the charge percentage, laid out like
+    // the volume tooltip (name line over value line). The pill no longer carries
+    // a separate power-mode glyph (GNOME-style) — the mode rides the battery icon
+    // variant plus this line. Falls back to the charge state when no
+    // power-profiles daemon is running.
+    readonly property string batteryTip: {
+        var pct = I18n.t("quickSettings.batteryPercent", {
+            "percent": SystemStatus.batteryPercent
+        });
+        var state = "";
+        if (PowerMode.available)
+            state = root.powerModeName;
+        else if (SystemStatus.batteryFull)
+            state = I18n.t("quickSettings.batteryFull");
+        else if (SystemStatus.batteryCharging)
+            state = I18n.t("quickSettings.charging");
+        return state.length > 0 ? state + "\n" + pct : pct;
     }
 
     // Connecting sweep: cycle the fan bars while a wifi network is activating,
@@ -279,10 +353,13 @@ Item {
                 }
 
                 StatusIcon {
-                    visible: SystemStatus.btEnabled
+                    // GNOME shows the status-area bluetooth glyph only while a
+                    // device is connected (status/bluetooth.js: nConnected > 0),
+                    // not merely when the radio is on — the toggle owns on/off.
+                    visible: SystemStatus.btConnectedDevices.length > 0
                     name: "bluetooth"
                     color: pillButton.mdState.textColor
-                    tip: I18n.t("quickSettings.bluetooth")
+                    tip: root.bluetoothTip
                 }
 
                 StatusIcon {
@@ -293,25 +370,24 @@ Item {
                 }
 
                 StatusIcon {
-                    visible: PowerMode.available && PowerMode.profile !== PowerProfile.Balanced
-                    name: PowerMode.iconName
-                    color: pillButton.mdState.textColor
-                    tip: PowerMode.profile === PowerProfile.Performance ? I18n.t("quickSettings.powerProfile.performance") : I18n.t("quickSettings.powerProfile.powerSaver")
-                }
-
-                StatusIcon {
                     name: StatusIcons.volumeIcon(Audio.volume, Audio.muted)
                     color: pillButton.mdState.textColor
-                    tip: Audio.muted ? I18n.t("quickSettings.muted") : I18n.t("quickSettings.volume")
+                    tip: root.volumeTip
                 }
 
                 StatusIcon {
                     visible: SystemStatus.hasBattery
-                    name: StatusIcons.batteryIcon(SystemStatus.batteryPercent, SystemStatus.batteryCharging, SystemStatus.batteryFull)
+                    // Power Saver rides the battery glyph as the leaf variant
+                    // (Windows 11 / GNOME style), so the pill needs no separate
+                    // power-mode icon. Charging and critical-low still win the
+                    // glyph; the exact mode is always in the tooltip.
+                    name: {
+                        if (PowerMode.available && PowerMode.profile === PowerProfile.PowerSaver && !SystemStatus.batteryCharging && !SystemStatus.batteryFull && !SystemStatus.batteryLow)
+                            return "battery_saver";
+                        return StatusIcons.batteryIcon(SystemStatus.batteryPercent, SystemStatus.batteryCharging, SystemStatus.batteryFull);
+                    }
                     color: root.batteryColor
-                    tip: I18n.t("quickSettings.batteryPercent", {
-                        "percent": SystemStatus.batteryPercent
-                    })
+                    tip: root.batteryTip
                 }
 
                 MD.Text {

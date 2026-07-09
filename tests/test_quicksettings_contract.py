@@ -105,6 +105,11 @@ assert(context.audioSinkIcon("Navi 31 HDMI Audio") === "monitor", "hdmi sink ico
 assert(context.audioSinkIcon("Built-in Speakers") === "speaker", "speaker sink icon");
 assert(context.audioSinkIcon("WH-1000XM4 bluez_output") === "headset_mic", "bt sink icon");
 
+assert(context.audioSinkType("Navi 31 HDMI Audio") === "hdmi", "hdmi sink type");
+assert(context.audioSinkType("Built-in Speakers") === "speakers", "speaker sink type");
+assert(context.audioSinkType("WH-1000XM4 bluez_output") === "headset", "bt sink type");
+assert(context.audioSinkType("USB Headphones Analog") === "headphones", "headphone sink type");
+
 assert(context.wifiSignalIcon(90) === "signal_wifi_4_bar", "strong signal 0-100");
 assert(context.wifiSignalIcon(0.9) === "signal_wifi_4_bar", "strong signal 0-1");
 assert(context.wifiSignalIcon(60) === "network_wifi_3_bar", "good signal");

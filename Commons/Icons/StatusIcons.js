@@ -98,6 +98,23 @@ function audioSinkIcon(label) {
     return "speaker";
 }
 
+// Windows-style short endpoint TYPE from the same keywords, as a key into
+// quickSettings.outputType.* — Windows leads the volume tooltip with the type
+// ("Speakers", "Headphones", ...) rather than the long card description.
+function audioSinkType(label) {
+    var name = String(label || "").toLowerCase();
+    if (name.indexOf("headphone") >= 0) {
+        return "headphones";
+    }
+    if (name.indexOf("headset") >= 0 || name.indexOf("bluez") >= 0) {
+        return "headset";
+    }
+    if (name.indexOf("hdmi") >= 0 || name.indexOf("displayport") >= 0 || name.indexOf("display") >= 0) {
+        return "hdmi";
+    }
+    return "speakers";
+}
+
 // NetworkManager reports 0-100; tolerate an already-normalized 0-1 value.
 function wifiSignalIcon(strength) {
     var normalized = strength > 1 ? strength / 100 : strength;
