@@ -74,7 +74,8 @@ Item {
             // Below the icon, like the bar-tray tooltips (default is above).
             y: parent.height + 4
             text: statusIcon.tip
-            visible: statusHover.hovered && text.length > 0
+            // Suppress the hover tooltips once the panel is up — it covers them.
+            visible: statusHover.hovered && text.length > 0 && !root.panelOpen
         }
     }
 
