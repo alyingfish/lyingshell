@@ -18,12 +18,12 @@ Implemented:
 - Runtime JSON settings loaded from `~/.config/lyingshell/settings.json`.
 - Material Design 3 theme setup through QmlMaterial.
 - Time, weather placeholder, and Niri service boundaries.
-
-Planned:
-
 - Niri workspace and focused-window UI.
 - System tray.
 - Quick settings.
+
+Planned:
+
 - Notification panel.
 - Settings window.
 - Weather integration.
@@ -62,10 +62,6 @@ On first launch, Lying Shell creates
 `Commons/Settings/Settings.qml`. The file is plain JSON and is primarily a
 persistence target for the planned settings window.
 
-Malformed JSON or file IO errors leave the shell running with the current
-in-memory settings, or defaults during startup. Legacy `settings.jsonc` files
-are ignored.
-
 ## Development
 
 Useful checks:
@@ -92,7 +88,6 @@ Repository layout:
 Development rules:
 
 - Keep `shell.qml` thin; compose the app in `App/Shell.qml`.
-- Use PascalCase QML module directories and `qs.<Path>` imports.
 - Route static visible text through project I18n tokens.
 - Use Quickshell services before external commands.
 
