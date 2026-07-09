@@ -122,7 +122,7 @@ Singleton {
             property JsonObject appearance: JsonObject {
                 property string language: "en"
                 property string mode: "light"
-                property string accentColor: "#4F6357"
+                property string accentColor: "#6750A4"
                 property string font: "Noto Sans"
                 // Derive the runtime accent from the wallpaper via matugen.
                 // The derived color stays in memory (Theme.wallpaperAccent);

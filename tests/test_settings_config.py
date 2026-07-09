@@ -101,7 +101,7 @@ def main() -> None:
     appearance_body = handler_body(settings_qml, "property JsonObject appearance")
     assert 'property string language: "en"' in appearance_body
     assert 'property string mode: "light"' in appearance_body
-    assert 'property string accentColor: "#4F6357"' in appearance_body
+    assert 'property string accentColor: "#6750A4"' in appearance_body
     assert 'property string font: "Noto Sans"' in appearance_body
     assert "property bool useWallpaperColor: true" in appearance_body
 
