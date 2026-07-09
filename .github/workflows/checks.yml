@@ -20,7 +20,7 @@ jobs:
       - name: Install system packages
         run: |
           pacman -Syu --noconfirm --needed \
-            git git-lfs cmake gcc make pkgconf python \
+            git git-lfs cmake gcc make nodejs pkgconf python \
             qt6-base qt6-declarative qt6-svg qt6-shadertools quickshell
 
       - uses: actions/checkout@v4
