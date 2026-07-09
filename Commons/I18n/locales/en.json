@@ -84,7 +84,6 @@
     "timeLeft": "{hours}h {minutes}m left",
     "timeUntilFull": "{hours}h {minutes}m until full",
     "tool": {
-      "calculator": "Calculator",
       "clipboard": "Clipboard history",
       "colorPicker": "Color picker",
       "comingSoon": "Coming soon",

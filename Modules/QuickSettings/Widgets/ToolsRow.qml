@@ -1,13 +1,12 @@
 import QtQuick
-import qs.Services
 import qs.Services.Niri
 
 // Tools row (prototype #rowTools): one-shot utility chips packed edge to edge.
-// Colour picker, screenshot and calculator are wired; screen recording,
-// clipboard history and on-screen keyboard are placeholders (dimmed "coming
-// soon" chips) until their backends land in later tasks. Chips fold the row
-// away (`collapseRequested`); tools that hand off to another surface also close
-// the whole panel (`closeRequested`).
+// Colour picker and screenshot are wired; screen recording, clipboard history
+// and on-screen keyboard are placeholders (dimmed "coming soon" chips) until
+// their backends land in later tasks. Chips fold the row away
+// (`collapseRequested`); tools that hand off to another surface also close the
+// whole panel (`closeRequested`).
 Row {
     id: root
 
@@ -16,7 +15,7 @@ Row {
 
     // Chip count is fixed here (keep in sync with the chips below); the row
     // width is split evenly across them.
-    readonly property int chipCount: 6
+    readonly property int chipCount: 5
     readonly property real chipWidth: (width - (chipCount - 1) * spacing) / chipCount
 
     height: 40
@@ -59,24 +58,11 @@ Row {
         }
     }
 
-    ToolChip {
-        width: root.chipWidth
-        icon.name: "calculate"
-        alt: false
-        tooltipKey: "quickSettings.tool.calculator"
-
-        onClicked: {
-            root.collapseRequested();
-            root.closeRequested();
-            Session.openCalculator();
-        }
-    }
-
     // --- placeholder tools (backends land in later tasks) -------------------
     ToolChip {
         width: root.chipWidth
         icon.name: "screen_record"
-        alt: true
+        alt: false
         tooltipKey: "quickSettings.tool.screenRecord"
         comingSoon: true
     }
@@ -84,7 +70,7 @@ Row {
     ToolChip {
         width: root.chipWidth
         icon.name: "content_paste"
-        alt: false
+        alt: true
         tooltipKey: "quickSettings.tool.clipboard"
         comingSoon: true
     }
@@ -92,7 +78,7 @@ Row {
     ToolChip {
         width: root.chipWidth
         icon.name: "keyboard"
-        alt: true
+        alt: false
         tooltipKey: "quickSettings.tool.keyboard"
         comingSoon: true
     }

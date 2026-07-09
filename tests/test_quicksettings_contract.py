@@ -284,7 +284,6 @@ def main() -> None:
         "quickSettings.tools",
         "quickSettings.tool.colorPicker",
         "quickSettings.tool.screenshot",
-        "quickSettings.tool.calculator",
         # Tooltips on the icon-only header actions (prototype: settings + power).
         "quickSettings.settings",
         "quickSettings.lock",
@@ -303,7 +302,6 @@ def main() -> None:
         "Session.lock",
         "Session.openSettings",
         "Niri.pickColor",
-        "Session.openCalculator",
         "Niri.takeScreenshot",
     ]:
         assert feature in panel, f"panel missing {feature}"
