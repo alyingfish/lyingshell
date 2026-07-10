@@ -21,6 +21,8 @@ Item {
     signal closeRequested
     signal detailRequested(string name)
     signal powerRequested
+    // Colour-pick handoff from the tools row; the panel owns the pick.
+    signal pickRequested
 
     // Expandable-row state; the panel aliases these for tests/e2e.
     property alias toolsOpen: header.toolsOpen
@@ -38,11 +40,19 @@ Item {
     readonly property int page: pager.page
     readonly property int pageCount: pager.pageCount
 
-    // Compact height (expandable rows collapsed) the detail pages lock onto so
-    // navigation never resizes the panel.
-    readonly property real compactContentHeight: 32 + sectionGap + slidersCol.implicitHeight + sectionGap + pager.height + (dotsRow.visible ? sectionGap + dotsRow.height : 0)
+    // Main-view height as last measured on screen (open rows included); the
+    // detail pages lock the panel onto it so navigation never resizes the
+    // card. Frozen while hidden: the StackView hides this page under a pushed
+    // detail (and the popup hides the whole panel for a colour pick), which
+    // collapses the Column's live measurement.
+    property real lastShownHeight: 0
 
     implicitHeight: mainColumn.implicitHeight
+
+    onImplicitHeightChanged: if (visible)
+        lastShownHeight = implicitHeight
+    onVisibleChanged: if (visible)
+        lastShownHeight = implicitHeight
 
     function setPage(page: int) {
         pager.setPage(page);
@@ -75,6 +85,7 @@ Item {
 
             onCloseRequested: root.closeRequested()
             onPowerRequested: root.powerRequested()
+            onPickRequested: root.pickRequested()
         }
 
         // --- sliders --------------------------------------------------------

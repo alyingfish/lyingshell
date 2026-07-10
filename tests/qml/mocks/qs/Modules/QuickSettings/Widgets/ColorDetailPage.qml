@@ -15,6 +15,10 @@ import qs.Services.Niri
 DetailPage {
     id: root
 
+    // "Pick again" hands off to the panel's beginColorPick: the card closes
+    // for the aim and reopens on this page when niri replies.
+    signal pickRequested
+
     detailName: "color"
     title: I18n.t("quickSettings.tool.colorPicker")
 
@@ -84,8 +88,9 @@ DetailPage {
                 copyValue: page.h + ", " + page.s + ", " + page.v
             }
 
-            // Re-run the interactive pick; the result flows back through
-            // Niri.lastPickedColor and refreshes the rows in place.
+            // Re-run the interactive pick; the panel closes out of the way
+            // and the result flows back through Niri.lastPickedColor,
+            // refreshing the rows when the panel reopens on this page.
             MD.Button {
                 id: pickAgainBtn
 
@@ -134,7 +139,7 @@ DetailPage {
                     }
                 }
 
-                onClicked: Niri.pickColor()
+                onClicked: root.pickRequested()
             }
 
             // HEX/RGB/HSV row: a surface card with a label, the value, and a

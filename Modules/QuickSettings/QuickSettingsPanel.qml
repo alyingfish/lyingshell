@@ -26,6 +26,9 @@ Item {
     id: root
 
     signal closeRequested
+    // Asks the host (QuickSettingsButton via the popup) to reopen the panel;
+    // emitted when a colour pick completes while the panel is closed.
+    signal openRequested
 
     // Mirrors the menu's open state so the staggered entrance can run at the
     // start of the card's open transform.
@@ -60,7 +63,6 @@ Item {
     readonly property real headerOpacityProbe: mainPage.headerOpacityProbe
     readonly property real pagerOpacityProbe: mainPage.pagerOpacityProbe
     readonly property Item tileTrackProbe: mainPage.tileTrackProbe
-    readonly property real compactContentHeight: mainPage.compactContentHeight
     // Slide probes read the stack items' transform (StackView drives x/opacity).
     readonly property real mainSlideProbe: mainPage.x
     readonly property real detailSlideProbe: (stack.depth > 1 && stack.currentItem) ? stack.currentItem.x : 0
@@ -87,7 +89,9 @@ Item {
     Component {
         id: colorComp
 
-        ColorDetailPage {}
+        ColorDetailPage {
+            onPickRequested: root.beginColorPick()
+        }
     }
 
     Component {
@@ -123,15 +127,9 @@ Item {
         if (!comp) {
             return;
         }
-        // Lock the compact height and drop the session card before the detail
-        // page replaces the main view 1:1 (prototype collapseRowsInstant).
-        mainPage.collapseRowsInstant();
-        // Freeze the compact height now, while MainPage is still visible: once
-        // the StackView puts the detail on top it sets mainPage.visible=false,
-        // which cascades to descendants (e.g. the page dots), collapsing any
-        // live measurement of MainPage and shrinking the panel. Prototype:
-        // qs.style.height = getBoundingClientRect().height.
-        detailHeight = mainPage.compactContentHeight;
+        // Drop the session card; the expandable rows keep their toggle state
+        // behind the detail (mainPage.lastShownHeight locks the panel to the
+        // height they gave it, so the swap stays 1:1).
         sessionMenuOpen = false;
         if (stack.depth > 1) {
             stack.replace(comp);
@@ -149,25 +147,41 @@ Item {
 
     onDetailChanged: reconcileStack()
 
-    // Frozen compact height used while a detail is shown. Snapshotted in
-    // reconcileStack() before the StackView hides MainPage, so navigation never
-    // resizes the panel. Live-bound (and thus correct) until the first push
-    // reassigns it to a constant.
-    property real detailHeight: mainPage.compactContentHeight
-
     implicitWidth: contentWidth + pad * 2
-    implicitHeight: pad * 2 + (detail !== "" ? detailHeight : mainPage.implicitHeight)
+    // Detail pages lock the height the main view last had on screen (open
+    // rows included, via mainPage.lastShownHeight — the StackView's hide
+    // collapses any live measurement), so navigation never resizes the panel.
+    implicitHeight: pad * 2 + (detail !== "" ? mainPage.lastShownHeight : mainPage.implicitHeight)
 
-    // Refresh process-backed state whenever the panel becomes visible.
+    // Colour-pick handoff (tools row + the readout page's "pick again"): the
+    // target pixel may sit behind the card, so the panel closes for the aim
+    // while pickPending keeps its state (open rows, current detail) through
+    // the hide; the reply reopens it on the readout page. A cancelled pick
+    // (Esc) never replies — the panel just stays closed with its state
+    // intact, and the handoff ends on the next open.
+    property bool pickPending: false
+
+    function beginColorPick() {
+        pickPending = true;
+        if (!Niri.pickColor()) {
+            pickPending = false;
+            return;
+        }
+        closeRequested();
+    }
+
+    // Refresh process-backed state whenever the panel becomes visible; reset
+    // the navigation/row state on close (skipped while a pick is pending, so
+    // the reopened panel resumes where the user left it).
     onVisibleChanged: {
         if (visible) {
+            pickPending = false;
             Brightness.refresh();
             Airplane.refresh();
             DoNotDisturb.refresh();
-        } else {
+        } else if (!pickPending) {
             detail = "";
-            mainPage.toolsOpen = false;
-            mainPage.pmodeOpen = false;
+            mainPage.collapseRowsInstant();
             sessionMenuOpen = false;
             mainPage.setPage(0);
         }
@@ -182,15 +196,17 @@ Item {
         when: SystemStatus.wifiDevice !== null
     }
 
-    // A completed color pick reveals its readout page (a cancelled pick never
-    // fires this, so cancelling leaves the main view untouched). The hex also
-    // lands on the clipboard, GNOME-picker style; the page copies other formats.
+    // A completed color pick reopens the panel on its readout page (the
+    // handoff closed it for the aim). The hex also lands on the clipboard,
+    // GNOME-picker style; the page copies other formats.
     Connections {
         target: Niri
 
         function onColorPicked(hex) {
             Quickshell.clipboardText = hex;
+            root.pickPending = false;
             root.detail = "color";
+            root.openRequested();
         }
     }
 
@@ -203,8 +219,8 @@ Item {
         x: root.pad
         y: root.pad
         width: root.contentWidth
-        // Detail pages lock the frozen compact height; main drives it otherwise.
-        height: root.detail !== "" ? root.detailHeight : mainPage.implicitHeight
+        // Detail pages lock the last shown main height; main drives it otherwise.
+        height: root.detail !== "" ? mainPage.lastShownHeight : mainPage.implicitHeight
 
         initialItem: mainPage
 
@@ -292,6 +308,7 @@ Item {
         onCloseRequested: root.closeRequested()
         onDetailRequested: name => root.detail = name
         onPowerRequested: root.sessionMenuOpen = !root.sessionMenuOpen
+        onPickRequested: root.beginColorPick()
     }
 
     // ======================================================================

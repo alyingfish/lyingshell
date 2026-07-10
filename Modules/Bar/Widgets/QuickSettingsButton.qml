@@ -401,5 +401,7 @@ Item {
         open: root.panelOpen
 
         onCloseRequested: root.panelOpen = false
+        // A completed colour pick reopens the panel on its readout page.
+        onOpenRequested: root.panelOpen = true
     }
 }

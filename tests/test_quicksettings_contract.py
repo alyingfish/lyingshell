@@ -364,7 +364,22 @@ def main() -> None:
         "StackView owns visibility"
     )
     assert "DetailPage {" in panel, "detail pages extend the shared DetailPage chrome"
-    assert "compactContentHeight" in panel, "detail pages keep the compact main height"
+    # The expandable rows keep their toggle state across a detail round-trip:
+    # navigation locks the height the main view last had on screen (open rows
+    # included) instead of collapsing the rows to a compact height.
+    assert "lastShownHeight" in panel, "detail pages lock the last shown main height"
+    assert "compactContentHeight" not in panel, (
+        "detail navigation must not collapse the expandable rows"
+    )
+    # Colour pick hands off: the panel closes for the aim (the target pixel
+    # may sit behind the card) with its state kept alive (pickPending gates
+    # the close reset), and the reply reopens it on the readout page.
+    assert "pickPending" in panel and "beginColorPick" in panel, (
+        "the colour pick closes the panel without dropping its state"
+    )
+    assert "openRequested" in panel, (
+        "the pick result reopens the panel on the readout page"
+    )
     assert "pageCount" in panel and "pager.page" in panel, "tile grid is paged with dots"
     assert "wheelNotches" in panel and "onWheel" in panel, (
         "wheel/touchpad over the tile area flips pages"

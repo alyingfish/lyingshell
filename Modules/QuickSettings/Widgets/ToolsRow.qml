@@ -4,13 +4,16 @@ import qs.Services.Niri
 // Tools row (prototype #rowTools): one-shot utility chips packed edge to edge.
 // Colour picker and screenshot are wired; screen recording, clipboard history
 // and on-screen keyboard are placeholders (dimmed "coming soon" chips) until
-// their backends land in later tasks. Chips fold the row away
-// (`collapseRequested`); tools that hand off to another surface also close the
-// whole panel (`closeRequested`).
+// their backends land in later tasks. Chips never fold the row away — tools
+// that hand off to another surface close the whole panel instead
+// (`closeRequested`, or `pickRequested` when the panel must reopen on the
+// result), and the row keeps its toggle state for the next open.
 Row {
     id: root
 
-    signal collapseRequested
+    // Colour pick handoff: the panel closes for the aim (the target pixel may
+    // sit behind the card) and reopens on the readout page when niri replies.
+    signal pickRequested
     signal closeRequested
 
     // Chip count is fixed here (keep in sync with the chips below); the row
@@ -31,18 +34,16 @@ Row {
         onTriggered: Niri.takeScreenshot()
     }
 
-    // Colour picker: niri's interactive pick. The result opens the colour
-    // readout page (wired in QuickSettingsPanel) instead of a dead-end swatch.
+    // Colour picker: niri's interactive pick, owned by QuickSettingsPanel
+    // (beginColorPick) so the close-for-the-aim and the reopen onto the
+    // readout page live in one place.
     ToolChip {
         width: root.chipWidth
         icon.name: "colorize"
         alt: false
         tooltipKey: "quickSettings.tool.colorPicker"
 
-        onClicked: {
-            root.collapseRequested();
-            Niri.pickColor();
-        }
+        onClicked: root.pickRequested()
     }
 
     ToolChip {
@@ -52,7 +53,6 @@ Row {
         tooltipKey: "quickSettings.tool.screenshot"
 
         onClicked: {
-            root.collapseRequested();
             root.closeRequested();
             screenshotDelay.restart();
         }

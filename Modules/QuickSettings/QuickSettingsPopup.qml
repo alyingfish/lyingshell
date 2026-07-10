@@ -19,6 +19,9 @@ Item {
     property bool open: false
 
     signal closeRequested
+    // Panel asks to be reopened (a colour pick completed while closed);
+    // bubbles to the bar button that owns the open state.
+    signal openRequested
 
     // Bar.qml: full-screen window + full input mask while true.
     readonly property bool expanded: open || panelCard.opacity > 0.001
@@ -182,6 +185,7 @@ Item {
                         open: root.open
 
                         onCloseRequested: root.closeRequested()
+                        onOpenRequested: root.openRequested()
                     }
                 }
             }

@@ -19,8 +19,8 @@ Item {
     // Expandable-row state; the panel aliases these for tests and e2e.
     property bool toolsOpen: false
     property bool pmodeOpen: false
-    // Instant collapse (no spring) when a detail page must measure the
-    // compact panel, mirroring the prototype's collapseRowsInstant().
+    // Instant collapse (no spring) for the panel-close reset, so a quick
+    // reopen never catches the rows mid-collapse.
     property bool revealAnimated: true
     // Driven by the panel so the power button suppresses its tooltip while
     // the session card is up.
@@ -29,6 +29,8 @@ Item {
     signal closeRequested
     // Power button pressed; the panel owns the session-menu card.
     signal powerRequested
+    // Colour-pick handoff from the tools row; the panel owns the pick.
+    signal pickRequested
 
     function collapseRowsInstant() {
         revealAnimated = false;
@@ -398,7 +400,7 @@ Item {
                     anchors.topMargin: header.sectionGap
                     width: parent.width
 
-                    onCollapseRequested: header.toolsOpen = false
+                    onPickRequested: header.pickRequested()
                     onCloseRequested: header.closeRequested()
                 }
             }

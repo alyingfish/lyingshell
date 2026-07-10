@@ -32,6 +32,14 @@ Window {
 
         name: "QuickSettingsMotion"
 
+        // qml6 (no qmltestrunner) reports no per-test results: a failing
+        // verify aborts only its own function, silently, and the process
+        // still exits 0. Each test therefore bumps this counter as its last
+        // statement, and the alphabetically-last case (qmltest runs in
+        // alphabetical order) emits the wrapper's required PASS marker only
+        // when every case completed.
+        property int passedTests: 0
+
         function test_rise_stagger() {
             panel.open = true;
             wait(60);
@@ -44,6 +52,7 @@ Window {
             wait(700);
             verify(Math.abs(panel.headerOpacityProbe - 1) < 0.01, "header settles opaque");
             verify(Math.abs(panel.pagerOpacityProbe - 1) < 0.01, "pager settles opaque");
+            tester.passedTests++;
         }
 
         function test_tools_reveal_spring() {
@@ -57,6 +66,7 @@ Window {
             panel.toolsOpen = false;
             wait(600);
             verify(Math.abs(panel.switchReveal) < 0.01, "tools reveal settles closed");
+            tester.passedTests++;
         }
 
         // Switching tool<->power while open is a vertical slide of the track,
@@ -86,6 +96,7 @@ Window {
             compare(Math.round(panel.switchSlideProbe), 0, "track settles back on the tools slide");
             panel.toolsOpen = false;
             wait(600);
+            tester.passedTests++;
         }
 
         function test_detail_slide() {
@@ -99,6 +110,51 @@ Window {
             panel.detail = "";
             wait(700);
             verify(Math.abs(panel.mainSlideProbe) < 0.5, "main view slides back");
+            tester.passedTests++;
+        }
+
+        // Detail round-trip with the tools row open: the row keeps its toggle
+        // state behind the detail, and the detail page locks the panel at the
+        // row-open height instead of snapping back to the compact one.
+        function test_detail_keeps_open_row() {
+            panel.toolsOpen = true;
+            wait(700);
+            const openHeight = panel.implicitHeight;
+            panel.detail = "wifi";
+            wait(700);
+            verify(panel.toolsOpen, "tools row stays toggled behind the detail");
+            verify(Math.abs(panel.implicitHeight - openHeight) < 0.5, "detail locks the row-open height, got " + panel.implicitHeight + " vs " + openHeight);
+            panel.detail = "";
+            wait(700);
+            verify(panel.toolsOpen, "tools row is still open after back");
+            verify(Math.abs(panel.implicitHeight - openHeight) < 0.5, "panel keeps the row-open height after back, got " + panel.implicitHeight);
+            panel.toolsOpen = false;
+            wait(600);
+            tester.passedTests++;
+        }
+
+        // Colour-pick handoff: beginColorPick closes the panel with
+        // pickPending held, so the hide skips the state reset; the async
+        // reply reopens it on the readout page at the same height, and back
+        // returns to the main view with the tools row still open.
+        function test_pick_handoff_keeps_row() {
+            panel.toolsOpen = true;
+            wait(700);
+            const openHeight = panel.implicitHeight;
+            panel.beginColorPick();
+            panel.visible = false; // the popup hides the card for the aim
+            wait(50); // mock Niri replies via Qt.callLater
+            verify(panel.toolsOpen, "handoff keeps the tools row open through the close");
+            compare(panel.detail, "color", "the pick reply opens the color readout");
+            panel.visible = true; // openRequested -> the button reopens the panel
+            wait(700);
+            verify(Math.abs(panel.implicitHeight - openHeight) < 0.5, "readout page keeps the row-open height, got " + panel.implicitHeight + " vs " + openHeight);
+            panel.detail = "";
+            wait(700);
+            verify(panel.toolsOpen, "back returns with the tools row still open");
+            panel.toolsOpen = false;
+            wait(600);
+            tester.passedTests++;
         }
 
         function test_page_spring() {
@@ -132,6 +188,14 @@ Window {
             wait(600);
             compare(panel.page, 0, "returns to page 1");
             verify(Math.abs(track.x) < 2, "track returns to page 1, got " + track.x);
+            tester.passedTests++;
+        }
+
+        // Alphabetically last: runs after every case above and emits the
+        // wrapper's required marker only if all of them completed (see the
+        // passedTests note at the top of this TestCase).
+        function test_zz_all_completed() {
+            compare(tester.passedTests, 7, "every motion case ran to completion");
             console.log("PASS: quick settings motion contract");
         }
     }
