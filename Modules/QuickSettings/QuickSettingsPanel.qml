@@ -198,12 +198,15 @@ Item {
 
     // A completed color pick reopens the panel on its readout page (the
     // handoff closed it for the aim). The hex also lands on the clipboard,
-    // GNOME-picker style; the page copies other formats.
+    // GNOME-picker style; the page copies other formats. Copy via a detached
+    // wl-copy rather than Quickshell.clipboardText: the latter stops serving
+    // the selection once no shell surface is focused, so a paste after the
+    // panel closes would come up empty.
     Connections {
         target: Niri
 
         function onColorPicked(hex) {
-            Quickshell.clipboardText = hex;
+            Quickshell.execDetached(["wl-copy", hex]);
             root.pickPending = false;
             root.detail = "color";
             root.openRequested();

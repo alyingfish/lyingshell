@@ -202,7 +202,10 @@ DetailPage {
                     }
 
                     onClicked: {
-                        Quickshell.clipboardText = fmtRow.copyValue;
+                        // Detached wl-copy, not Quickshell.clipboardText: that
+                        // selection dies when the panel loses focus, so the
+                        // value would vanish before the user can paste it.
+                        Quickshell.execDetached(["wl-copy", fmtRow.copyValue]);
                         copied = true;
                         copiedReset.restart();
                     }

@@ -34,6 +34,7 @@ Planned:
 - [Quickshell](https://quickshell.org/).
 - Qt 6 QML tooling, including `qmllint` for development checks.
 - `git`, `git-lfs`, and `cmake` for the bundled dependency installer.
+- `wl-clipboard` (`wl-copy`) for the quick-settings color picker's copy-to-clipboard.
 
 ## Install Dependencies
 
