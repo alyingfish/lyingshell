@@ -80,7 +80,12 @@ MD.Button {
 
         Column {
             anchors.left: rowIcon.visible ? rowIcon.right : parent.left
-            anchors.leftMargin: rowIcon.visible ? 10 : 0
+            // 12 (not the prototype's 10) puts the text column at
+            // 14 + 18 + 12 = 44, the column SoundDetailPage's mixer rows
+            // hold to clear their filled mute pill; every device list
+            // (sound, Wi-Fi, Bluetooth, keyboard) shares this row, so they
+            // all align on that one column.
+            anchors.leftMargin: rowIcon.visible ? 12 : 0
             anchors.right: rowTrailing.left
             anchors.rightMargin: 10
             anchors.verticalCenter: parent.verticalCenter

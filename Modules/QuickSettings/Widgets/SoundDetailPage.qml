@@ -62,8 +62,8 @@ DetailPage {
     // the app's mute button (spanning both lines), its name over a live
     // percent readout, and a compact expressive slider. The 7px inset
     // centers the mute glyph on the device rows' icon column (14 + 18/2);
-    // the body sits just past the device rows' text column (14 + 18 + 10 =
-    // 42) so the name lines up with them yet clears the filled mute pill.
+    // the body sits on the device rows' text column (14 + 18 + 12 = 44) so
+    // the name lines up with them while 44 still clears the filled mute pill.
     component MixerRow: Rectangle {
         id: mixerRow
 
