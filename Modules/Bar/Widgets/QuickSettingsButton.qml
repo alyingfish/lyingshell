@@ -90,32 +90,17 @@ Item {
         return device + "\n" + level;
     }
 
-    // Localized power-profile name, shared by the battery tooltip.
-    readonly property string powerModeName: {
-        if (PowerMode.profile === PowerProfile.Performance)
-            return I18n.t("quickSettings.powerProfile.performance");
-        if (PowerMode.profile === PowerProfile.PowerSaver)
-            return I18n.t("quickSettings.powerProfile.powerSaver");
-        return I18n.t("quickSettings.powerProfile.balanced");
-    }
-
-    // Battery: the active power mode over the charge percentage, laid out like
-    // the volume tooltip (name line over value line). The pill no longer carries
-    // a separate power-mode glyph (GNOME-style) — the mode rides the battery icon
-    // variant plus this line. Falls back to the charge state when no
-    // power-profiles daemon is running.
+    // Battery: the same status line the quick-settings power-mode row reads —
+    // the live time estimate ("5h 12m left" / "1m until full") when UPower has
+    // one, else the charge state — laid out like the volume tooltip over the
+    // charge percentage. The Empty/Unknown state reads as the raw percentage, so
+    // drop the redundant second line there.
     readonly property string batteryTip: {
         var pct = I18n.t("quickSettings.batteryPercent", {
             "percent": SystemStatus.batteryPercent
         });
-        var state = "";
-        if (PowerMode.available)
-            state = root.powerModeName;
-        else if (SystemStatus.batteryFull)
-            state = I18n.t("quickSettings.batteryFull");
-        else if (SystemStatus.batteryCharging)
-            state = I18n.t("quickSettings.charging");
-        return state.length > 0 ? state + "\n" + pct : pct;
+        var status = SystemStatus.hasBattery ? BatteryStatus.line : "";
+        return status.length > 0 && status !== pct ? status + "\n" + pct : pct;
     }
 
     // Connecting sweep: cycle the fan bars while a wifi network is activating,

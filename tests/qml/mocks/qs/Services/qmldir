@@ -1,5 +1,6 @@
 module qs.Services
 singleton Audio 1.0 Audio.qml
+singleton BatteryStatus 1.0 BatteryStatus.qml
 singleton Brightness 1.0 Brightness.qml
 singleton NightLight 1.0 NightLight.qml
 singleton Airplane 1.0 Airplane.qml

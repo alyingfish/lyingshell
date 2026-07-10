@@ -39,6 +39,9 @@ Singleton {
     // and never draws the charging bolt or a time-to-full estimate.
     readonly property bool batteryCharging: hasBattery && battery.state === UPowerDeviceState.Charging
     readonly property bool batteryNotCharging: hasBattery && battery.state === UPowerDeviceState.PendingCharge
+    // Actively draining. Empty / Unknown / PendingDischarge are none of the
+    // above and read as a raw percentage, never a time estimate.
+    readonly property bool batteryDischarging: hasBattery && battery.state === UPowerDeviceState.Discharging
     // UPower often lingers in Charging at 100% (time-to-full a few seconds)
     // before flipping to FullyCharged; treat both as full, matching the icon.
     readonly property bool batteryFull: hasBattery && (battery.state === UPowerDeviceState.FullyCharged || (batteryCharging && batteryPercent >= 100))

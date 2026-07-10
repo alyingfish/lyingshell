@@ -11,43 +11,12 @@ import qs.Services
 Rectangle {
     id: root
 
-    // Estimate text: "5h 12m" with an hour, else minutes only ("30m", "1m")
-    // floored to 1 so a live estimate never renders a dead "0h" or "0h 0m".
-    function estimate(seconds, hoursToken, minutesToken) {
-        if (seconds >= 3600) {
-            return I18n.t(hoursToken, {
-                "hours": Math.floor(seconds / 3600),
-                "minutes": Math.floor(seconds % 3600 / 60)
-            });
-        }
-        return I18n.t(minutesToken, {
-            "minutes": Math.max(1, Math.floor(seconds / 60))
-        });
-    }
-
-    // Battery first: while a battery exists the row describes it, never a
-    // power-profile name. Profile name / "AC" is only the no-battery fallback.
+    // Battery first: while a battery exists the row describes it (shared with
+    // the bar pill's battery tooltip via BatteryStatus), never a power-profile
+    // name. Profile name / "AC" is only the no-battery fallback.
     readonly property string label: {
         if (SystemStatus.hasBattery) {
-            if (SystemStatus.batteryFull) {
-                return I18n.t("quickSettings.batteryFull");
-            }
-            // Plugged in but held below full (charge limit / hysteresis wait).
-            if (SystemStatus.batteryNotCharging) {
-                return I18n.t("quickSettings.batteryNotCharging");
-            }
-            // Active charge/discharge: show the time estimate, or "Estimating…"
-            // until UPower computes one.
-            if (SystemStatus.batteryCharging) {
-                return SystemStatus.battery.timeToFull > 0 ? estimate(SystemStatus.battery.timeToFull, "quickSettings.timeUntilFull", "quickSettings.minutesUntilFull") : I18n.t("quickSettings.estimating");
-            }
-            if (SystemStatus.battery.state === UPowerDeviceState.Discharging) {
-                return SystemStatus.battery.timeToEmpty > 0 ? estimate(SystemStatus.battery.timeToEmpty, "quickSettings.timeLeft", "quickSettings.minutesLeft") : I18n.t("quickSettings.estimating");
-            }
-            // Empty / Unknown: no estimate applies, read the raw percentage.
-            return I18n.t("quickSettings.batteryPercent", {
-                "percent": SystemStatus.batteryPercent
-            });
+            return BatteryStatus.line;
         }
         // No battery: read out AC, or the current profile when a daemon exists.
         if (!PowerMode.available) {
