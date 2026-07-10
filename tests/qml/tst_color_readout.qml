@@ -7,11 +7,12 @@ import qs.Services.Niri
 import "../../Modules/QuickSettings"
 
 // Color readout page under offscreen qml6 (mocked Niri/Settings): the
-// M3-expressive layout fills the detail viewport exactly (no scroll, no gap,
-// with a floor so tiny viewports scroll instead of crushing the hero), the
-// Recent grid reloads a tapped pick into the readout, the clear button
-// empties the history without dropping the readout, and a live pick lands in
-// the settings-persisted history (deduped, capped) through the panel.
+// M3-expressive layout keeps its natural fixed height whatever the viewport
+// (no section soaks leftover space; short viewports scroll, tall ones leave
+// whitespace), the Recent grid reloads a tapped pick into the readout, the
+// clear button empties the history without dropping the readout, and a live
+// pick lands in the settings-persisted history (deduped, capped) through the
+// panel.
 Window {
     id: root
 
@@ -52,7 +53,7 @@ Window {
             Settings.options.quickSettings.colorPicker.recentColors = ["#112233", "#445566", "#778899"];
         }
 
-        function test_a_layout_fills_viewport() {
+        function test_a_layout_keeps_natural_height() {
             tryVerify(() => page.bodyItem !== null, 5000, "async body loads");
             body = page.bodyItem;
 
@@ -60,16 +61,20 @@ Window {
             verify(body.hasColor, "recents alone light the readout");
             compare(body.shownHex, "#112233", "readout falls back to the newest recent");
 
-            // Fits exactly: the hero absorbs the leftover, so the body is
-            // precisely the 262px viewport - no scroll, no bottom gap.
-            tryVerify(() => Math.abs(body.height - 262) < 0.5, 5000, "body fills the viewport exactly, got " + body.height);
+            // Natural fixed height: 72 hero + 124 format rows + 66 recents +
+            // 2x8 gaps = 278, independent of the viewport — no section soaks
+            // leftover space.
+            tryVerify(() => Math.abs(body.height - 278) < 0.5, 5000, "body keeps its natural height, got " + body.height);
 
-            // Below the floor the fixed sections win (48px hero + rows +
-            // recents + gaps = 254) and the page scrolls instead.
+            // A short viewport never crushes the sections; the page keeps
+            // its height and scrolls instead.
             page.height = 200;
-            tryVerify(() => Math.abs(body.height - 254) < 0.5, 5000, "tiny viewports overflow at the 254px floor, got " + body.height);
+            tryVerify(() => Math.abs(body.height - 278) < 0.5, 5000, "short viewports keep the natural height, got " + body.height);
+
+            // A tall viewport leaves whitespace instead of inflating the hero.
+            page.height = 600;
+            tryVerify(() => Math.abs(body.height - 278) < 0.5, 5000, "tall viewports keep the natural height, got " + body.height);
             page.height = 302;
-            tryVerify(() => Math.abs(body.height - 262) < 0.5, 5000, "restored viewport refits");
             tester.passedTests++;
         }
 

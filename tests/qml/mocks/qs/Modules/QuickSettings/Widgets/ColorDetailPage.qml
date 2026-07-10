@@ -8,12 +8,13 @@ import qs.Material
 import "../../../Material/Motion.js" as Motion
 import qs.Services.Niri
 
-// Color-picker result page, M3-expressive split-hero layout sized to fill the
-// detail viewport exactly (the hero swatch absorbs the leftover height, so the
-// page neither scrolls nor leaves a gap):
-//   - hero row: the readout swatch paired with a square "pick again" button
-//     (asymmetric corner split, hover morph) — the old full-width swatch +
-//     full-width button rows merged into one flexible band;
+// Color-picker result page, M3-expressive split-hero layout. Every section
+// keeps its natural fixed height: the detail viewport is fixed anyway (the
+// panel locks the tools-open main height, since the readout is only reached
+// through the tools row), so nothing stretches to soak the leftover — spare
+// viewport reads as quiet whitespace below the content:
+//   - hero band: the readout swatch paired with a square "pick again" button
+//     (asymmetric corner split, hover morph) at a fixed compact height;
 //   - HEX / RGB / HSV rows as a grouped list (big outer corners, small inner)
 //     each with a copy button;
 //   - a Recent grid of the last picks (settings-persisted by the panel):
@@ -74,9 +75,9 @@ DetailPage {
             }
 
             width: parent ? parent.width : 0
-            // Fill the viewport exactly; below its floor the fixed sections
-            // win and the page scrolls instead of crushing the hero.
-            height: hasColor ? Math.max(viewportHeight, 48 + formatGroup.height + recentSection.height + 2 * body.spacing) : viewportHeight
+            // Natural content height: a viewport shorter than the content
+            // scrolls; a taller one leaves bottom whitespace.
+            height: hasColor ? body.implicitHeight : viewportHeight
 
             // The panel auto-copies the picked HEX on every pick; claim the
             // HEX row's check and snap the readout back to the live pick
@@ -103,17 +104,17 @@ DetailPage {
             Column {
                 id: body
 
-                anchors.fill: parent
+                width: parent.width
                 visible: page.hasColor
                 spacing: 8
 
                 // --- hero: swatch + pick-again split pair -------------------
-                // Absorbs the viewport leftover so the page always fits.
+                // Fixed compact band: the readout identity, not a space filler.
                 Item {
                     id: hero
 
                     width: parent.width
-                    height: page.height - formatGroup.height - recentSection.height - 2 * body.spacing
+                    height: 72
 
                     Rectangle {
                         anchors.left: parent.left
