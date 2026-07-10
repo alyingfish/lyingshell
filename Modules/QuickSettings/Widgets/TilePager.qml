@@ -283,8 +283,8 @@ Item {
         QuickToggle {
             width: pager.cellWidth
             labelKey: "quickSettings.doNotDisturb"
-            icon.name: "notifications"
-            offIconName: "notifications_off"
+            icon.name: "notifications_off"
+            offIconName: "notifications"
             checked: DoNotDisturb.enabled
 
             onClicked: DoNotDisturb.toggle()

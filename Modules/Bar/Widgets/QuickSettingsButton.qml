@@ -357,7 +357,7 @@ Item {
 
                 StatusIcon {
                     visible: DoNotDisturb.enabled
-                    name: "do_not_disturb_on"
+                    name: "notifications_off"
                     color: pillButton.mdState.textColor
                     tip: I18n.t("quickSettings.doNotDisturb")
                 }
