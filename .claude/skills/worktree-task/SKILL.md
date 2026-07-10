@@ -1,12 +1,15 @@
 ---
 name: worktree-task
-description: Start, verify, and finish a unit of work in this repo using the multi-agent worktree workflow — claiming a task, creating a feature worktree/branch, running the check gate before committing, and cleaning up after merge. Use when starting parallel or feature work, when asked to create a worktree or branch for a task, or when wrapping up a task with commits.
+description: Start, verify, and finish a unit of work in this repo using the local-only multi-agent worktree workflow — claiming a task, creating a feature worktree/branch, running the check gate, and merging locally after user approval. Use when starting parallel or feature work, when asked to create a worktree or branch for a task, or when wrapping up a task with commits.
 ---
 
 # Worktree task workflow
 
 Worktrees are siblings under `../` (the shared `worktrees/` directory), one
 per task, one agent per worktree. Never edit a worktree you did not create.
+
+Everything in this workflow is **local only**: local worktrees, local
+branches, local merges. Never push, fetch, or open PRs.
 
 ## Start a task
 
@@ -15,9 +18,8 @@ already claimed — an existing `<type>/<slug>` branch or worktree **is** the
 claim:
 
 ```bash
-git fetch origin
 git worktree list
-git branch -a
+git branch
 ```
 
 If a branch or worktree for the task already exists, another agent owns it:
@@ -30,10 +32,8 @@ git worktree add ../lyingshell-<slug> -b <type>/<slug> main
 
 - `<slug>`: short kebab-case task name (e.g. `notification-panel`).
 - `<type>`: `feat`, `fix`, or `refactor`.
-- Branch from local `main` (which may hold commits not yet pushed to
-  `origin`), unless the task explicitly builds on another branch. Bring
-  `main` up to date with `origin` first when practical
-  (`git fetch origin && git merge --ff-only origin/main`).
+- Branch from local `main`, unless the task explicitly builds on another
+  branch.
 
 Work only inside that new worktree from then on.
 
@@ -50,6 +50,10 @@ is unavailable in your environment.
 
 ## Commit
 
+**Do not commit until the user explicitly says so.** When the work is ready,
+leave the changes uncommitted in the worktree, report what is ready, and wait
+for the user's go-ahead.
+
 - Small commits, one logical change each.
 - Subject line: imperative, lower-case type prefix matching the branch
   (`feat: add notification panel surface`).
@@ -61,8 +65,12 @@ is unavailable in your environment.
 
 ## Finish a task
 
-1. Rebase on `origin/main`, re-run the check gate.
-2. Push the branch and open a PR to `main` (or merge locally if told to).
+**Do not merge until the user explicitly says so.** Report that the branch is
+ready and wait for the go-ahead. Then:
+
+1. Rebase on local `main`, re-run the check gate.
+2. Merge the branch into `main` locally (from the main checkout:
+   `git merge <type>/<slug>`). Never push or open a PR.
 3. After merge, from the main checkout:
 
 ```bash
