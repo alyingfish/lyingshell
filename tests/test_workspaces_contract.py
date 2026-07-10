@@ -105,7 +105,7 @@ def main() -> None:
     # 12 aligns the workspaces pill with the quick-settings pill (6360cb5).
     assert "readonly property int horizontalPadding: 12" in workspaces
     assert "readonly property int controlHeight: 24" in workspaces
-    assert "readonly property int dotGap: 8" in workspaces
+    assert "readonly property int dotGap: 6" in workspaces
     assert "Settings.options.bar.widgets.workspaces.scrollLoop" in workspaces
     assert "Settings.options.bar.widgets.workspaces.urgentPulse" in workspaces
     assert "Workspaces {" in workspaces_pointer_test
