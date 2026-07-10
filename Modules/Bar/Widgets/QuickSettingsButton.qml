@@ -136,6 +136,10 @@ Item {
             // misaligns it with the tray's. The icon's center sits on the bar's
             // center, so the bar bottom is half the bar height below it.
             y: parent.height / 2 + root.barSurfaceRect.height / 2 + 4
+            // Drop the bottom popup margin: it hangs into the strip the bar
+            // reserves below itself for the tray tooltips, and the default 4px
+            // margin would clamp it back up, floating it above the tray's.
+            bottomMargin: 0
             text: statusIcon.tip
             // Suppress the hover tooltips once the panel is up — it covers them.
             visible: statusHover.hovered && text.length > 0 && !root.panelOpen
