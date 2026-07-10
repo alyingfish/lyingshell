@@ -5,8 +5,9 @@ import Quickshell
 import Quickshell.Services.Pipewire
 
 // Audio service boundary over Quickshell Pipewire: default sink/source
-// volume + mute, output device switching, and privacy signals (recording
-// streams / camera links) for the quick-settings pill and panel.
+// volume + mute, output/input device switching, per-app playback streams,
+// and privacy signals (recording streams / camera links) for the
+// quick-settings pill and panel.
 Singleton {
     id: root
 
@@ -21,8 +22,14 @@ Singleton {
     readonly property real inputVolume: hasSource ? source.audio.volume : 0
     readonly property bool inputMuted: hasSource ? source.audio.muted : false
 
-    // Physical output devices for the output-device detail list.
+    // Physical output devices for the sound detail's Output list.
     readonly property var sinkDevices: Pipewire.nodes.values.filter(node => node !== null && node.isSink && !node.isStream && node.audio !== null)
+
+    // Physical input (microphone) devices for the sound detail's Input list.
+    readonly property var sourceDevices: Pipewire.nodes.values.filter(node => node !== null && !node.isSink && !node.isStream && node.audio !== null)
+
+    // Apps currently playing audio, for the sound detail's per-app mixer.
+    readonly property var playbackStreams: Pipewire.nodes.values.filter(node => node !== null && (node.type & PwNodeType.AudioOutStream) === PwNodeType.AudioOutStream && node.audio !== null)
 
     // Apps currently recording audio; GNOME shows the input slider and the
     // mic privacy indicator exactly while such streams exist.
@@ -65,6 +72,24 @@ Singleton {
         Pipewire.preferredDefaultAudioSink = node;
     }
 
+    function setPreferredSource(node: PwNode) {
+        Pipewire.preferredDefaultAudioSource = node;
+    }
+
+    function setStreamVolume(node: PwNode, value: real) {
+        if (node === null || node.audio === null) {
+            return;
+        }
+        node.audio.muted = false;
+        node.audio.volume = Math.max(0, Math.min(1, value));
+    }
+
+    function toggleStreamMuted(node: PwNode) {
+        if (node !== null && node.audio !== null) {
+            node.audio.muted = !node.audio.muted;
+        }
+    }
+
     // Node audio properties are only live while tracked.
     PwObjectTracker {
         objects: [Pipewire.defaultAudioSink, Pipewire.defaultAudioSource]
@@ -72,5 +97,13 @@ Singleton {
 
     PwObjectTracker {
         objects: root.sinkDevices
+    }
+
+    PwObjectTracker {
+        objects: root.sourceDevices
+    }
+
+    PwObjectTracker {
+        objects: root.playbackStreams
     }
 }

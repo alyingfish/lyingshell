@@ -115,6 +115,31 @@ function audioSinkType(label) {
     return "speakers";
 }
 
+// Input-device glyph from its Pipewire description/name keywords.
+function audioSourceIcon(label) {
+    var name = String(label || "").toLowerCase();
+    if (name.indexOf("headset") >= 0 || name.indexOf("headphone") >= 0 || name.indexOf("bluez") >= 0) {
+        return "headset_mic";
+    }
+    if (name.indexOf("webcam") >= 0 || name.indexOf("camera") >= 0) {
+        return "videocam";
+    }
+    return "mic";
+}
+
+// Short endpoint TYPE from the same keywords, as a key into
+// quickSettings.inputType.* — the sound detail's input sub line.
+function audioSourceType(label) {
+    var name = String(label || "").toLowerCase();
+    if (name.indexOf("headset") >= 0 || name.indexOf("headphone") >= 0 || name.indexOf("bluez") >= 0) {
+        return "headset";
+    }
+    if (name.indexOf("webcam") >= 0 || name.indexOf("camera") >= 0) {
+        return "webcam";
+    }
+    return "microphone";
+}
+
 // NetworkManager reports 0-100; tolerate an already-normalized 0-1 value.
 function wifiSignalIcon(strength) {
     var normalized = strength > 1 ? strength / 100 : strength;

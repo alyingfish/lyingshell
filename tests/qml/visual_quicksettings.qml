@@ -79,8 +79,8 @@ Window {
                 panel.setPage(0);
                 panel.detail = "wifi";
             }],
-        ["detail-audio", () => {
-                panel.detail = "output";
+        ["detail-sound", () => {
+                panel.detail = "sound";
             }],
         ["detail-bt-off", () => {
                 Bluetooth.defaultAdapter.enabled = false;

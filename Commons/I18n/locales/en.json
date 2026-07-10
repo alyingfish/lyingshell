@@ -44,6 +44,11 @@
     "doNotDisturb": "Do Not Disturb",
     "estimating": "Estimating…",
     "hotspotActive": "Hotspot active",
+    "inputType": {
+      "headset": "Headset",
+      "microphone": "Microphone",
+      "webcam": "Webcam"
+    },
     "kbdBacklight": {
       "high": "High",
       "low": "Low",
@@ -81,6 +86,10 @@
       "suspend": "Suspend"
     },
     "settings": "Settings",
+    "sound": "Sound",
+    "soundApps": "Apps",
+    "soundInputs": "Input",
+    "soundOutputs": "Output",
     "timeLeft": "{hours}h {minutes}m left",
     "timeUntilFull": "{hours}h {minutes}m until full",
     "tool": {

@@ -97,7 +97,7 @@ Item {
                 iconReactive: true
                 iconChecked: Audio.muted
                 iconTooltipKey: Audio.muted ? "quickSettings.unmute" : "quickSettings.mute"
-                detailTooltipKey: "quickSettings.outputDevice"
+                detailTooltipKey: "quickSettings.sound"
                 value: Audio.volume
                 dimmed: Audio.muted
                 hasDetail: Audio.hasSink
@@ -105,7 +105,7 @@ Item {
 
                 onMoved: newValue => Audio.setVolume(newValue)
                 onIconClicked: Audio.toggleMuted()
-                onDetailRequested: root.detailRequested("output")
+                onDetailRequested: root.detailRequested("sound")
             }
 
             QuickSlider {

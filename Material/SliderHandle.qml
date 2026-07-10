@@ -24,6 +24,9 @@ Item {
     property bool handlePressed: false
     // Caller-driven reveal (e.g. wheel adjust has no press/focus/hover).
     property bool revealValue: false
+    // Compact in-row sliders (the sound mixer) show a live inline percent
+    // instead, so they switch the indicator off entirely.
+    property bool bubbleEnabled: true
     property int handleWidth: 12
     property int handleHeight: 24
     property bool horizontal: true
@@ -54,7 +57,7 @@ Item {
     Rectangle {
         id: bubble
 
-        readonly property bool shown: root.handlePressed || root.handleHasFocus || root._hoverRevealed || root.revealValue
+        readonly property bool shown: root.bubbleEnabled && (root.handlePressed || root.handleHasFocus || root._hoverRevealed || root.revealValue)
         // Prototype clamp: the pill center stays >= 22px from either row
         // edge so it never overflows the panel at the extremes.
         readonly property real centerInControl: root.control ? Math.max(22, Math.min(root.control.width - 22, root.x + root.width / 2)) : root.width / 2

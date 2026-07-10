@@ -56,36 +56,12 @@ MD.Button {
 
     Component.onCompleted: rowIn.restart()
 
-    SequentialAnimation {
+    DetailRise {
         id: rowIn
 
-        ScriptAction {
-            script: {
-                detailRow.opacity = 0;
-                rowTy.y = -8;
-            }
-        }
-
-        PauseAnimation {
-            // order goes to -1 while a delegate tears down; clamp so the
-            // stagger never asks for a negative duration.
-            duration: Math.max(0, detailRow.order * 35)
-        }
-
-        ParallelAnimation {
-            MotionAnimation {
-                target: rowTy
-                property: "y"
-                to: 0
-            }
-
-            MotionAnimation {
-                target: detailRow
-                property: "opacity"
-                to: 1
-                spring: Motion.effectsDefault
-            }
-        }
+        target: detailRow
+        translate: rowTy
+        order: detailRow.order
     }
 
     contentItem: Item {

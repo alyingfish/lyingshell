@@ -2,6 +2,7 @@ module qs.Modules.QuickSettings.Widgets
 QuickToggle 1.0 QuickToggle.qml
 QuickMenuToggle 1.0 QuickMenuToggle.qml
 QuickSlider 1.0 QuickSlider.qml
+ReactiveIconButton 1.0 ReactiveIconButton.qml
 ToolChip 1.0 ToolChip.qml
 ToolsRow 1.0 ToolsRow.qml
 SessionMenu 1.0 SessionMenu.qml
@@ -12,9 +13,10 @@ PageDots 1.0 PageDots.qml
 MainPage 1.0 MainPage.qml
 DetailPage 1.0 DetailPage.qml
 DetailRow 1.0 DetailRow.qml
+DetailRise 1.0 DetailRise.qml
 DetailEmpty 1.0 DetailEmpty.qml
 WifiDetailPage 1.0 WifiDetailPage.qml
 BluetoothDetailPage 1.0 BluetoothDetailPage.qml
-OutputDetailPage 1.0 OutputDetailPage.qml
+SoundDetailPage 1.0 SoundDetailPage.qml
 KbdDetailPage 1.0 KbdDetailPage.qml
 ColorDetailPage 1.0 ColorDetailPage.qml

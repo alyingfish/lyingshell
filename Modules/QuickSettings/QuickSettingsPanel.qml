@@ -11,7 +11,7 @@ import "../../Material/Motion.js" as Motion
 // (12px padding, 10px section gap) of header actions + battery pill, two
 // expandable rows (tools, power mode), expressive sliders, a horizontally
 // paged toggle-tile grid with page dots, and sliding detail views (Wi-Fi /
-// Bluetooth / Sound output / Keyboard). System state lives in Quickshell
+// Bluetooth / Sound / Keyboard). System state lives in Quickshell
 // services and the qs.Services boundaries; this module only wires state to
 // MD3 controls.
 //
@@ -31,7 +31,7 @@ Item {
     // start of the card's open transform.
     property bool open: false
 
-    // "" | "wifi" | "bluetooth" | "output" | "kbd" | "color". Settable command
+    // "" | "wifi" | "bluetooth" | "sound" | "kbd" | "color". Settable command
     // AND a reflection of the stack (the back button pops directly); kept for
     // the external contract (serializeState / setDetail / e2e).
     property string detail: ""
@@ -73,7 +73,7 @@ Item {
     readonly property var detailMap: ({
             "wifi": wifiComp,
             "bluetooth": btComp,
-            "output": outputComp,
+            "sound": soundComp,
             "kbd": kbdComp,
             "color": colorComp
         })
@@ -97,9 +97,9 @@ Item {
     }
 
     Component {
-        id: outputComp
+        id: soundComp
 
-        OutputDetailPage {}
+        SoundDetailPage {}
     }
 
     Component {

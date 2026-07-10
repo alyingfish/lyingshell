@@ -267,7 +267,7 @@ def main() -> None:
 
         # --- detail pages keep the main-view dimensions ------------------------
         main_height = shell.state()["geometry"]["card"]["height"]
-        for detail in ("wifi", "bluetooth", "output"):
+        for detail in ("wifi", "bluetooth", "sound"):
             shell.ipc("setDetail", detail)
             wait_for(lambda d=detail: shell.state()["detail"] == d, 5, f"detail {detail!r}")
             time.sleep(0.6)  # settle any height animation before measuring

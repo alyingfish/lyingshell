@@ -44,6 +44,11 @@
     "doNotDisturb": "勿扰模式",
     "estimating": "估算中…",
     "hotspotActive": "热点已开启",
+    "inputType": {
+      "headset": "耳麦",
+      "microphone": "麦克风",
+      "webcam": "摄像头"
+    },
     "kbdBacklight": {
       "high": "高",
       "low": "低",
@@ -81,6 +86,10 @@
       "suspend": "挂起"
     },
     "settings": "设置",
+    "sound": "声音",
+    "soundApps": "应用",
+    "soundInputs": "输入",
+    "soundOutputs": "输出",
     "timeLeft": "剩余 {hours} 小时 {minutes} 分钟",
     "timeUntilFull": "{hours} 小时 {minutes} 分钟后充满",
     "tool": {

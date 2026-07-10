@@ -10,6 +10,9 @@ import qs.Material
 // while dragging. Value is service-owned: bound in via `value` (0..1), user
 // drags emit `moved` and the service loops the state back. The slider runs
 // 0..100 internally so the value indicator reads as a percentage.
+// `compact` (prototype `.slider.mix`) scales the row down for the sound
+// mixer: 26px row, 10px track, 18px handle, inline percent instead of the
+// value pill, and the icon/trailing slots become optional.
 Item {
     id: control
 
@@ -26,14 +29,22 @@ Item {
     // active track/handle/dot turn outline, and it stops taking input; the
     // leading icon button stays live as the unmute affordance.
     property bool dimmed: false
+    // Compact variant (prototype `.slider.mix`, the sound mixer's in-row
+    // slider): 26px row, 10px track, 18px handle, and no value indicator —
+    // the mixer row shows a live inline percent instead.
+    property bool compact: false
+    // Mixer rows own their leading mute button (it spans the name line too)
+    // and have no trailing slot, so both are optional.
+    property bool hasIcon: true
+    property bool hasTrailing: true
 
     signal moved(real newValue)
     signal iconClicked()
     signal detailRequested()
 
-    // Prototype slider-row height (`.slider` 38px; the 32px icon buttons
-    // center inside it).
-    implicitHeight: 38
+    // Prototype slider-row height (`.slider` 38px, 26px compact; the 32px
+    // icon buttons center inside it).
+    implicitHeight: compact ? 26 : 38
     implicitWidth: 32 + 10 + slider.implicitWidth + 10 + 32
 
     Item {
@@ -41,65 +52,19 @@ Item {
 
         anchors.left: parent.left
         anchors.verticalCenter: parent.verticalCenter
-        width: 32
+        visible: control.hasIcon
+        width: control.hasIcon ? 32 : 0
         height: 32
 
-        // Reactive leading icon (mute / mic): a standard 32px icon button
-        // that fills primary and squares 16 -> 11 while checked, like the
-        // prototype `.ib.on` morph.
-        MD.IconButton {
-            id: iconButton
-
-            // Selection colors cross-fade on the effects spring; `checked`
-            // is outside StateButton's state machine so the library never
-            // animates these on its own.
-            property color animBackground: control.iconChecked ? mdState.ctx.color.primary : MD.Util.transparent(mdState.ctx.color.primary, 0)
-            property color animText: control.iconChecked ? mdState.ctx.color.on_primary : mdState.ctx.color.on_surface_variant
-            // Checked morph 16 -> 11 (prototype `.ib.on` border-radius);
-            // step the target — the internal Behavior renders the change.
-            readonly property real stateCorner: control.iconChecked && !down ? 11 : mdState.corner
-
+        // Reactive leading icon (mute / mic): the shared prototype `.ib`
+        // morphing icon button.
+        ReactiveIconButton {
             anchors.centerIn: parent
             visible: control.iconReactive
-            mdState.type: MD.Enum.IBtStandard
-            mdState.size: MD.Enum.XS
-            icon.name: control.iconName
-            // Prototype `.ib svg` glyph size.
-            icon.width: 18
-            icon.height: 18
+            iconName: control.iconName
             checked: control.iconChecked
-            mdState.backgroundColor: animBackground
-            mdState.textColor: animText
-            mdState.corners: MD.Util.corners(stateCorner)
-            // Prototype `.ib:active{transform:scale(.88)}`.
-            scale: down ? 0.88 : 1
+            tooltipKey: control.iconTooltipKey
             onClicked: control.iconClicked()
-
-            MD.ToolTip {
-                // Below the button, like bar-tray tooltips (library default is above).
-                y: parent.height + 4
-                text: control.iconTooltipKey.length > 0 ? I18n.t(control.iconTooltipKey) : ""
-                visible: iconButton.hovered && text.length > 0
-            }
-
-            Behavior on animBackground {
-                MotionColorAnimation {
-                }
-
-            }
-
-            Behavior on animText {
-                MotionColorAnimation {
-                }
-
-            }
-
-            Behavior on scale {
-                MotionAnimation {
-                }
-
-            }
-
         }
 
         // Non-reactive leading icon (brightness): the prototype renders a
@@ -118,12 +83,12 @@ Item {
         id: slider
 
         anchors.left: iconSlot.right
-        anchors.leftMargin: 10
+        anchors.leftMargin: control.hasIcon ? 10 : 0
         anchors.right: trailingSlot.left
-        anchors.rightMargin: 10
+        anchors.rightMargin: control.hasTrailing ? 10 : 0
         anchors.verticalCenter: parent.verticalCenter
-        implicitHeight: 38
-        mdState.handleHeight: 24
+        implicitHeight: control.compact ? 26 : 38
+        mdState.handleHeight: control.compact ? 18 : 24
         // Prototype `.sh` keeps a constant 4px width and only grows in height
         // while dragging; pin the line so MD3's pressed 4->2 narrowing (which
         // thinned the handle mid-drag) doesn't fire.
@@ -136,11 +101,17 @@ Item {
         to: 100
         onMoved: control.moved(value / 100)
 
-        // Prototype expressive track: 13px tall, active/inactive split by a
-        // 10px gap each side of the handle center, outer corner 8 / inner 2,
-        // and a 4px primary stop dot 6px from the track end.
+        // Prototype expressive track: 13px tall (10px compact), active/
+        // inactive split by a 10px gap each side of the handle center, outer
+        // corner 8 / inner 2 (7 compact), and a 4px primary stop dot 6px
+        // (5px compact) from the track end.
         background: Item {
             id: track
+
+            // Prototype `.mix` metrics vs the main-row ones.
+            readonly property int thickness: control.compact ? 10 : 13
+            readonly property int outerCorner: control.compact ? 7 : 8
+            readonly property int dotMargin: control.compact ? 5 : 6
 
             // Muted rows swap the primary group to outline (prototype
             // `.srow.muted` recolor).
@@ -154,31 +125,31 @@ Item {
             }
 
             implicitWidth: 200
-            implicitHeight: 38
+            implicitHeight: control.compact ? 26 : 38
 
             MD.Rectangle {
                 x: 0
-                y: (track.height - 13) / 2
+                y: (track.height - track.thickness) / 2
                 width: Math.max(0, slider.handleCenter - 10)
-                height: 13
-                corners: MD.Util.corners(8, 2, 8, 2)
+                height: track.thickness
+                corners: MD.Util.corners(track.outerCorner, 2, track.outerCorner, 2)
                 color: track.activeColor
                 visible: width > 0
             }
 
             MD.Rectangle {
                 x: Math.min(track.width, slider.handleCenter + 10)
-                y: (track.height - 13) / 2
+                y: (track.height - track.thickness) / 2
                 width: Math.max(0, track.width - x)
-                height: 13
-                corners: MD.Util.corners(2, 8, 2, 8)
+                height: track.thickness
+                corners: MD.Util.corners(2, track.outerCorner, 2, track.outerCorner)
                 color: track.inactiveColor
                 visible: width > 0
 
                 Rectangle {
                     anchors.verticalCenter: parent.verticalCenter
                     anchors.right: parent.right
-                    anchors.rightMargin: 6
+                    anchors.rightMargin: track.dotMargin
                     width: 4
                     height: 4
                     radius: 2
@@ -208,6 +179,8 @@ Item {
             // 6px above the handle's resting top edge (was 6px above the whole
             // 38px row, which floated the pill too far off the thin handle).
             bubbleGap: 6
+            // Compact mixer rows show a live inline percent instead.
+            bubbleEnabled: !control.compact
         }
 
     }
@@ -220,15 +193,16 @@ Item {
         value: control.value * 100
     }
 
-    // Trailing 32px slot: the output-device button when a detail page
+    // Trailing 32px slot: the sound-detail button when a detail page
     // exists, otherwise the prototype's alignment spacer (`.sp40` audit fix:
-    // both sliders' right edges align).
+    // both sliders' right edges align). Compact mixer rows drop it.
     Item {
         id: trailingSlot
 
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
-        width: 32
+        visible: control.hasTrailing
+        width: control.hasTrailing ? 32 : 0
         height: 32
 
         MD.IconButton {

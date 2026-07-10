@@ -40,15 +40,17 @@ QS_FILES = [
     QS_DIR / "Widgets" / "MainPage.qml",
     QS_DIR / "Widgets" / "DetailPage.qml",
     QS_DIR / "Widgets" / "DetailRow.qml",
+    QS_DIR / "Widgets" / "DetailRise.qml",
     QS_DIR / "Widgets" / "DetailEmpty.qml",
     QS_DIR / "Widgets" / "WifiDetailPage.qml",
     QS_DIR / "Widgets" / "BluetoothDetailPage.qml",
-    QS_DIR / "Widgets" / "OutputDetailPage.qml",
+    QS_DIR / "Widgets" / "SoundDetailPage.qml",
     QS_DIR / "Widgets" / "KbdDetailPage.qml",
     QS_DIR / "Widgets" / "ColorDetailPage.qml",
     QS_DIR / "Widgets" / "QuickToggle.qml",
     QS_DIR / "Widgets" / "QuickMenuToggle.qml",
     QS_DIR / "Widgets" / "QuickSlider.qml",
+    QS_DIR / "Widgets" / "ReactiveIconButton.qml",
     ROOT / "Services" / "SystemStatus.qml",
     ROOT / "Commons" / "Icons" / "StatusIcons.js",
     ROOT / "Material" / "Wheel.js",
@@ -110,6 +112,14 @@ assert(context.audioSinkType("Navi 31 HDMI Audio") === "hdmi", "hdmi sink type")
 assert(context.audioSinkType("Built-in Speakers") === "speakers", "speaker sink type");
 assert(context.audioSinkType("WH-1000XM4 bluez_output") === "headset", "bt sink type");
 assert(context.audioSinkType("USB Headphones Analog") === "headphones", "headphone sink type");
+
+assert(context.audioSourceIcon("Internal Microphone alsa_input") === "mic", "mic source icon");
+assert(context.audioSourceIcon("Pixel Buds Pro bluez_input") === "headset_mic", "bt source icon");
+assert(context.audioSourceIcon("C920 Webcam Analog") === "videocam", "webcam source icon");
+
+assert(context.audioSourceType("Internal Microphone alsa_input") === "microphone", "mic source type");
+assert(context.audioSourceType("Pixel Buds Pro bluez_input") === "headset", "bt source type");
+assert(context.audioSourceType("C920 Webcam Analog") === "webcam", "webcam source type");
 
 assert(context.wifiSignalIcon(90) === "signal_wifi_4_bar", "strong signal 0-100");
 assert(context.wifiSignalIcon(0.9) === "signal_wifi_4_bar", "strong signal 0-1");
@@ -224,9 +234,10 @@ def main() -> None:
     assert "quickSettings.percentValue" in slider, "value indicator must read as a percentage"
     assert "MD.ToolTip" in slider and "iconTooltipKey" in slider
     assert "dimmed" in slider, "muted sliders fade the track"
-    # Web-prototype expressive track: 13px tall, 10px handle gap, stop dot,
-    # and a fixed 32px trailing slot so both sliders' right edges align.
-    assert "height: 13" in slider, "track uses the prototype 13px thickness"
+    # Web-prototype expressive track: 13px tall (10px in the sound mixer's
+    # compact variant), 10px handle gap, stop dot, and a fixed 32px trailing
+    # slot so both sliders' right edges align.
+    assert "compact ? 10 : 13" in slider, "track uses the prototype 13/10px thickness"
     assert "handleCenter - 10" in slider and "handleCenter + 10" in slider, (
         "active/inactive tracks keep the 10px inset gap around the handle"
     )
@@ -305,8 +316,20 @@ def main() -> None:
         "Niri.takeScreenshot",
     ]:
         assert feature in panel, f"panel missing {feature}"
-    for detail in ['"wifi"', '"bluetooth"', '"output"', '"kbd"', '"color"']:
+    for detail in ['"wifi"', '"bluetooth"', '"sound"', '"kbd"', '"color"']:
         assert detail in panel, f"panel missing detail page {detail}"
+    # Sound detail: Output / Input device sections + the per-app mixer.
+    for token in [
+        "quickSettings.soundOutputs",
+        "quickSettings.soundInputs",
+        "quickSettings.soundApps",
+    ]:
+        assert token in panel, f"sound detail missing section {token}"
+    assert "Audio.playbackStreams" in panel, "the sound detail lists app streams"
+    assert "Audio.setStreamVolume" in panel and "Audio.toggleStreamMuted" in panel, (
+        "mixer rows drive per-stream volume/mute through the Audio service"
+    )
+    assert "compact: true" in panel, "mixer rows use the compact slider variant"
     # Power mode lives in the header battery pill + expandable connected
     # group now, not in a detail page or grid tile.
     assert '"power"' not in panel.replace('"power_settings_new"', ""), (
@@ -386,6 +409,10 @@ def main() -> None:
     assert "Quickshell.Services.Pipewire" in audio
     assert "Process" not in audio, "Audio must use the Pipewire service, not commands"
     assert "PwObjectTracker" in audio
+    # Sound detail data: input devices + per-app playback streams, switched
+    # and mixed through the service (pages never touch Pipewire directly).
+    assert "sourceDevices" in audio and "preferredDefaultAudioSource" in audio
+    assert "playbackStreams" in audio and "AudioOutStream" in audio
 
     for name, marker in [
         ("NightLight.qml", "wlsunset"),
