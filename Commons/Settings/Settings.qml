@@ -216,6 +216,12 @@ Singleton {
                 }
             }
             property JsonObject quickSettings: JsonObject {
+                property JsonObject colorPicker: JsonObject {
+                    // Last picked colors, newest first ("#rrggbb"); written by
+                    // QuickSettingsPanel on every pick (deduped, capped at its
+                    // maxRecentColors) and shown by the readout's Recent grid.
+                    property var recentColors: []
+                }
                 property JsonObject widgets: JsonObject {
                     property JsonObject nightLight: JsonObject {
                         // Manual quick-settings toggle; Services/NightLight.qml

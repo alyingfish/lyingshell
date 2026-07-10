@@ -30,11 +30,13 @@
     "cameraInUse": "Camera in use",
     "charging": "Charging",
     "colorPicker": {
+      "clearRecent": "Clear recent colors",
       "copied": "Copied",
       "hex": "HEX",
       "hsv": "HSV",
       "pickAgain": "Pick again",
       "prompt": "Click anywhere to pick a color",
+      "recent": "Recent",
       "rgb": "RGB"
     },
     "connect": "Connect",

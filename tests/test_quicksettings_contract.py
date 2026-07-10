@@ -295,6 +295,9 @@ def main() -> None:
         "quickSettings.tools",
         "quickSettings.tool.colorPicker",
         "quickSettings.tool.screenshot",
+        # Color readout: Recent picks grid + its clear action.
+        "quickSettings.colorPicker.recent",
+        "quickSettings.colorPicker.clearRecent",
         # Tooltips on the icon-only header actions (prototype: settings + power).
         "quickSettings.settings",
         "quickSettings.lock",
@@ -380,6 +383,14 @@ def main() -> None:
     assert "openRequested" in panel, (
         "the pick result reopens the panel on the readout page"
     )
+    # Recent-colors history: the panel records every pick into settings
+    # (deduped, capped); the readout's grid reloads a tapped one and its
+    # header action clears the history.
+    assert "recordRecentColor" in panel and "maxRecentColors" in panel, (
+        "the panel records picked colors into the recent history"
+    )
+    assert "recentColors" in panel, "the readout reads the persisted recents"
+    assert "recentColors = []" in panel, "the clear action empties the history"
     assert "pageCount" in panel and "pager.page" in panel, "tile grid is paged with dots"
     assert "wheelNotches" in panel and "onWheel" in panel, (
         "wheel/touchpad over the tile area flips pages"
@@ -460,6 +471,8 @@ def main() -> None:
     assert "property bool enabled: false" in settings
     assert "property int temperature: 4000" in settings
     assert 'property string showBatteryValue: "whenLow"' in settings
+    assert "property JsonObject colorPicker" in settings
+    assert "property var recentColors: []" in settings
 
     # --- i18n parity -----------------------------------------------------------
     en = json.loads(read(LOCALES / "en.json"))

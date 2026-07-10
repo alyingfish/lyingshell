@@ -2,6 +2,8 @@ import QtQuick
 import QtQuick.Window
 import Qcm.Material as MD
 import Quickshell.Bluetooth
+import qs.Commons.Settings
+import qs.Services.Niri
 import "../../Modules/QuickSettings"
 
 // Offscreen visual dump of the quick-settings panel against the web
@@ -86,8 +88,13 @@ Window {
                 Bluetooth.defaultAdapter.enabled = false;
                 panel.detail = "bluetooth";
             }],
-        ["main-dark", () => {
+        ["detail-color", () => {
                 Bluetooth.defaultAdapter.enabled = true;
+                Niri.lastPickedColor = "#8150ff";
+                Settings.options.quickSettings.colorPicker.recentColors = ["#8150ff", "#e2725b", "#3a7ca5", "#f4c95d", "#6b8e23"];
+                panel.detail = "color";
+            }],
+        ["main-dark", () => {
                 panel.detail = "";
                 MD.Token.color.mode = MD.Enum.Dark;
             }]

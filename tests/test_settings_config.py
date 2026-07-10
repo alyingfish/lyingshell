@@ -71,6 +71,10 @@ def main() -> None:
     # Trailing colon keeps the marker from matching quickSettingsButton above.
     menu_body = handler_body(settings_qml, "property JsonObject quickSettings:")
     assert "property JsonObject nightLight" in menu_body
+    # Color-picker recents live under quickSettings, not widgets: they are
+    # feature history, not a widget's tunable.
+    assert "property JsonObject colorPicker" in menu_body
+    assert "property var recentColors: []" in menu_body
     assert "runtimeSettingsFile.writeAdapter()" in settings_qml
     assert "onAdapterUpdated" in settings_qml
     assert "function reloadRuntimeSettings()" in settings_qml

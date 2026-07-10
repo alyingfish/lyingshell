@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Qcm.Material as MD
+import qs.Commons.Settings
 import qs.Material
 import qs.Services
 import qs.Services.Niri
@@ -196,6 +197,16 @@ Item {
         when: SystemStatus.wifiDevice !== null
     }
 
+    // Recent-colors history behind the readout page's grid. Recorded here,
+    // not in the page: the page is rebuilt on every push, but the panel hears
+    // every pick. The readout's slot count mirrors this cap.
+    readonly property int maxRecentColors: 8
+
+    function recordRecentColor(hex) {
+        const prior = Settings.options.quickSettings.colorPicker.recentColors || [];
+        Settings.options.quickSettings.colorPicker.recentColors = [hex].concat(prior.filter(c => c !== hex)).slice(0, maxRecentColors);
+    }
+
     // A completed color pick reopens the panel on its readout page (the
     // handoff closed it for the aim). The hex also lands on the clipboard,
     // GNOME-picker style; the page copies other formats. Copy via a detached
@@ -207,6 +218,7 @@ Item {
 
         function onColorPicked(hex) {
             Quickshell.execDetached(["wl-copy", hex]);
+            root.recordRecentColor(hex);
             root.pickPending = false;
             root.detail = "color";
             root.openRequested();
