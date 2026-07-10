@@ -39,6 +39,12 @@ DetailPage {
             readonly property int s: Math.round(picked.hsvSaturation * 100)
             readonly property int v: Math.round(picked.hsvValue * 100)
 
+            // Label of the row whose value is currently on the clipboard, so
+            // exactly one row shows a persistent "copied" check. Seeded to the
+            // HEX row because the panel auto-copies HEX on every pick; a manual
+            // copy of another row hands the check over to it.
+            property string copiedFormat: ""
+
             width: parent ? parent.width : 0
             spacing: 8
 
@@ -70,6 +76,9 @@ DetailPage {
                 visible: page.hasColor
                 label: I18n.t("quickSettings.colorPicker.hex")
                 value: Niri.lastPickedColor.toUpperCase()
+                // The panel auto-copies the picked HEX to the clipboard on
+                // every pick; echo that on this row so the notice isn't silent.
+                echoAutoCopy: true
             }
 
             ColorFormatRow {
@@ -143,13 +152,38 @@ DetailPage {
             }
 
             // HEX/RGB/HSV row: a surface card with a label, the value, and a
-            // trailing copy button that flips to a check for a beat on copy.
+            // trailing copy button. The button shows a persistent check while
+            // this row's value is the one on the clipboard (page.copiedFormat),
+            // so the auto-copied HEX reads as "already copied" without a flash.
             component ColorFormatRow: Rectangle {
                 id: fmtRow
 
                 property string label: ""
                 property string value: ""
                 property string copyValue: value
+                // The HEX row sets this: on every pick the panel auto-copies
+                // HEX, so seed page.copiedFormat to this row's label to claim
+                // the check without touching the clipboard ourselves.
+                property bool echoAutoCopy: false
+
+                // True while this row's value is what sits on the clipboard.
+                readonly property bool onClipboard: page.copiedFormat.length > 0 && page.copiedFormat === label
+
+                // Claim the "copied" check on a fresh pick. onColorPicked covers
+                // "pick again" (this row already exists); onCompleted covers the
+                // first pick, where the signal fired before this row was built
+                // (the readout page is pushed only after the pick completes).
+                Component.onCompleted: if (echoAutoCopy && page.hasColor)
+                    page.copiedFormat = label
+
+                Connections {
+                    target: Niri
+                    enabled: fmtRow.echoAutoCopy
+
+                    function onColorPicked(hex) {
+                        page.copiedFormat = fmtRow.label;
+                    }
+                }
 
                 implicitHeight: 46
                 radius: 15
@@ -185,14 +219,17 @@ DetailPage {
                 MD.IconButton {
                     id: copyButton
 
-                    property bool copied: false
+                    // Transient: shows the "Copied" tooltip for a beat after an
+                    // actual click. Kept apart from the persistent check so an
+                    // auto-copy never pops a tooltip with no interaction.
+                    property bool justClicked: false
 
                     anchors.right: parent.right
                     anchors.rightMargin: 6
                     anchors.verticalCenter: parent.verticalCenter
                     mdState.type: MD.Enum.IBtStandard
                     mdState.size: MD.Enum.XS
-                    icon.name: copied ? "check" : "content_copy"
+                    icon.name: fmtRow.onClipboard ? "check" : "content_copy"
                     icon.width: 18
                     icon.height: 18
                     scale: down ? 0.88 : 1
@@ -206,22 +243,35 @@ DetailPage {
                         // selection dies when the panel loses focus, so the
                         // value would vanish before the user can paste it.
                         Quickshell.execDetached(["wl-copy", fmtRow.copyValue]);
-                        copied = true;
-                        copiedReset.restart();
+                        page.copiedFormat = fmtRow.label;
+                        justClicked = true;
+                        tooltipReset.restart();
                     }
 
                     Timer {
-                        id: copiedReset
+                        id: tooltipReset
 
                         interval: 1200
 
-                        onTriggered: copyButton.copied = false
+                        onTriggered: copyButton.justClicked = false
                     }
 
                     MD.ToolTip {
-                        y: parent.height + 4
+                        id: copiedTip
+
+                        // Anchor the popup to the row, not the button: it opens
+                        // on click, while the button's press scale (0.88 -> 1)
+                        // is still springing back, and a popup tracks its
+                        // parent's transform — parented to the button it drifts
+                        // for a beat after appearing. The row never scales.
+                        parent: fmtRow
+                        x: copyButton.x + (copyButton.width - copiedTip.implicitWidth) / 2
+                        y: copyButton.y + copyButton.height + 4
+                        // MD.ToolTip defaults to a 500ms hover delay; this one
+                        // is driven by a click, so show it the instant it opens.
+                        delay: 0
                         text: I18n.t("quickSettings.colorPicker.copied")
-                        visible: copyButton.copied
+                        visible: copyButton.justClicked
                     }
                 }
             }
