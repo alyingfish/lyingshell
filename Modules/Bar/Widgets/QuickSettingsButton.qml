@@ -145,8 +145,12 @@ Item {
         }
 
         MD.ToolTip {
-            // Below the icon, like the bar-tray tooltips (default is above).
-            y: parent.height + 4
+            // Hang below the bar's bottom edge, matching the bar-tray tooltips —
+            // not below the glyph. The 16px icon is centered in the taller (32px)
+            // strip, so anchoring to the icon floats the tip up inside the bar and
+            // misaligns it with the tray's. The icon's center sits on the bar's
+            // center, so the bar bottom is half the bar height below it.
+            y: parent.height / 2 + root.barSurfaceRect.height / 2 + 4
             text: statusIcon.tip
             // Suppress the hover tooltips once the panel is up — it covers them.
             visible: statusHover.hovered && text.length > 0 && !root.panelOpen
