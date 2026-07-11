@@ -4,6 +4,7 @@ import qs.Commons.Settings
 import qs.Commons.Theme
 import qs.Modules.Wallpaper
 import qs.Modules.Bar
+import qs.Modules.Toast
 
 Scope {
     id: root
@@ -24,5 +25,10 @@ Scope {
 
             screen: modelData
         }
+    }
+
+    // Transient status toasts (connect/pair feedback), focused output only;
+    // unmapped until a toast fires (visible tracks Toast.active).
+    ToastOverlay {
     }
 }
