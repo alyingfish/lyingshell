@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Window
 import Qcm.Material as MD
 import Quickshell.Bluetooth
+import Quickshell.Networking
 import qs.Commons.Settings
 import qs.Services.Niri
 import "../../Modules/QuickSettings"
@@ -60,6 +61,24 @@ Window {
         }
     }
 
+    // Depth-first search for the loaded detail-page body exposing `prop`
+    // (the pushed page is not a public panel handle).
+    function findWithProp(item, prop) {
+        if (!item) {
+            return null;
+        }
+        if (prop in item) {
+            return item;
+        }
+        for (var i = 0; i < item.children.length; i++) {
+            const hit = findWithProp(item.children[i], prop);
+            if (hit) {
+                return hit;
+            }
+        }
+        return null;
+    }
+
     property int shotIndex: 0
     readonly property var shots: [
         ["main-light", () => panel.open = true],
@@ -80,6 +99,47 @@ Window {
         ["detail-wifi", () => {
                 panel.setPage(0);
                 panel.detail = "wifi";
+            }],
+        // Expanded-row states (prototype wifi.js accordion bodies).
+        ["detail-wifi-hero-open", () => {
+                const body = root.findWithProp(panel, "expandedNetwork");
+                body.expandedNetwork = Networking.wifiNets[0];
+            }],
+        ["detail-wifi-psk", () => {
+                const body = root.findWithProp(panel, "expandedNetwork");
+                body.expandedNetwork = Networking.wifiNets[5];
+            }],
+        ["detail-wifi-hidden", () => {
+                const body = root.findWithProp(panel, "expandedNetwork");
+                body.expandedNetwork = body.hiddenSentinel;
+            }],
+        // Second beat: the join form has settled, scroll it into view.
+        ["detail-wifi-hidden-scrolled", () => {
+                const body = root.findWithProp(panel, "expandedNetwork");
+                var flick = body.parent;
+                while (flick && !("contentY" in flick)) {
+                    flick = flick.parent;
+                }
+                if (flick) {
+                    flick.contentY = Math.max(0, flick.contentHeight - flick.height);
+                }
+            }],
+        ["detail-hotspot", () => {
+                const body = root.findWithProp(panel, "expandedNetwork");
+                body.expandedNetwork = null;
+                Networking.wifiDevice.mode = WifiDeviceMode.AccessPoint;
+            }],
+        ["detail-bt", () => {
+                Networking.wifiDevice.mode = WifiDeviceMode.Station;
+                panel.detail = "bluetooth";
+            }],
+        ["detail-bt-hero-open", () => {
+                const body = root.findWithProp(panel, "expandedDevice");
+                body.expandedDevice = Bluetooth.allDevices[0];
+            }],
+        ["detail-bt-paired-open", () => {
+                const body = root.findWithProp(panel, "expandedDevice");
+                body.expandedDevice = Bluetooth.allDevices[2];
             }],
         ["detail-sound", () => {
                 panel.detail = "sound";

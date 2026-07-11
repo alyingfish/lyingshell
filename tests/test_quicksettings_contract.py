@@ -44,6 +44,14 @@ QS_FILES = [
     QS_DIR / "Widgets" / "DetailEmpty.qml",
     QS_DIR / "Widgets" / "WifiDetailPage.qml",
     QS_DIR / "Widgets" / "BluetoothDetailPage.qml",
+    QS_DIR / "Widgets" / "ExpandoRow.qml",
+    QS_DIR / "Widgets" / "DetailSection.qml",
+    QS_DIR / "Widgets" / "RowPropList.qml",
+    QS_DIR / "Widgets" / "RowAutoConnect.qml",
+    QS_DIR / "Widgets" / "RowActions.qml",
+    QS_DIR / "Widgets" / "ActionButton.qml",
+    QS_DIR / "Widgets" / "PasswordField.qml",
+    QS_DIR / "Widgets" / "MiniSwitch.qml",
     QS_DIR / "Widgets" / "SoundDetailPage.qml",
     QS_DIR / "Widgets" / "KbdDetailPage.qml",
     QS_DIR / "Widgets" / "ColorDetailPage.qml",
@@ -128,7 +136,7 @@ assert(context.wifiSignalIcon(40) === "network_wifi_2_bar", "fair signal");
 assert(context.wifiSignalIcon(10) === "network_wifi_1_bar", "weak signal");
 assert(context.wifiSignalIcon(0) === "signal_wifi_0_bar", "no signal");
 
-// Connecting sweep: pill feeds connectingBar/4 (0..4) into wifiSignalIcon.
+// Bar levels stay exact on the 0..1 quarter steps.
 assert(context.wifiSignalIcon(1/4) === "network_wifi_1_bar", "sweep bar 1");
 assert(context.wifiSignalIcon(2/4) === "network_wifi_2_bar", "sweep bar 2");
 assert(context.wifiSignalIcon(3/4) === "network_wifi_3_bar", "sweep bar 3");
@@ -180,8 +188,9 @@ def leaf_string_keys(bundle: dict, prefix: str = "") -> set[str]:
 
 def main() -> None:
     # --- files exist -------------------------------------------------------
-    for name in SERVICES:
+    for name in SERVICES + ["Toast.qml", "Hotspot.qml", "HiddenNetwork.qml", "ConnectFeedback.qml", "LinkDetails.qml"]:
         assert (ROOT / "Services" / name).exists(), f"missing Services/{name}"
+    assert (ROOT / "Modules" / "Toast" / "ToastOverlay.qml").exists(), "missing toast surface"
     for path in QS_FILES:
         assert path.exists(), f"missing {path.name}"
     assert (ROOT / "tests" / "e2e" / "QuickSettingsIpcDriver.qml").exists()
@@ -273,6 +282,14 @@ def main() -> None:
     assert "visible: root.showBatteryText" in qs_root
     assert 'showBatteryValue === "always"' in qs_root
     assert "batteryLow" in qs_root
+    # GNOME SystemIndicator rules (web-prototype tray.js): absence is the
+    # "off" state — network shows only with a connection/hotspot/acquiring,
+    # night light and the non-balanced power profile earn their own icons,
+    # and a muted mic drops the privacy tint.
+    assert "networkIndicatorVisible" in qs_root, "idle wifi shows no indicator"
+    assert '"nightlight"' in qs_root, "night light gets a pill indicator"
+    assert "PowerProfile.Balanced" in qs_root, "power profile indicator gates on non-default"
+    assert 'Audio.inputMuted ? "mic_off" : "mic"' in qs_root, "mic indicator tracks mute"
 
     # --- panel covers the GNOME quick-settings functions --------------------
     # The panel is split across the module; assert against the whole tree.
@@ -410,6 +427,21 @@ def main() -> None:
     assert "VerticalFlickable" in panel, "overlong detail lists scroll inside the card"
     assert 'name: "check"' in panel, "the active detail row shows a trailing check"
     assert "MD.Switch" in panel, "wifi/bt detail headers carry the radio switch"
+    # Network/Bluetooth port (web-prototype wifi.js/bt.js): rows expand in
+    # place; connecting runs only from the explicit body button — a row click
+    # must never itself connect (the rejected one-click model).
+    assert "onHeaderClicked" in panel, "wifi/bt rows expand on click"
+    assert "ExpandoRow" in panel, "device rows use the expandable vessel"
+    assert "connectWithPsk" in panel, "the password form connects with the PSK"
+    assert "ConnectFeedback.watchWifi" in panel and "ConnectFeedback.watchBt" in panel, (
+        "explicit connects register for completion feedback (toasts)"
+    )
+    assert "HiddenNetwork.join" in panel, "the hidden-network row joins by SSID"
+    # KDE hotspot model: a dedicated tile; the Wi-Fi tile is the radio switch
+    # and is never retitled.
+    assert 'labelKey: "quickSettings.hotspot"' in panel, "Hotspot is its own tile"
+    assert "Hotspot.toggle" in panel, "the hotspot tile drives the service"
+    assert "hotspotScanNote" in panel, "AP mode replaces the network list"
 
     # Night light and do-not-disturb are grid tiles (prototype tile set);
     # the brightness slider icon is a plain level readout.
@@ -445,6 +477,10 @@ def main() -> None:
         ("Airplane.qml", "rfkill"),
         ("DoNotDisturb.qml", "makoctl"),
         ("Brightness.qml", "brightnessctl"),
+        # No Quickshell API for AP-mode profiles or hidden SSID joins.
+        ("Hotspot.qml", "nmcli"),
+        ("HiddenNetwork.qml", "nmcli"),
+        ("LinkDetails.qml", "nmcli"),
     ]:
         service = read(ROOT / "Services" / name)
         assert marker in service, f"{name} must own {marker}"
