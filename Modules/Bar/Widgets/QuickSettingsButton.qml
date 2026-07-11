@@ -103,16 +103,11 @@ Item {
         return status.length > 0 && status !== pct ? status + "\n" + pct : pct;
     }
 
-    // Connecting sweep: cycle the fan bars while a wifi network is activating,
-    // matching macOS/GNOME/Windows. Only runs while wifiConnecting is true.
-    property int connectingBar: 0
-    Timer {
-        running: SystemStatus.wifiConnecting
-        interval: 350
-        repeat: true
-        onRunningChanged: if (!running) root.connectingBar = 0
-        onTriggered: root.connectingBar = (root.connectingBar + 1) % 5
-    }
+    // GNOME SystemIndicator rule (web-prototype tray.js): the network icon
+    // exists only while there is something to report — a wired link, an
+    // active/acquiring wifi connection, or the hotspot. Wi-Fi enabled but
+    // idle shows nothing.
+    readonly property bool networkIndicatorVisible: SystemStatus.wiredConnected || (Networking.wifiEnabled && (SystemStatus.hotspotActive || SystemStatus.activeWifiNetwork !== null || SystemStatus.wifiConnecting))
 
     // Each pill indicator names itself on hover (GNOME status-area style). The
     // pill is a single Button, so per-icon HoverHandlers drive per-icon
@@ -316,7 +311,10 @@ Item {
                 anchors.centerIn: parent
                 spacing: 8
 
-                // Privacy indicators first, GNOME-style.
+                // Privacy camera first, GNOME-style; then the prototype's
+                // indicator order (tray.js): night light, network, DND,
+                // bluetooth, airplane, mic, volume, power profile, battery.
+                // Absence is the "off" state — nothing here dims to show idle.
                 StatusIcon {
                     visible: Audio.cameraInUse
                     name: "videocam"
@@ -325,24 +323,50 @@ Item {
                 }
 
                 StatusIcon {
-                    visible: Audio.microphoneInUse
-                    name: "mic"
-                    color: MD.Token.color.tertiary
-                    tip: I18n.t("quickSettings.microphoneInUse")
-                }
-
-                StatusIcon {
-                    visible: Airplane.enabled
-                    name: "airplanemode_active"
+                    // Active right now per schedule, not merely enabled
+                    // (GNOME status/nightLight.js NightLightActive).
+                    visible: NightLight.active
+                    name: "nightlight"
                     color: pillButton.mdState.textColor
-                    tip: I18n.t("quickSettings.airplaneMode")
+                    tip: I18n.t("quickSettings.nightLight")
                 }
 
                 StatusIcon {
-                    visible: SystemStatus.wifiDevice !== null || SystemStatus.wiredConnected
-                    name: SystemStatus.wifiConnecting ? StatusIcons.wifiSignalIcon(root.connectingBar / 4) : SystemStatus.networkIconName
+                    visible: root.networkIndicatorVisible
+                    // While acquiring with nothing active yet the prototype
+                    // pulses the full wifi glyph (its .acq state).
+                    name: SystemStatus.wifiConnecting && SystemStatus.activeWifiNetwork === null && !SystemStatus.wiredConnected ? "wifi" : SystemStatus.networkIconName
                     color: pillButton.mdState.textColor
                     tip: root.networkTip
+
+                    // Prototype acqPulse: opacity 1 <-> 0.3 while a connect
+                    // is in flight (GNOME swaps to a static -acquiring- icon;
+                    // the pulse is the prototype's deliberate variant).
+                    SequentialAnimation on opacity {
+                        running: SystemStatus.wifiConnecting
+                        loops: Animation.Infinite
+
+                        onStopped: opacity = 1
+
+                        NumberAnimation {
+                            to: 0.3
+                            duration: 550
+                            easing.type: Easing.InOutQuad
+                        }
+
+                        NumberAnimation {
+                            to: 1
+                            duration: 550
+                            easing.type: Easing.InOutQuad
+                        }
+                    }
+                }
+
+                StatusIcon {
+                    visible: DoNotDisturb.enabled
+                    name: "notifications_off"
+                    color: pillButton.mdState.textColor
+                    tip: I18n.t("quickSettings.doNotDisturb")
                 }
 
                 StatusIcon {
@@ -356,10 +380,19 @@ Item {
                 }
 
                 StatusIcon {
-                    visible: DoNotDisturb.enabled
-                    name: "notifications_off"
+                    visible: Airplane.enabled
+                    name: "airplanemode_active"
                     color: pillButton.mdState.textColor
-                    tip: I18n.t("quickSettings.doNotDisturb")
+                    tip: I18n.t("quickSettings.airplaneMode")
+                }
+
+                StatusIcon {
+                    // Only while an app records; the privacy tint drops on a
+                    // muted mic (no privacy concern), prototype trayMic.
+                    visible: Audio.microphoneInUse
+                    name: Audio.inputMuted ? "mic_off" : "mic"
+                    color: Audio.inputMuted ? pillButton.mdState.textColor : MD.Token.color.tertiary
+                    tip: I18n.t("quickSettings.microphoneInUse")
                 }
 
                 StatusIcon {
@@ -369,16 +402,18 @@ Item {
                 }
 
                 StatusIcon {
+                    // Power profile only when non-default (GNOME
+                    // status/powerProfiles.js), sharing the power-mode row's
+                    // glyphs.
+                    visible: PowerMode.available && PowerMode.profile !== PowerProfile.Balanced
+                    name: PowerMode.profile === PowerProfile.PowerSaver ? "energy_savings_leaf" : "bolt"
+                    color: pillButton.mdState.textColor
+                    tip: PowerMode.profile === PowerProfile.PowerSaver ? I18n.t("quickSettings.powerProfile.powerSaver") : I18n.t("quickSettings.powerProfile.performance")
+                }
+
+                StatusIcon {
                     visible: SystemStatus.hasBattery
-                    // Power Saver rides the battery glyph as the leaf variant
-                    // (Windows 11 / GNOME style), so the pill needs no separate
-                    // power-mode icon. Charging and critical-low still win the
-                    // glyph; the exact mode is always in the tooltip.
-                    name: {
-                        if (PowerMode.available && PowerMode.profile === PowerProfile.PowerSaver && !SystemStatus.batteryCharging && !SystemStatus.batteryFull && !SystemStatus.batteryLow)
-                            return "battery_saver";
-                        return StatusIcons.batteryIcon(SystemStatus.batteryPercent, SystemStatus.batteryCharging, SystemStatus.batteryFull);
-                    }
+                    name: StatusIcons.batteryIcon(SystemStatus.batteryPercent, SystemStatus.batteryCharging, SystemStatus.batteryFull)
                     color: root.batteryColor
                     tip: root.batteryTip
                 }
