@@ -25,6 +25,9 @@ MD.Button {
     property string offIconName: ""
     // Dark/night tiles render both glyphs filled at all times (no hover fill).
     property bool alwaysFill: false
+    // Acquiring state (prototype .tile.acq): the icon pulses while an
+    // adapter power transition or hotspot start is in flight.
+    property bool pulsing: false
     // Cross-fade the selection colors on the M3E effects spring (critically
     // damped, never overshoots) so the fill animates in step with the shape
     // morph instead of snapping. `checked` is outside StateButton's state
@@ -152,6 +155,30 @@ MD.Button {
                 property: "scale"
                 from: 0.6
                 to: 1
+            }
+
+            // Prototype acqPulse keyframes (.9s ease-in-out, 50% -> 0.3).
+            SequentialAnimation {
+                running: control.pulsing
+                loops: Animation.Infinite
+
+                onStopped: iconStack.opacity = 1
+
+                NumberAnimation {
+                    target: iconStack
+                    property: "opacity"
+                    to: 0.3
+                    duration: 450
+                    easing.type: Easing.InOutQuad
+                }
+
+                NumberAnimation {
+                    target: iconStack
+                    property: "opacity"
+                    to: 1
+                    duration: 450
+                    easing.type: Easing.InOutQuad
+                }
             }
 
         }

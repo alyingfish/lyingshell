@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell.Bluetooth
 import Quickshell.Networking
 import qs.Commons.I18n
 import qs.Commons.Settings
@@ -56,6 +57,9 @@ Item {
         }
         if (SystemStatus.btAdapter !== null) {
             list.push(btTileComp);
+        }
+        if (Hotspot.available) {
+            list.push(hotspotTileComp);
         }
         if (SystemStatus.wiredDevice !== null && (SystemStatus.wiredDevice.connected || SystemStatus.wiredDevice.networks.values.length > 0)) {
             list.push(wiredTileComp);
@@ -205,9 +209,31 @@ Item {
                 "count": SystemStatus.btConnectedDevices.length
             }) : ""
             checked: SystemStatus.btEnabled
+            // BlueZ TURNING_ON/OFF: pulse through the power transition
+            // (prototype btAcqPulse / GNOME bluetooth-acquiring-symbolic).
+            pulsing: SystemStatus.btAdapter !== null && (SystemStatus.btAdapter.state === BluetoothAdapterState.Enabling || SystemStatus.btAdapter.state === BluetoothAdapterState.Disabling)
 
             onClicked: SystemStatus.btAdapter.enabled = !SystemStatus.btAdapter.enabled
             onExpandRequested: pager.detailRequested("bluetooth")
+        }
+    }
+
+    // KDE hotspot model: one dedicated Hotspot toggle; the Wi-Fi tile stays
+    // the radio switch and is never retitled. Starting the AP forces the
+    // radio on (Services/Hotspot.qml); the radio switch going off takes the
+    // AP down with it (NetworkManager).
+    Component {
+        id: hotspotTileComp
+
+        QuickToggle {
+            width: pager.cellWidth
+            labelKey: "quickSettings.hotspot"
+            icon.name: "wifi_tethering"
+            offIconName: "wifi_tethering_off"
+            checked: SystemStatus.hotspotActive
+            pulsing: Hotspot.busy
+
+            onClicked: Hotspot.toggle()
         }
     }
 

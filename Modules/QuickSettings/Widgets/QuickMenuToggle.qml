@@ -15,6 +15,7 @@ Item {
     property alias iconName: toggleButton.icon.name
     property alias offIconName: toggleButton.offIconName
     property alias statusText: toggleButton.statusText
+    property alias pulsing: toggleButton.pulsing
     property bool checked: false
 
     signal clicked()
