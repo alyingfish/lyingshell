@@ -206,6 +206,7 @@ Item {
                         visible: row.nameBadgeIcon.length > 0
                         name: row.nameBadgeIcon
                         size: 12
+                        fill: true
                         opacity: 0.75
                         color: row.mutedColor
                     }
