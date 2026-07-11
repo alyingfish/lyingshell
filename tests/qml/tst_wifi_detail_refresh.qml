@@ -4,13 +4,13 @@ import QtTest
 import Quickshell.Networking
 import qs.Modules.QuickSettings.Widgets
 
-// WifiDetailPage feeds its sorted top-10 list through a ScriptModel, which
-// diffs by network identity: a re-sort MOVES the affected row's delegate
-// instead of rebuilding the whole list. Reassigning a plain-array model (the
-// old approach) reset the Repeater and recreated every delegate; when a
-// scan-driven re-sort landed while a row was mid state-transition (scrolling),
-// destroying it crashed the shell in Qt's animation timer. This test guards
-// that the delegate is reused, not recreated.
+// WifiDetailPage feeds its hero / saved / other groups through ScriptModels,
+// which diff by network identity: a re-sort MOVES the affected row's
+// delegate instead of rebuilding the list. Reassigning a plain-array model
+// (the old approach) reset the Repeater and recreated every delegate; when a
+// scan-driven re-sort landed while a row was mid state-transition
+// (scrolling), destroying it crashed the shell in Qt's animation timer. This
+// test guards that grouping and that delegates are reused, not recreated.
 Window {
     id: root
 
@@ -33,9 +33,9 @@ Window {
         // The list body is async-incubated by DetailPage; grab it once loaded.
         property var body: null
 
-        function rowFor(name) {
-            for (var i = 0; i < body.rows.count; i++) {
-                var it = body.rows.itemAt(i);
+        function rowIn(repeater, name) {
+            for (var i = 0; i < repeater.count; i++) {
+                var it = repeater.itemAt(i);
                 if (it && it.modelData && it.modelData.name === name) {
                     return it;
                 }
@@ -46,33 +46,37 @@ Window {
         function test_list_and_reuse() {
             tryVerify(() => page.bodyItem !== null, 5000, "async body loads");
             body = page.bodyItem;
+            tryVerify(() => body.heroRows.count > 0, 5000, "refresh fills the models");
 
-            // Top 10, connected network first.
-            compare(body.rows.count, 10, "top-10 networks listed");
-            compare(body.rows.itemAt(0).modelData.name, "Homelab-5G", "connected network sorts first");
+            // Groups: connected hero, saved (known), other (unknown).
+            compare(body.heroRows.count, 1, "one connected hero card");
+            compare(body.heroRows.itemAt(0).modelData.name, "Homelab-5G", "connected network is the hero");
+            compare(body.savedRows.count, 1, "known network sits in Saved");
+            compare(body.savedRows.itemAt(0).modelData.name, "Homelab", "Homelab is the saved row");
+            compare(body.rows.count, 8, "unknown networks fill Other networks");
 
             // Sub-bar jitter changes nothing: same delegate instance.
-            var five = rowFor("Homelab-5G");
-            verify(five !== null, "Homelab-5G row present");
-            Networking.wifiNets[0].signalStrength = 0.88; // 0.9 -> 0.88, still bar 4
+            var cafe = rowIn(body.rows, "Café Aurora Guest");
+            verify(cafe !== null, "Café Aurora Guest row present");
+            Networking.wifiNets[2].signalStrength = 0.58; // 0.6 -> 0.58, still bar 3
             body.refresh();
-            verify(rowFor("Homelab-5G") === five, "sub-bar jitter keeps the delegate");
+            verify(rowIn(body.rows, "Café Aurora Guest") === cafe, "sub-bar jitter keeps the delegate");
 
-            // Crossing a signal bar reorders the list. The moved row keeps its
-            // delegate instance (a move, not a rebuild) -- the crash guard.
-            var homelab = rowFor("Homelab");
-            verify(homelab !== null, "Homelab row present");
-            Networking.wifiNets[1].signalStrength = 0.5; // bar 4 -> bar 2, drops down
+            // Crossing a signal bar reorders the group. The moved row keeps
+            // its delegate instance (a move, not a rebuild) -- the crash guard.
+            var fritz = rowIn(body.rows, "FRITZ!Box 7590");
+            verify(fritz !== null, "FRITZ!Box row present");
+            Networking.wifiNets[3].signalStrength = 0.6; // bar 1 -> bar 3, moves up
             body.refresh();
-            verify(rowFor("Homelab") === homelab, "reordered row keeps its delegate instance");
+            verify(rowIn(body.rows, "FRITZ!Box 7590") === fritz, "reordered row keeps its delegate instance");
 
-            // Toggling wifi off empties the list; back on repopulates.
+            // Toggling wifi off empties every group; back on repopulates.
             Networking.wifiEnabled = false;
             body.refresh();
-            compare(body.rows.count, 0, "disabled wifi clears the list");
+            compare(body.heroRows.count + body.savedRows.count + body.rows.count, 0, "disabled wifi clears the groups");
             Networking.wifiEnabled = true;
             body.refresh();
-            compare(body.rows.count, 10, "re-enabled wifi repopulates the list");
+            compare(body.heroRows.count + body.savedRows.count + body.rows.count, 10, "re-enabled wifi repopulates");
 
             console.log("PASS: wifi detail refresh");
         }

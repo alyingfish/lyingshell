@@ -5,3 +5,4 @@ WifiSecurityType 1.0 WifiSecurityType.qml
 WifiDeviceMode 1.0 WifiDeviceMode.qml
 NetworkConnectivity 1.0 NetworkConnectivity.qml
 ConnectionState 1.0 ConnectionState.qml
+ConnectionFailReason 1.0 ConnectionFailReason.qml

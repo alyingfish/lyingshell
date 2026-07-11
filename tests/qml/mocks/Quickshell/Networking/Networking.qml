@@ -19,6 +19,9 @@ QtObject {
         property real signalStrength: 0.5
         property bool stateChanging: false
         property int state: connected ? ConnectionState.Connected : ConnectionState.Disconnected
+        property var nmSettings: []
+
+        signal connectionFailed(int reason)
 
         function connect() {
             root.wifiNets.forEach(n => n.connected = false);
@@ -29,6 +32,10 @@ QtObject {
         }
         function connectWithPsk(psk) {
             connect();
+        }
+        function forget() {
+            known = false;
+            connected = false;
         }
     }
 
@@ -48,7 +55,7 @@ QtObject {
     readonly property QtObject wifiDevice: QtObject {
         readonly property int type: 1
         readonly property bool connected: true
-        readonly property int mode: WifiDeviceMode.Station
+        property int mode: WifiDeviceMode.Station
         property bool scannerEnabled: false
         readonly property QtObject networks: QtObject {
             readonly property var values: root.wifiNets
