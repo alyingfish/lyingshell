@@ -40,6 +40,7 @@
       "rgb": "RGB"
     },
     "connect": "Connect",
+    "connectAutomatically": "Connect automatically",
     "darkStyle": "Dark Style",
     "detailOffHint": "Use the switch above to turn it on",
     "detailOffTitle": "{name} is off",

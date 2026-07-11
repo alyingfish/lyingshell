@@ -1,0 +1,1 @@
+../../../../../../../Modules/QuickSettings/Widgets/DetailSection.qml

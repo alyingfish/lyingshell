@@ -20,3 +20,11 @@ BluetoothDetailPage 1.0 BluetoothDetailPage.qml
 SoundDetailPage 1.0 SoundDetailPage.qml
 KbdDetailPage 1.0 KbdDetailPage.qml
 ColorDetailPage 1.0 ColorDetailPage.qml
+ExpandoRow 1.0 ExpandoRow.qml
+DetailSection 1.0 DetailSection.qml
+RowPropList 1.0 RowPropList.qml
+RowAutoConnect 1.0 RowAutoConnect.qml
+RowActions 1.0 RowActions.qml
+ActionButton 1.0 ActionButton.qml
+PasswordField 1.0 PasswordField.qml
+MiniSwitch 1.0 MiniSwitch.qml
