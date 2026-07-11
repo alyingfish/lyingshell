@@ -8,3 +8,8 @@ singleton DoNotDisturb 1.0 DoNotDisturb.qml
 singleton PowerMode 1.0 PowerMode.qml
 singleton Session 1.0 Session.qml
 singleton SystemStatus 1.0 SystemStatus.qml
+singleton Toast 1.0 Toast.qml
+singleton Hotspot 1.0 Hotspot.qml
+singleton HiddenNetwork 1.0 HiddenNetwork.qml
+singleton ConnectFeedback 1.0 ConnectFeedback.qml
+singleton LinkDetails 1.0 LinkDetails.qml

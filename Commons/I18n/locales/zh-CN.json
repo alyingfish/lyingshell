@@ -116,5 +116,21 @@
     "wifiPassword": "密码",
     "wifiSecured": "加密",
     "wired": "有线网络"
+  },
+  "toast": {
+    "btConnectFailed": "连接失败 — {name}",
+    "btConnected": "{name} 已连接",
+    "btDisconnected": "{name} 已断开",
+    "btPairFailed": "配对失败 — {name}",
+    "btRemoved": "已移除 {name}",
+    "hotspotFailed": "无法开启热点",
+    "hotspotOff": "热点已关闭",
+    "hotspotOn": "热点已开启 — {name}",
+    "wifiConnected": "已连接到 {name}",
+    "wifiDisconnected": "已断开 {name}",
+    "wifiFailed": "Wi‑Fi 连接失败 — {name}",
+    "wifiForgot": "已忽略 {name}",
+    "wifiOpeningSignIn": "正在打开登录页面…",
+    "wifiPortal": "需要登录"
   }
 }

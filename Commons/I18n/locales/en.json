@@ -116,5 +116,21 @@
     "wifiPassword": "Password",
     "wifiSecured": "Secured",
     "wired": "Wired"
+  },
+  "toast": {
+    "btConnectFailed": "Couldn’t connect — {name}",
+    "btConnected": "{name} connected",
+    "btDisconnected": "{name} disconnected",
+    "btPairFailed": "Pairing failed — {name}",
+    "btRemoved": "Removed {name}",
+    "hotspotFailed": "Couldn’t start the hotspot",
+    "hotspotOff": "Hotspot off",
+    "hotspotOn": "Hotspot on — {name}",
+    "wifiConnected": "Connected to {name}",
+    "wifiDisconnected": "Disconnected from {name}",
+    "wifiFailed": "Wi‑Fi connection failed — {name}",
+    "wifiForgot": "Forgot {name}",
+    "wifiOpeningSignIn": "Opening sign-in page…",
+    "wifiPortal": "Sign-in required"
   }
 }
