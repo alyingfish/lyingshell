@@ -26,8 +26,30 @@
     "batteryPercent": "{percent}%",
     "bluetooth": "蓝牙",
     "bluetoothConnectedCount": "已连接 {count} 台设备",
+    "btAddress": "地址",
+    "btBattery": "电量",
     "btConnected": "已连接",
+    "btConnectedBattery": "已连接 · 电量 {percent}%",
+    "btDiscoverableAs": "现在可作为“{name}”被发现",
+    "btErrConnectFailed": "连接失败 — 请确保设备在附近并已开机。",
+    "btErrPairFailed": "配对失败 — 请确保设备在附近并处于配对模式。",
+    "btNearbyDevices": "附近设备",
     "btNotConnected": "未连接",
+    "btPair": "配对",
+    "btPaired": "已配对",
+    "btPairedProp": "已配对",
+    "btPairing": "配对中…",
+    "btRemove": "移除",
+    "btTypes": {
+      "headphones": "耳机",
+      "keyboard": "键盘",
+      "mouse": "鼠标",
+      "phone": "手机",
+      "speaker": "音箱",
+      "tv": "电视",
+      "unknown": "未知",
+      "watch": "手表"
+    },
     "cameraInUse": "正在使用摄像头",
     "cancel": "取消",
     "charging": "正在充电",
@@ -95,6 +117,7 @@
     "propLinkSpeed": "链路速率",
     "propSecurity": "安全性",
     "propSignal": "信号",
+    "propType": "类型",
     "securityNone": "无（开放）",
     "session": {
       "logOut": "注销",
@@ -150,7 +173,8 @@
     "wifiSecured": "加密",
     "wifiSignInRequired": "需要登录",
     "wifiSsid": "网络名称 (SSID)",
-    "wired": "有线网络"
+    "wired": "有线网络",
+    "yes": "是"
   },
   "toast": {
     "btConnectFailed": "连接失败 — {name}",

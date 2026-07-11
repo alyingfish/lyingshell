@@ -197,6 +197,31 @@ Item {
         when: SystemStatus.wifiDevice !== null
     }
 
+    // Bluetooth discovery + discoverability only while the bluetooth detail
+    // is open (BlueZ StartDiscovery; GNOME Settings makes the adapter
+    // discoverable while its page is up).
+    Binding {
+        target: SystemStatus.btAdapter
+        property: "discovering"
+        value: root.detail === "bluetooth" && SystemStatus.btEnabled
+        when: SystemStatus.btAdapter !== null
+    }
+
+    Binding {
+        target: SystemStatus.btAdapter
+        property: "discoverable"
+        value: root.detail === "bluetooth" && SystemStatus.btEnabled
+        when: SystemStatus.btAdapter !== null
+    }
+
+    // Connect/pair failure toasts fire only while the matching detail page
+    // is not on screen (the page shows the error inline).
+    Binding {
+        target: ConnectFeedback
+        property: "visibleDetail"
+        value: root.visible ? root.detail : ""
+    }
+
     // Recent-colors history behind the readout page's grid. Recorded here,
     // not in the page: the page is rebuilt on every push, but the panel hears
     // every pick. The readout's slot count mirrors this cap.

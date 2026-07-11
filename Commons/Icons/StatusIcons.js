@@ -86,6 +86,34 @@ function btDeviceIcon(iconName) {
     return "bluetooth";
 }
 
+// Bluez freedesktop icon name -> quickSettings.btType.* key (the device
+// dialog's Type row, web-prototype d.type).
+function btDeviceType(iconName) {
+    var name = String(iconName || "");
+    if (name.indexOf("headset") >= 0 || name.indexOf("headphone") >= 0) {
+        return "headphones";
+    }
+    if (name.indexOf("audio") >= 0) {
+        return "speaker";
+    }
+    if (name.indexOf("mouse") >= 0) {
+        return "mouse";
+    }
+    if (name.indexOf("keyboard") >= 0) {
+        return "keyboard";
+    }
+    if (name.indexOf("phone") >= 0) {
+        return "phone";
+    }
+    if (name.indexOf("watch") >= 0) {
+        return "watch";
+    }
+    if (name.indexOf("display") >= 0 || name.indexOf("video") >= 0) {
+        return "tv";
+    }
+    return "unknown";
+}
+
 // Output-device glyph from its Pipewire description/name keywords.
 function audioSinkIcon(label) {
     var name = String(label || "").toLowerCase();

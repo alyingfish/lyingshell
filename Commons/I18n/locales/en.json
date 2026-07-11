@@ -26,8 +26,30 @@
     "batteryPercent": "{percent}%",
     "bluetooth": "Bluetooth",
     "bluetoothConnectedCount": "{count} connected",
+    "btAddress": "Address",
+    "btBattery": "Battery",
     "btConnected": "Connected",
+    "btConnectedBattery": "Connected · Battery {percent}%",
+    "btDiscoverableAs": "Now discoverable as “{name}”",
+    "btErrConnectFailed": "Couldn’t connect — make sure the device is nearby and turned on.",
+    "btErrPairFailed": "Pairing failed — make sure the device is nearby and in pairing mode.",
+    "btNearbyDevices": "Nearby devices",
     "btNotConnected": "Not connected",
+    "btPair": "Pair",
+    "btPaired": "Paired",
+    "btPairedProp": "Paired",
+    "btPairing": "Pairing…",
+    "btRemove": "Remove",
+    "btTypes": {
+      "headphones": "Headphones",
+      "keyboard": "Keyboard",
+      "mouse": "Mouse",
+      "phone": "Phone",
+      "speaker": "Speaker",
+      "tv": "TV",
+      "unknown": "Unknown",
+      "watch": "Watch"
+    },
     "cameraInUse": "Camera in use",
     "cancel": "Cancel",
     "charging": "Charging",
@@ -95,6 +117,7 @@
     "propLinkSpeed": "Link speed",
     "propSecurity": "Security",
     "propSignal": "Signal",
+    "propType": "Type",
     "securityNone": "None (open)",
     "session": {
       "logOut": "Log Out",
@@ -150,7 +173,8 @@
     "wifiSecured": "Secured",
     "wifiSignInRequired": "Sign-in required",
     "wifiSsid": "Network name (SSID)",
-    "wired": "Wired"
+    "wired": "Wired",
+    "yes": "Yes"
   },
   "toast": {
     "btConnectFailed": "Couldn’t connect — {name}",
