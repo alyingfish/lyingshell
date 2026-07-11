@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Window
 import QtTest
 import qs.Commons.Settings
-import qs.Modules.QuickSettings.Widgets
+import qs.Modules.QuickSettings.Detail.Pages
 import qs.Services.Niri
 import "../../Modules/QuickSettings"
 

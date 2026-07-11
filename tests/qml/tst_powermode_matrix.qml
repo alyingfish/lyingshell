@@ -3,7 +3,7 @@ import QtQuick.Window
 import QtTest
 import Quickshell.Services.UPower
 import qs.Services
-import qs.Modules.QuickSettings.Widgets
+import qs.Modules.QuickSettings.Main
 
 // Behavioral matrix for the header battery pill + power-mode row across the
 // four real-world combinations of battery presence and power-profile daemon

@@ -1,0 +1,1 @@
+../../../../../../../../Modules/QuickSettings/Detail/Pages/WifiDetailPage.qml

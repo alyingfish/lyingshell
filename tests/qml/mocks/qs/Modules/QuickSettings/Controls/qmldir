@@ -1,0 +1,8 @@
+module qs.Modules.QuickSettings.Controls
+QuickToggle 1.0 QuickToggle.qml
+QuickMenuToggle 1.0 QuickMenuToggle.qml
+QuickSlider 1.0 QuickSlider.qml
+ReactiveIconButton 1.0 ReactiveIconButton.qml
+ActionButton 1.0 ActionButton.qml
+PasswordField 1.0 PasswordField.qml
+MiniSwitch 1.0 MiniSwitch.qml

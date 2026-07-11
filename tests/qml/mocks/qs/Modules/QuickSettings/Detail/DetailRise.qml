@@ -1,0 +1,1 @@
+../../../../../../../Modules/QuickSettings/Detail/DetailRise.qml

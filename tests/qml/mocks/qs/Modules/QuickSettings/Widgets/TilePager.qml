@@ -1,1 +1,0 @@
-../../../../../../../Modules/QuickSettings/Widgets/TilePager.qml

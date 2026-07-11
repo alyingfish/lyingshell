@@ -5,7 +5,9 @@ import qs.Commons.Settings
 import qs.Material
 import qs.Services
 import qs.Services.Niri
-import qs.Modules.QuickSettings.Widgets
+import qs.Modules.QuickSettings.Main
+import qs.Modules.QuickSettings.Detail
+import qs.Modules.QuickSettings.Detail.Pages
 import "../../Material/Motion.js" as Motion
 
 // Quick-settings panel content mirroring the web prototype: a 344px card

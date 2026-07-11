@@ -1,0 +1,1 @@
+../../../../../../../Modules/QuickSettings/Controls/MiniSwitch.qml

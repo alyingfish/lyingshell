@@ -1,0 +1,9 @@
+module qs.Modules.QuickSettings.Main
+MainPage 1.0 MainPage.qml
+PanelHeader 1.0 PanelHeader.qml
+PowerModeRow 1.0 PowerModeRow.qml
+ToolsRow 1.0 ToolsRow.qml
+ToolChip 1.0 ToolChip.qml
+TilePager 1.0 TilePager.qml
+PageDots 1.0 PageDots.qml
+SessionMenu 1.0 SessionMenu.qml

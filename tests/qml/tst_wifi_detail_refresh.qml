@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Window
 import QtTest
 import Quickshell.Networking
-import qs.Modules.QuickSettings.Widgets
+import qs.Modules.QuickSettings.Detail.Pages
 
 // WifiDetailPage feeds its hero / saved / other groups through ScriptModels,
 // which diff by network identity: a re-sort MOVES the affected row's

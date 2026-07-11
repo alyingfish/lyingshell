@@ -1,0 +1,1 @@
+../../../../../../../Modules/QuickSettings/Main/PowerModeRow.qml

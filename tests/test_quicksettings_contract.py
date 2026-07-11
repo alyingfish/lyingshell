@@ -30,35 +30,35 @@ QS_FILES = [
     QS_BUTTON,
     QS_DIR / "QuickSettingsPopup.qml",
     QS_DIR / "QuickSettingsPanel.qml",
-    QS_DIR / "Widgets" / "PanelHeader.qml",
-    QS_DIR / "Widgets" / "ToolsRow.qml",
-    QS_DIR / "Widgets" / "ToolChip.qml",
-    QS_DIR / "Widgets" / "PowerModeRow.qml",
-    QS_DIR / "Widgets" / "SessionMenu.qml",
-    QS_DIR / "Widgets" / "TilePager.qml",
-    QS_DIR / "Widgets" / "PageDots.qml",
-    QS_DIR / "Widgets" / "MainPage.qml",
-    QS_DIR / "Widgets" / "DetailPage.qml",
-    QS_DIR / "Widgets" / "DetailRow.qml",
-    QS_DIR / "Widgets" / "DetailRise.qml",
-    QS_DIR / "Widgets" / "DetailEmpty.qml",
-    QS_DIR / "Widgets" / "WifiDetailPage.qml",
-    QS_DIR / "Widgets" / "BluetoothDetailPage.qml",
-    QS_DIR / "Widgets" / "ExpandoRow.qml",
-    QS_DIR / "Widgets" / "DetailSection.qml",
-    QS_DIR / "Widgets" / "RowPropList.qml",
-    QS_DIR / "Widgets" / "RowAutoConnect.qml",
-    QS_DIR / "Widgets" / "RowActions.qml",
-    QS_DIR / "Widgets" / "ActionButton.qml",
-    QS_DIR / "Widgets" / "PasswordField.qml",
-    QS_DIR / "Widgets" / "MiniSwitch.qml",
-    QS_DIR / "Widgets" / "SoundDetailPage.qml",
-    QS_DIR / "Widgets" / "KbdDetailPage.qml",
-    QS_DIR / "Widgets" / "ColorDetailPage.qml",
-    QS_DIR / "Widgets" / "QuickToggle.qml",
-    QS_DIR / "Widgets" / "QuickMenuToggle.qml",
-    QS_DIR / "Widgets" / "QuickSlider.qml",
-    QS_DIR / "Widgets" / "ReactiveIconButton.qml",
+    QS_DIR / "Main" / "PanelHeader.qml",
+    QS_DIR / "Main" / "ToolsRow.qml",
+    QS_DIR / "Main" / "ToolChip.qml",
+    QS_DIR / "Main" / "PowerModeRow.qml",
+    QS_DIR / "Main" / "SessionMenu.qml",
+    QS_DIR / "Main" / "TilePager.qml",
+    QS_DIR / "Main" / "PageDots.qml",
+    QS_DIR / "Main" / "MainPage.qml",
+    QS_DIR / "Detail" / "DetailPage.qml",
+    QS_DIR / "Detail" / "DetailRow.qml",
+    QS_DIR / "Detail" / "DetailRise.qml",
+    QS_DIR / "Detail" / "DetailEmpty.qml",
+    QS_DIR / "Detail" / "Pages" / "WifiDetailPage.qml",
+    QS_DIR / "Detail" / "Pages" / "BluetoothDetailPage.qml",
+    QS_DIR / "Detail" / "ExpandoRow.qml",
+    QS_DIR / "Detail" / "DetailSection.qml",
+    QS_DIR / "Detail" / "RowPropList.qml",
+    QS_DIR / "Detail" / "RowAutoConnect.qml",
+    QS_DIR / "Detail" / "RowActions.qml",
+    QS_DIR / "Controls" / "ActionButton.qml",
+    QS_DIR / "Controls" / "PasswordField.qml",
+    QS_DIR / "Controls" / "MiniSwitch.qml",
+    QS_DIR / "Detail" / "Pages" / "SoundDetailPage.qml",
+    QS_DIR / "Detail" / "Pages" / "KbdDetailPage.qml",
+    QS_DIR / "Detail" / "Pages" / "ColorDetailPage.qml",
+    QS_DIR / "Controls" / "QuickToggle.qml",
+    QS_DIR / "Controls" / "QuickMenuToggle.qml",
+    QS_DIR / "Controls" / "QuickSlider.qml",
+    QS_DIR / "Controls" / "ReactiveIconButton.qml",
     ROOT / "Services" / "SystemStatus.qml",
     ROOT / "Commons" / "Icons" / "StatusIcons.js",
     ROOT / "Material" / "Wheel.js",
@@ -206,7 +206,7 @@ def main() -> None:
     assert "mask: overlayExpanded ? null : barMask" in bar
 
     # --- widget contracts ---------------------------------------------------
-    toggle = read(QS_DIR / "Widgets" / "QuickToggle.qml")
+    toggle = read(QS_DIR / "Controls" / "QuickToggle.qml")
     assert "MD.Button {" in toggle, "QuickToggle wraps MD.Button, not Rectangle+MouseArea"
     assert "checkable: false" in toggle, "toggle display state is service-owned"
     assert "MD.Enum.BtFilled :" in toggle and "BtFilledTonal" in toggle
@@ -227,14 +227,14 @@ def main() -> None:
         "truncated labels (long SSIDs) show the full text in a hover tooltip"
     )
 
-    menu_toggle = read(QS_DIR / "Widgets" / "QuickMenuToggle.qml")
+    menu_toggle = read(QS_DIR / "Controls" / "QuickMenuToggle.qml")
     assert "SplitButtonIndicator" in menu_toggle
     assert "signal expandRequested" in menu_toggle
     assert '"chevron_right"' in menu_toggle, (
         "arrow segments navigate to detail pages, not dropdowns"
     )
 
-    slider = read(QS_DIR / "Widgets" / "QuickSlider.qml")
+    slider = read(QS_DIR / "Controls" / "QuickSlider.qml")
     assert "MD.Slider {" in slider
     assert "signal moved(" in slider
     # Compact handle wrapper with a percent value indicator, plus an icon
@@ -413,7 +413,7 @@ def main() -> None:
         "wheel/touchpad over the tile area flips pages"
     )
     assert "WheelHandler {" not in panel, "WheelHandler is dead on the live compositor"
-    pager = read(QS_DIR / "Widgets" / "TilePager.qml")
+    pager = read(QS_DIR / "Main" / "TilePager.qml")
     assert "SwipeView {" not in pager, (
         "tile pages slide a spring track, not a strict-range SwipeView: "
         "StrictlyEnforceRange fixup-fights the MD3 rebound overshoot"

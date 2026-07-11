@@ -1,0 +1,10 @@
+module qs.Modules.QuickSettings.Detail
+DetailPage 1.0 DetailPage.qml
+DetailRow 1.0 DetailRow.qml
+DetailRise 1.0 DetailRise.qml
+DetailEmpty 1.0 DetailEmpty.qml
+ExpandoRow 1.0 ExpandoRow.qml
+DetailSection 1.0 DetailSection.qml
+RowPropList 1.0 RowPropList.qml
+RowAutoConnect 1.0 RowAutoConnect.qml
+RowActions 1.0 RowActions.qml

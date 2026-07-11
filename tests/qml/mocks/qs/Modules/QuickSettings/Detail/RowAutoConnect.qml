@@ -1,0 +1,1 @@
+../../../../../../../Modules/QuickSettings/Detail/RowAutoConnect.qml

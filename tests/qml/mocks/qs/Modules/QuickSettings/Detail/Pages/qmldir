@@ -1,0 +1,6 @@
+module qs.Modules.QuickSettings.Detail.Pages
+WifiDetailPage 1.0 WifiDetailPage.qml
+BluetoothDetailPage 1.0 BluetoothDetailPage.qml
+SoundDetailPage 1.0 SoundDetailPage.qml
+KbdDetailPage 1.0 KbdDetailPage.qml
+ColorDetailPage 1.0 ColorDetailPage.qml

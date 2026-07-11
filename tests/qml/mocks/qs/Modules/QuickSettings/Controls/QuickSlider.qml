@@ -1,0 +1,1 @@
+../../../../../../../Modules/QuickSettings/Controls/QuickSlider.qml
