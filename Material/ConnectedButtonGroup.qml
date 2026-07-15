@@ -100,6 +100,7 @@ Item {
                     style: root.labelStyle
                     opacity: segment.mdState.contentOpacity
                     icon.name: segment.modelData.icon
+                    icon.fill: segment.isCurrent
                     icon.size: MD.Token.button.xsmall.icon_size
                     text: segment.modelData.text
                     color: segment.mdState.textColor
