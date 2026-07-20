@@ -13,3 +13,4 @@ singleton Hotspot 1.0 Hotspot.qml
 singleton HiddenNetwork 1.0 HiddenNetwork.qml
 singleton ConnectFeedback 1.0 ConnectFeedback.qml
 singleton LinkDetails 1.0 LinkDetails.qml
+singleton WifiScan 1.0 WifiScan.qml

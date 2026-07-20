@@ -29,6 +29,14 @@ DetailPage {
         }
     }
 
+    // BlueZ discovery runs continuously while the page is open, so a refresh
+    // re-reads the live device list and re-groups it (dropping vanished
+    // devices, surfacing newly found ones).
+    showRefresh: true
+    onRefreshRequested: if (bodyItem !== null) {
+        bodyItem.refresh();
+    }
+
     bodyContent: Component {
         Column {
             id: page

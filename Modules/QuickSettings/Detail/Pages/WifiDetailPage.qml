@@ -26,6 +26,20 @@ DetailPage {
     switchChecked: Networking.wifiEnabled
     onSwitchToggled: checked => Networking.wifiEnabled = checked
 
+    // Force a fresh NetworkManager scan through WifiScan (Quickshell.Networking
+    // exposes no rescan trigger, only the continuous `scannerEnabled`); the
+    // scanner binding then folds the results in. Re-sort the current list at
+    // once for immediate feedback while the scan runs.
+    showRefresh: true
+    onRefreshRequested: {
+        if (Networking.wifiEnabled && SystemStatus.wifiDevice !== null && !SystemStatus.hotspotActive) {
+            WifiScan.rescan();
+        }
+        if (bodyItem !== null) {
+            bodyItem.refresh();
+        }
+    }
+
 
 
     bodyContent: Component {

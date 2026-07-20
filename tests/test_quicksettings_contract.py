@@ -437,6 +437,15 @@ def main() -> None:
         "explicit connects register for completion feedback (toasts)"
     )
     assert "HiddenNetwork.join" in panel, "the hidden-network row joins by SSID"
+    # The wifi/bt detail headers carry a manual refresh button: the shared
+    # DetailPage chrome exposes the opt-in, the wifi page forces a fresh
+    # NetworkManager scan (no rescan trigger in Quickshell.Networking).
+    assert "showRefresh" in panel and "refreshRequested" in panel, (
+        "the shared detail chrome carries an opt-in header refresh action"
+    )
+    assert "WifiScan.rescan" in panel, (
+        "the wifi refresh forces a fresh scan through the WifiScan service"
+    )
     # KDE hotspot model: a dedicated tile; the Wi-Fi tile is the radio switch
     # and is never retitled.
     assert 'labelKey: "quickSettings.hotspot"' in panel, "Hotspot is its own tile"
@@ -481,6 +490,8 @@ def main() -> None:
         ("Hotspot.qml", "nmcli"),
         ("HiddenNetwork.qml", "nmcli"),
         ("LinkDetails.qml", "nmcli"),
+        # No Quickshell trigger for an on-demand Wi-Fi rescan.
+        ("WifiScan.qml", "nmcli"),
     ]:
         service = read(ROOT / "Services" / name)
         assert marker in service, f"{name} must own {marker}"

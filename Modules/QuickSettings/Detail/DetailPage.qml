@@ -26,6 +26,13 @@ Item {
     property bool switchChecked: false
     signal switchToggled(bool checked)
 
+    // Optional header refresh action (Wi-Fi rescan / Bluetooth re-poll). The
+    // concrete page opts in with `showRefresh` and does the work in
+    // `onRefreshRequested`; the button spins on tap for feedback since a
+    // re-read may surface no visible change.
+    property bool showRefresh: false
+    signal refreshRequested()
+
     // The list body (a Column). Loaded async; exposed for tests/plumbing.
     property Component bodyContent: null
     readonly property alias bodyItem: bodyLoader.item
@@ -79,16 +86,60 @@ Item {
             }
         }
 
-        // Prototype .swt mini switch: gates the wifi/bluetooth radios.
-        MiniSwitch {
-            id: dvSwitch
-
+        // Right cluster: the optional refresh button ahead of the radio
+        // switch. Row skips hidden items, so a page using only one of them
+        // gets no phantom gap.
+        Row {
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
-            visible: root.showSwitch
-            checkedState: root.switchChecked
+            spacing: 6
 
-            onToggled: root.switchToggled(checked)
+            MD.IconButton {
+                id: refreshButton
+
+                anchors.verticalCenter: parent.verticalCenter
+                visible: root.showRefresh
+                // Nothing to scan while the radio is off.
+                enabled: !root.showSwitch || root.switchChecked
+                mdState.type: MD.Enum.IBtStandard
+                mdState.size: MD.Enum.XS
+                icon.name: "refresh"
+                icon.width: 18
+                icon.height: 18
+                scale: down ? 0.88 : 1
+
+                Behavior on scale {
+                    MotionAnimation {}
+                }
+
+                onClicked: {
+                    spin.restart();
+                    root.refreshRequested();
+                }
+
+                // One-shot full turn; a multiple of 360 rests upright.
+                NumberAnimation {
+                    id: spin
+
+                    target: refreshButton
+                    property: "rotation"
+                    from: 0
+                    to: 360
+                    duration: 500
+                    easing.type: Easing.OutCubic
+                }
+            }
+
+            // Prototype .swt mini switch: gates the wifi/bluetooth radios.
+            MiniSwitch {
+                id: dvSwitch
+
+                anchors.verticalCenter: parent.verticalCenter
+                visible: root.showSwitch
+                checkedState: root.switchChecked
+
+                onToggled: root.switchToggled(checked)
+            }
         }
     }
 

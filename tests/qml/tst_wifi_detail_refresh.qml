@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Window
 import QtTest
 import Quickshell.Networking
+import qs.Services
 import qs.Modules.QuickSettings.Detail.Pages
 
 // WifiDetailPage feeds its hero / saved / other groups through ScriptModels,
@@ -77,6 +78,20 @@ Window {
             Networking.wifiEnabled = true;
             body.refresh();
             compare(body.heroRows.count + body.savedRows.count + body.rows.count, 10, "re-enabled wifi repopulates");
+
+            // The header refresh action forces a fresh scan and re-reads the
+            // list: with wifi on it kicks WifiScan.rescan()...
+            var scansBefore = WifiScan.rescanCount;
+            page.refreshRequested();
+            compare(WifiScan.rescanCount, scansBefore + 1, "refresh forces a NetworkManager rescan");
+            compare(body.heroRows.count + body.savedRows.count + body.rows.count, 10, "refresh keeps the populated groups");
+
+            // ...and with wifi off it clears every group without a scan (the
+            // radio can't scan), proving the model-refresh wiring.
+            Networking.wifiEnabled = false;
+            page.refreshRequested();
+            compare(WifiScan.rescanCount, scansBefore + 1, "no rescan while the radio is off");
+            compare(body.heroRows.count + body.savedRows.count + body.rows.count, 0, "the header refresh re-reads the models");
 
             console.log("PASS: wifi detail refresh");
         }
