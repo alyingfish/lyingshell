@@ -27,8 +27,16 @@ Item {
         shakeAnim.restart();
     }
 
+    // Defer to the next tick rather than focusing synchronously. When a body
+    // Loader auto-focuses this field from its Component.onCompleted, the
+    // expando body is still clipped to zero height and hasn't rendered a
+    // frame; the MD.TextField's floating label animates its rise with
+    // render-thread Animators, which can't run on an unrealized item, so the
+    // animation's wall-clock elapses invisibly and the label snaps to the top
+    // instead of gliding. One tick lets the field realize first so the float
+    // animates smoothly.
     function forceFocus() {
-        field.forceActiveFocus();
+        Qt.callLater(field.forceActiveFocus);
     }
 
     width: parent ? parent.width : 0
