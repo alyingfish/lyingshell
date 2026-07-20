@@ -382,7 +382,10 @@ DetailPage {
                 visible: Networking.wifiEnabled && !SystemStatus.hotspotActive
                 order: page.otherOrder
                 text: heroModel.values.length > 0 || savedModel.values.length > 0 ? I18n.t("quickSettings.wifiOtherNetworks") : I18n.t("quickSettings.wifiNetworks")
-                scanning: true
+                // Spin while the continuous scanner is live (only while this
+                // page is open, per the panel's scannerEnabled binding), not
+                // forever.
+                scanning: SystemStatus.wifiDevice !== null && SystemStatus.wifiDevice.scannerEnabled
             }
 
             Column {
