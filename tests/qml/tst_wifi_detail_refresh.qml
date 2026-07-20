@@ -5,13 +5,14 @@ import Quickshell.Networking
 import qs.Services
 import qs.Modules.QuickSettings.Detail.Pages
 
-// WifiDetailPage feeds its hero / saved / other groups through ScriptModels,
-// which diff by network identity: a re-sort MOVES the affected row's
-// delegate instead of rebuilding the list. Reassigning a plain-array model
-// (the old approach) reset the Repeater and recreated every delegate; when a
-// scan-driven re-sort landed while a row was mid state-transition
-// (scrolling), destroying it crashed the shell in Qt's animation timer. This
-// test guards that grouping and that delegates are reused, not recreated.
+// WifiDetailPage drives hero / Saved / Other as contiguous slices of ONE
+// ScriptModel behind ONE Repeater, which diffs by network identity: a
+// re-sort or a regroup MOVES the affected row's delegate instead of
+// rebuilding it. Destroying a delegate mid state-transition (the old
+// plain-array rebuilds, and later the per-group Repeaters that made a
+// connect/disconnect a cross-model destroy+create) crashed the shell in
+// Qt's animation timer. This test guards the grouping and that delegates
+// are reused — across re-sorts AND across group changes.
 Window {
     id: root
 
@@ -47,14 +48,16 @@ Window {
         function test_list_and_reuse() {
             tryVerify(() => page.bodyItem !== null, 5000, "async body loads");
             body = page.bodyItem;
-            tryVerify(() => body.heroRows.count > 0, 5000, "refresh fills the models");
+            tryVerify(() => body.rows.count > 0, 5000, "refresh fills the model");
 
-            // Groups: connected hero, saved (known), other (unknown).
-            compare(body.heroRows.count, 1, "one connected hero card");
-            compare(body.heroRows.itemAt(0).modelData.name, "Homelab-5G", "connected network is the hero");
-            compare(body.savedRows.count, 1, "known network sits in Saved");
-            compare(body.savedRows.itemAt(0).modelData.name, "Homelab", "Homelab is the saved row");
-            compare(body.rows.count, 8, "unknown networks fill Other networks");
+            // Groups: connected hero, saved (known), other (unknown) — slice
+            // sizes exposed as counts, rows ordered hero → saved → other.
+            compare(body.heroCount, 1, "one connected hero card");
+            compare(body.rows.itemAt(0).modelData.name, "Homelab-5G", "connected network is the hero");
+            compare(body.savedCount, 1, "known network sits in Saved");
+            compare(body.rows.itemAt(1).modelData.name, "Homelab", "Homelab is the saved row");
+            compare(body.otherCount, 8, "unknown networks fill Other networks");
+            compare(body.rows.count, 10, "one repeater carries every group");
 
             // Sub-bar jitter changes nothing: same delegate instance.
             var cafe = rowIn(body.rows, "Café Aurora Guest");
@@ -71,27 +74,51 @@ Window {
             body.refresh();
             verify(rowIn(body.rows, "FRITZ!Box 7590") === fritz, "reordered row keeps its delegate instance");
 
-            // Toggling wifi off empties every group; back on repopulates.
+            // A saved connected network dropping out (phone hotspot vanishes,
+            // then NM deactivates on the refresh-forced rescan) moves the
+            // hero into the Saved group. With one model that's a delegate
+            // MOVE while its state-flip animations run -- per-group
+            // Repeaters made it a destroy+create, which SIGSEGVed in Qt's
+            // animation timer.
+            var heroNet = Networking.wifiNets[0]; // Homelab-5G, connected+known
+            var heroRow = rowIn(body.rows, "Homelab-5G");
+            heroNet.signalStrength = 0.5; // sorts below Homelab once regrouped
+            heroNet.connected = false;
+            body.refresh();
+            compare(body.heroCount, 0, "no hero after the connection drops");
+            compare(body.savedCount, 2, "the dropped network lands in Saved");
+            compare(body.rows.itemAt(1).modelData.name, "Homelab-5G", "regrouped row re-sorts by strength");
+            verify(rowIn(body.rows, "Homelab-5G") === heroRow, "hero-to-saved regroup keeps the delegate instance -- the crash guard");
+
+            // Reconnecting moves it back up to the hero slot, same delegate.
+            heroNet.signalStrength = 0.9;
+            heroNet.connected = true;
+            body.refresh();
+            compare(body.heroCount, 1, "reconnect restores the hero");
+            compare(body.rows.itemAt(0).modelData.name, "Homelab-5G", "the reconnected network is the hero again");
+            verify(rowIn(body.rows, "Homelab-5G") === heroRow, "saved-to-hero regroup keeps the delegate instance");
+
+            // Toggling wifi off empties the model; back on repopulates.
             Networking.wifiEnabled = false;
             body.refresh();
-            compare(body.heroRows.count + body.savedRows.count + body.rows.count, 0, "disabled wifi clears the groups");
+            compare(body.rows.count, 0, "disabled wifi clears the list");
             Networking.wifiEnabled = true;
             body.refresh();
-            compare(body.heroRows.count + body.savedRows.count + body.rows.count, 10, "re-enabled wifi repopulates");
+            compare(body.rows.count, 10, "re-enabled wifi repopulates");
 
             // The header refresh action forces a fresh scan and re-reads the
             // list: with wifi on it kicks WifiScan.rescan()...
             var scansBefore = WifiScan.rescanCount;
             page.refreshRequested();
             compare(WifiScan.rescanCount, scansBefore + 1, "refresh forces a NetworkManager rescan");
-            compare(body.heroRows.count + body.savedRows.count + body.rows.count, 10, "refresh keeps the populated groups");
+            compare(body.rows.count, 10, "refresh keeps the populated list");
 
             // ...and with wifi off it clears every group without a scan (the
             // radio can't scan), proving the model-refresh wiring.
             Networking.wifiEnabled = false;
             page.refreshRequested();
             compare(WifiScan.rescanCount, scansBefore + 1, "no rescan while the radio is off");
-            compare(body.heroRows.count + body.savedRows.count + body.rows.count, 0, "the header refresh re-reads the models");
+            compare(body.rows.count, 0, "the header refresh re-reads the model");
 
             console.log("PASS: wifi detail refresh");
         }

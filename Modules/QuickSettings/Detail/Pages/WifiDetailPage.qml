@@ -56,17 +56,23 @@ DetailPage {
             // The failure was NM need-secrets: reopen with the password form
             // even on a network that looked open (stale/unknown security).
             property bool errorSecrets: false
-            // Row delegates, for tests asserting reuse across a re-sort.
-            readonly property alias rows: otherRepeater
-            readonly property alias savedRows: savedRepeater
-            readonly property alias heroRows: heroRepeater
+            // Row delegates, for tests asserting reuse across regroups.
+            readonly property alias rows: listRepeater
+            // Sizes of the hero / Saved / Other slices of listModel, written
+            // by refresh() alongside the values so group bindings see them
+            // atomically.
+            property int heroCount: 0
+            property int savedCount: 0
+            property int otherCount: 0
 
             readonly property string hiddenSentinel: "__hidden__"
             // Which connected network LinkDetails was last fetched for.
             property string _linkFor: ""
-            readonly property int otherOrder: 2 + savedModel.values.length
+            readonly property int otherOrder: 2 + savedCount
 
-            spacing: 5
+            // 2px row rhythm inside a group; group-leading wrappers open the
+            // 5px group gap themselves (topPadding 3 above their header).
+            spacing: 2
 
             function toggleRow(network) {
                 if (expandedNetwork === network) {
@@ -173,20 +179,17 @@ DetailPage {
                 }));
             }
 
-            // Order-stable lists driving the Repeaters via ScriptModels
-            // (identity-diffed so unchanged networks keep their delegates; a
-            // full rebuild mid state-transition SIGSEGVs in Qt's animation
-            // timer — see the DetailRow-era note in git history).
+            // ONE order-stable list drives ONE Repeater via a ScriptModel
+            // (identity-diffed so unchanged networks keep their delegates;
+            // destroying a row mid state-transition SIGSEGVs in Qt's
+            // animation timer — see the DetailRow-era note in git history).
+            // Hero / Saved / Other are contiguous slices of this single
+            // model, so a connect or disconnect that regroups a row is a
+            // delegate MOVE. Separate per-group Repeaters made that a
+            // cross-model destroy+create of a row whose state-flip
+            // animations were still running — the hotspot-vanish crash.
             ScriptModel {
-                id: heroModel
-            }
-
-            ScriptModel {
-                id: savedModel
-            }
-
-            ScriptModel {
-                id: otherModel
+                id: listModel
             }
 
             // Signal bar level (0..4), matching StatusIcons.wifiSignalIcon
@@ -199,9 +202,10 @@ DetailPage {
             function refresh() {
                 var dev = SystemStatus.wifiDevice;
                 if (!Networking.wifiEnabled || !dev || SystemStatus.hotspotActive) {
-                    heroModel.values = [];
-                    savedModel.values = [];
-                    otherModel.values = [];
+                    heroCount = 0;
+                    savedCount = 0;
+                    otherCount = 0;
+                    listModel.values = [];
                     return;
                 }
                 var byStrength = (a, b) => {
@@ -213,8 +217,8 @@ DetailPage {
                     return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
                 };
                 var nets = dev.networks.values.filter(n => n !== null && n.name.length > 0);
-                heroModel.values = nets.filter(n => n.connected).slice(0, 1);
-                var heroName = heroModel.values.length > 0 ? heroModel.values[0].name : "";
+                var hero = nets.filter(n => n.connected).slice(0, 1);
+                var heroName = hero.length > 0 ? hero[0].name : "";
                 if (heroName !== _linkFor) {
                     _linkFor = heroName;
                     if (heroName.length > 0) {
@@ -222,8 +226,12 @@ DetailPage {
                     }
                 }
                 var rest = nets.filter(n => !n.connected);
-                savedModel.values = rest.filter(n => n.known).sort(byStrength);
-                otherModel.values = rest.filter(n => !n.known).sort(byStrength).slice(0, 10);
+                var saved = rest.filter(n => n.known).sort(byStrength);
+                var other = rest.filter(n => !n.known).sort(byStrength).slice(0, 10);
+                heroCount = hero.length;
+                savedCount = saved.length;
+                otherCount = other.length;
+                listModel.values = hero.concat(saved, other);
             }
 
             // Re-sort on structural changes only (wifi on/off, device, AP list
@@ -337,165 +345,170 @@ DetailPage {
                 }
             }
 
-            // --- hero: the connected network --------------------------------
+            // --- hero + Saved + Other: one Repeater over listModel -----------
             Repeater {
-                id: heroRepeater
+                id: listRepeater
 
-                model: heroModel
+                model: listModel
 
-                WifiRow {
-                    wifiPage: page
-                    hero: true
-                    order: 0
-                }
-            }
+                // Wrapper so the first row of a group carries the group's
+                // section header: headers can't sit between the rows of a
+                // single Repeater any other way, and a single Repeater is
+                // what turns a regroup into a delegate move.
+                Column {
+                    id: rowWrap
 
-            // --- Saved group -------------------------------------------------
-            DetailSection {
-                visible: savedModel.values.length > 0
-                order: 1
-                text: I18n.t("quickSettings.wifiSaved")
-            }
+                    required property var modelData
+                    required property int index
 
-            Column {
-                width: parent.width
-                visible: savedModel.values.length > 0
-                spacing: 2
+                    readonly property bool isHero: index < page.heroCount
+                    readonly property bool isSaved: !isHero && index < page.heroCount + page.savedCount
+                    readonly property int groupIndex: isHero ? index : isSaved ? index - page.heroCount : index - page.heroCount - page.savedCount
+                    readonly property bool leadsGroup: !isHero && groupIndex === 0
 
-                Repeater {
-                    id: savedRepeater
+                    width: parent.width
+                    // Opens the 5px group gap over the page's 2px row rhythm.
+                    topPadding: leadsGroup ? 3 : 0
+                    spacing: 5
 
-                    model: savedModel
-
-                    WifiRow {
-                        required property int index
-
-                        wifiPage: page
-                        order: 2 + index
-                        groupPos: savedModel.values.length === 1 ? "only" : index === 0 ? "first" : index === savedModel.values.length - 1 ? "last" : "mid"
-                    }
-                }
-            }
-
-            // --- Other networks ----------------------------------------------
-            DetailSection {
-                visible: Networking.wifiEnabled && !SystemStatus.hotspotActive
-                order: page.otherOrder
-                text: heroModel.values.length > 0 || savedModel.values.length > 0 ? I18n.t("quickSettings.wifiOtherNetworks") : I18n.t("quickSettings.wifiNetworks")
-                // Spin while the continuous scanner is live (only while this
-                // page is open, per the panel's scannerEnabled binding), not
-                // forever.
-                scanning: SystemStatus.wifiDevice !== null && SystemStatus.wifiDevice.scannerEnabled
-            }
-
-            Column {
-                width: parent.width
-                visible: Networking.wifiEnabled && !SystemStatus.hotspotActive
-                spacing: 2
-
-                Repeater {
-                    id: otherRepeater
-
-                    model: otherModel
-
-                    WifiRow {
-                        required property int index
-
-                        wifiPage: page
-                        order: page.otherOrder + 1 + index
-                        groupPos: index === 0 ? "first" : "mid"
-                    }
-                }
-
-                // Trailing "Hidden network…" join row (prototype HID).
-                ExpandoRow {
-                    id: hiddenRow
-
-                    groupPos: otherModel.values.length === 0 ? "only" : "last"
-                    order: page.otherOrder + 1 + otherModel.values.length
-                    leadingIcon: "add"
-                    text: I18n.t("quickSettings.wifiHidden")
-                    busy: HiddenNetwork.busy
-                    subText: HiddenNetwork.busy ? I18n.t("quickSettings.wifiConnecting") : ""
-                    open: page.expandedNetwork === page.hiddenSentinel
-
-                    onHeaderClicked: if (!HiddenNetwork.busy) {
-                        page.toggleRow(page.hiddenSentinel);
-                    }
-
+                    // Loader-gated so only the two group-leading rows pay for
+                    // a section (its BusyIndicator is heavy; one per row
+                    // stalls the push slide's first frames).
                     Loader {
                         width: parent.width
-                        active: hiddenRow.revealing
+                        active: rowWrap.leadsGroup
                         visible: active
 
-                        sourceComponent: Column {
-                            id: hiddenForm
+                        sourceComponent: DetailSection {
+                            order: rowWrap.isSaved ? 1 : page.otherOrder
+                            text: rowWrap.isSaved ? I18n.t("quickSettings.wifiSaved") : page.heroCount > 0 || page.savedCount > 0 ? I18n.t("quickSettings.wifiOtherNetworks") : I18n.t("quickSettings.wifiNetworks")
+                            // Spin while the continuous scanner is live (only
+                            // while this page is open, per the panel's
+                            // scannerEnabled binding), not forever.
+                            scanning: !rowWrap.isSaved && SystemStatus.wifiDevice !== null && SystemStatus.wifiDevice.scannerEnabled
+                        }
+                    }
 
-                            property bool ssidError: false
+                    WifiRow {
+                        modelData: rowWrap.modelData
+                        wifiPage: page
+                        hero: rowWrap.isHero
+                        order: rowWrap.isHero ? 0 : rowWrap.isSaved ? 2 + rowWrap.groupIndex : page.otherOrder + 1 + rowWrap.groupIndex
+                        groupPos: rowWrap.isHero ? "single" : rowWrap.isSaved ? (page.savedCount === 1 ? "only" : rowWrap.groupIndex === 0 ? "first" : rowWrap.groupIndex === page.savedCount - 1 ? "last" : "mid") : rowWrap.groupIndex === 0 ? "first" : "mid"
+                    }
+                }
+            }
 
-                            spacing: 10
+            // With no unknown APs no repeater row leads the Other group, so
+            // this standalone header keeps the section (and its scanning
+            // cue) above the hidden-join row. Loader-gated like the per-row
+            // headers.
+            Loader {
+                width: parent.width
+                active: Networking.wifiEnabled && !SystemStatus.hotspotActive && page.otherCount === 0
+                visible: active
 
-                            PasswordField {
-                                id: hiddenSsid
+                sourceComponent: Column {
+                    topPadding: 3
+                    bottomPadding: 3
 
-                                placeholderText: I18n.t("quickSettings.wifiSsid")
-                                error: hiddenForm.ssidError
+                    DetailSection {
+                        order: page.otherOrder
+                        text: page.heroCount > 0 || page.savedCount > 0 ? I18n.t("quickSettings.wifiOtherNetworks") : I18n.t("quickSettings.wifiNetworks")
+                        scanning: SystemStatus.wifiDevice !== null && SystemStatus.wifiDevice.scannerEnabled
+                    }
+                }
+            }
 
-                                onEdited: hiddenForm.ssidError = false
-                                onAccepted: hiddenConnect.clicked()
+            // Trailing "Hidden network…" join row (prototype HID).
+            ExpandoRow {
+                id: hiddenRow
 
-                                Component.onCompleted: forceFocus()
-                            }
+                visible: Networking.wifiEnabled && !SystemStatus.hotspotActive
+                groupPos: page.otherCount === 0 ? "only" : "last"
+                order: page.otherOrder + 1 + page.otherCount
+                leadingIcon: "add"
+                text: I18n.t("quickSettings.wifiHidden")
+                busy: HiddenNetwork.busy
+                subText: HiddenNetwork.busy ? I18n.t("quickSettings.wifiConnecting") : ""
+                open: page.expandedNetwork === page.hiddenSentinel
 
-                            PasswordField {
-                                id: hiddenPsk
+                onHeaderClicked: if (!HiddenNetwork.busy) {
+                    page.toggleRow(page.hiddenSentinel);
+                }
 
-                                secret: true
-                                placeholderText: I18n.t("quickSettings.wifiPassword")
+                Loader {
+                    width: parent.width
+                    active: hiddenRow.revealing
+                    visible: active
 
-                                onAccepted: hiddenConnect.clicked()
-                            }
+                    sourceComponent: Column {
+                        id: hiddenForm
 
-                            MD.Text {
-                                width: parent.width
-                                text: hiddenForm.ssidError ? I18n.t("quickSettings.wifiErrSsidRequired") : I18n.t("quickSettings.wifiHiddenHint")
-                                color: hiddenForm.ssidError ? MD.Token.color.error : MD.Token.color.on_surface_variant
-                                typescale: MD.Token.typescale.body_small
-                                prominent: hiddenForm.ssidError
-                                font.family: Theme.textTypeface
-                                wrapMode: Text.Wrap
-                            }
+                        property bool ssidError: false
 
-                            RowActions {
-                                leftData: [
-                                    ActionButton {
-                                        filled: false
-                                        text: I18n.t("quickSettings.cancel")
+                        spacing: 10
 
-                                        onClicked: page.toggleRow(page.hiddenSentinel)
-                                    }
-                                ]
-                                rightData: [
-                                    ActionButton {
-                                        id: hiddenConnect
+                        PasswordField {
+                            id: hiddenSsid
 
-                                        text: I18n.t("quickSettings.connect")
-                                        enabled: !HiddenNetwork.busy
+                            placeholderText: I18n.t("quickSettings.wifiSsid")
+                            error: hiddenForm.ssidError
 
-                                        onClicked: {
-                                            var ssid = hiddenSsid.text.trim();
-                                            if (ssid.length === 0) {
-                                                hiddenForm.ssidError = true;
-                                                hiddenSsid.shake();
-                                                hiddenSsid.forceFocus();
-                                                return;
-                                            }
-                                            HiddenNetwork.join(ssid, hiddenPsk.text);
-                                            page.toggleRow(page.hiddenSentinel);
+                            onEdited: hiddenForm.ssidError = false
+                            onAccepted: hiddenConnect.clicked()
+
+                            Component.onCompleted: forceFocus()
+                        }
+
+                        PasswordField {
+                            id: hiddenPsk
+
+                            secret: true
+                            placeholderText: I18n.t("quickSettings.wifiPassword")
+
+                            onAccepted: hiddenConnect.clicked()
+                        }
+
+                        MD.Text {
+                            width: parent.width
+                            text: hiddenForm.ssidError ? I18n.t("quickSettings.wifiErrSsidRequired") : I18n.t("quickSettings.wifiHiddenHint")
+                            color: hiddenForm.ssidError ? MD.Token.color.error : MD.Token.color.on_surface_variant
+                            typescale: MD.Token.typescale.body_small
+                            prominent: hiddenForm.ssidError
+                            font.family: Theme.textTypeface
+                            wrapMode: Text.Wrap
+                        }
+
+                        RowActions {
+                            leftData: [
+                                ActionButton {
+                                    filled: false
+                                    text: I18n.t("quickSettings.cancel")
+
+                                    onClicked: page.toggleRow(page.hiddenSentinel)
+                                }
+                            ]
+                            rightData: [
+                                ActionButton {
+                                    id: hiddenConnect
+
+                                    text: I18n.t("quickSettings.connect")
+                                    enabled: !HiddenNetwork.busy
+
+                                    onClicked: {
+                                        var ssid = hiddenSsid.text.trim();
+                                        if (ssid.length === 0) {
+                                            hiddenForm.ssidError = true;
+                                            hiddenSsid.shake();
+                                            hiddenSsid.forceFocus();
+                                            return;
                                         }
+                                        HiddenNetwork.join(ssid, hiddenPsk.text);
+                                        page.toggleRow(page.hiddenSentinel);
                                     }
-                                ]
-                            }
+                                }
+                            ]
                         }
                     }
                 }
