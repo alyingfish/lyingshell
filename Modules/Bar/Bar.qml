@@ -146,6 +146,7 @@ PanelWindow {
                 sourceComponent: QuickSettingsButton {
                     barHidden: barSurface.isHidden
                     barSurfaceRect: Qt.rect(barSurface.surfaceX, barSurface.surfaceY, barSurface.surfaceWidth, barSurface.surfaceHeight)
+                    screenName: root.screen ? root.screen.name : ""
                 }
             }
         }

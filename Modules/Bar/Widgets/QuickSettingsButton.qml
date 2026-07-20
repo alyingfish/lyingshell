@@ -20,6 +20,9 @@ Item {
     // Fed by Bar.qml so the menu overlay can track bar geometry.
     property bool barHidden: false
     property rect barSurfaceRect
+    // Output name of this bar's screen; keys the ShellIpc registration so
+    // external commands route to the focused monitor's panel.
+    property string screenName: ""
 
     property bool panelOpen: false
     // Bar.qml: full-screen window + full input mask while true.
@@ -147,6 +150,16 @@ Item {
     onBarHiddenChanged: if (barHidden)
         panelOpen = false
     onPanelOpenChanged: console.info("[QuickSettings] panel " + (panelOpen ? "open" : "closed"))
+
+    // External command surface (Services/ShellIpc.qml): registered per
+    // screen so `panels toggle quicksettings` / `tools colorPicker` act on
+    // the focused monitor's panel.
+    Component.onCompleted: ShellIpc.registerPanel("quicksettings", screenName, ({
+        "isOpen": () => root.panelOpen,
+        "setOpen": open => root.panelOpen = open,
+        "pickColor": () => menu.panel.beginColorPick()
+    }))
+    Component.onDestruction: ShellIpc.unregisterPanel("quicksettings", root.screenName)
 
     // --- e2e surface ------------------------------------------------------
     // Plain functions consumed by the test-only IPC driver

@@ -56,6 +56,32 @@ scripts/run.sh
 The launcher starts Quickshell with this repository as the shell path and adds
 `~/.local/lib` to `QML_IMPORT_PATH`.
 
+## CLI and niri keybindings
+
+External processes drive the shell through Quickshell IPC. `scripts/ctl.sh`
+wraps the instance addressing:
+
+```bash
+scripts/ctl.sh panels toggle quicksettings   # toggle the panel on the focused monitor
+scripts/ctl.sh panels list                   # registered panel names
+scripts/ctl.sh tools colorPicker             # run the color picker flow
+scripts/ctl.sh show                          # list every IPC target/function
+```
+
+niri cannot register keybindings at runtime, so bind keys in your niri
+`config.kdl` to spawn the CLI (with the absolute path of this checkout):
+
+```kdl
+binds {
+    Mod+G hotkey-overlay-title="Toggle Quick Settings" { spawn "/path/to/lyingshell/scripts/ctl.sh" "panels" "toggle" "quicksettings"; }
+    Mod+P hotkey-overlay-title="Pick Color" { spawn "/path/to/lyingshell/scripts/ctl.sh" "tools" "colorPicker"; }
+}
+```
+
+`Mod` is the Super/Win key in a regular niri session. The command layer is
+extensible: new panels register with `Services/ShellIpc.qml` per screen, and
+new tools add a typed function to its `tools` handler.
+
 ## Settings
 
 On first launch, Lying Shell creates
