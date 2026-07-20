@@ -341,12 +341,18 @@ Item {
 
                     // Prototype acqPulse: opacity 1 <-> 0.3 while a connect
                     // is in flight (GNOME swaps to a static -acquiring- icon;
-                    // the pulse is the prototype's deliberate variant).
-                    SequentialAnimation on opacity {
+                    // the pulse is the prototype's deliberate variant). Pulse a
+                    // separate value and gate opacity on the connecting state so
+                    // the glyph snaps back to full opacity the instant the
+                    // connect ends — a bare `onStopped: opacity = 1` on the
+                    // value source could leave it stuck faded after a reconnect.
+                    property real pulse: 1
+
+                    opacity: SystemStatus.wifiConnecting ? pulse : 1
+
+                    SequentialAnimation on pulse {
                         running: SystemStatus.wifiConnecting
                         loops: Animation.Infinite
-
-                        onStopped: opacity = 1
 
                         NumberAnimation {
                             to: 0.3
