@@ -68,12 +68,14 @@ Item {
         }
 
         // Non-reactive leading icon (brightness): the prototype renders a
-        // plain 32px `.ib` box that is not a button.
+        // plain 32px `.ib` box that is not a button. Prototype glyphs are the
+        // filled Material variant.
         MD.Icon {
             anchors.centerIn: parent
             visible: !control.iconReactive
             name: control.iconName
             size: 18
+            fill: true
             color: MD.MProp.color.on_surface_variant
         }
 

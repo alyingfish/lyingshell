@@ -36,6 +36,24 @@ MD.IconButton {
     // Prototype `.ib:active{transform:scale(.88)}`.
     scale: down ? 0.88 : 1
 
+    // Prototype `.ib` glyphs are always the filled Material variant; the
+    // stock IconButton only fills while checked, so keep the glyph filled in
+    // both states (the color still cross-fades via mdState.textColor).
+    contentItem: Item {
+        implicitWidth: control.icon.width
+        implicitHeight: control.icon.height
+        opacity: control.mdState.contentOpacity
+
+        MD.Icon {
+            anchors.centerIn: parent
+            name: control.icon.name
+            size: Math.min(control.icon.width, control.icon.height)
+            color: control.mdState.textColor
+            fill: true
+        }
+
+    }
+
     MD.ToolTip {
         // Below the button, like bar-tray tooltips (library default is above).
         y: parent.height + 4
