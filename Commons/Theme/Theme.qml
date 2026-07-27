@@ -170,9 +170,10 @@ fi
         }
     }
 
-    // On a wallpaper or mode change, re-derive the matugen primary and cache it;
-    // the wallpaperAccent binding then drives apply()/pushAccentColor through
-    // requestedAccentColor. mode stays manual.
+    // On a wallpaper change (or useWallpaperColor being switched on), re-derive
+    // both modes' matugen primaries and cache them; the wallpaperAccent binding
+    // then drives apply()/pushAccentColor through requestedAccentColor. mode stays
+    // manual, and needs no derive of its own — the cache already covers it.
     Connections {
         target: Settings.options.appearance
         function onUseWallpaperColorChanged() {
@@ -188,11 +189,13 @@ fi
         }
     }
 
-    // Derive only when the current wallpaper+mode isn't already cached. This is
-    // what lets every startup signal cascade — settings load flipping
+    // Derive only when the current wallpaper isn't already cached for BOTH modes.
+    // This is what lets every startup signal cascade — settings load flipping
     // useWallpaperColor, the mode flip, an initial wallpaper event — skip matugen
     // when the cache is warm, while a real wallpaper change (path differs) still
-    // re-derives.
+    // re-derives. Gating on both modes (not just the current one) is what keeps a
+    // later mode flip from landing on an empty entry and falling back to
+    // accentColor.
     function needsDerive() {
         if (!Settings.options.appearance.useWallpaperColor) {
             return false;
@@ -201,7 +204,7 @@ fi
         if (!wp) {
             return false; // wallpaper not known yet; a later wallpaperChanged retries
         }
-        return !(accentCacheData.path === wp && wallpaperAccent.length > 0);
+        return !(accentCacheData.path === wp && accentCacheData.light.length > 0 && accentCacheData.dark.length > 0);
     }
 
     function maybeExtractFromWallpaper() {
@@ -212,44 +215,46 @@ fi
         extractDebounce.restart();
     }
 
-    // Persist the derived accent for a mode, keyed by the wallpaper it came from.
-    // A new wallpaper invalidates the other mode's entry (derived from the old
-    // image), forcing a re-derive when that mode is next used.
-    function cacheAccent(mode, accent) {
-        var wp = Wallpaper.getWallpaper(root.colorSourceScreen);
-        if (accentCacheData.path !== wp) {
-            accentCacheData.light = "";
-            accentCacheData.dark = "";
-            accentCacheData.path = wp;
-        }
-        if (mode === "dark") {
-            accentCacheData.dark = accent;
-        } else {
-            accentCacheData.light = accent;
-        }
+    // Persist BOTH modes' derived accents at once, keyed by the wallpaper they
+    // came from. One extraction yields both, so neither mode is ever left with an
+    // empty entry that would fall back to the user's accentColor on a mode flip.
+    // `path` is the image the colors were derived FROM, not the current wallpaper:
+    // stamping the latter would key a stale extraction to a new image and make
+    // needsDerive() consider it warm forever.
+    function cacheAccent(path, light, dark) {
+        accentCacheData.path = path;
+        accentCacheData.light = light;
+        accentCacheData.dark = dark;
         accentCache.writeAdapter();
     }
 
     Timer {
         id: extractDebounce
         interval: 150
-        onTriggered: extractAccent.run(Wallpaper.getWallpaper(root.colorSourceScreen), root.effectiveMode)
+        onTriggered: extractAccent.run(Wallpaper.getWallpaper(root.colorSourceScreen))
     }
 
     Process {
         id: extractAccent
         stdout: StdioCollector {}
 
-        function run(path, mode) {
+        // The image this run was launched for; keyed into the cache on exit.
+        property string sourcePath: ""
+
+        function run(path) {
             if (!path) {
                 return;
             }
+            sourcePath = path;
             if (running) {
                 running = false;
             }
+            // No -m: the JSON dump carries colors.primary.light AND .dark for any
+            // mode, so a single run seeds the whole cache (-m would only pick which
+            // one is echoed as "default", which we never read).
             // --prefer saturation: matugen errors non-interactively on images
             // with multiple candidate source colors without a preference.
-            command = ["sh", "-c", 'command -v matugen >/dev/null 2>&1 || exit 0; ' + 'matugen image "$1" -m "$2" --prefer saturation -j hex --dry-run', "sh", path, mode];
+            command = ["sh", "-c", 'command -v matugen >/dev/null 2>&1 || exit 0; ' + 'matugen image "$1" --prefer saturation -j hex --dry-run', "sh", path];
             running = true;
         }
 
@@ -257,11 +262,12 @@ fi
             if (exitCode !== 0) {
                 return;
             }
-            var accent = root.parseAccent(stdout.text, root.effectiveMode);
-            if (accent) {
+            var light = root.parseAccent(stdout.text, "light");
+            var dark = root.parseAccent(stdout.text, "dark");
+            if (light && dark) {
                 // Persist only; the wallpaperAccent binding + apply() pick it up
                 // reactively, and the next start/reload reads it with no matugen.
-                root.cacheAccent(root.effectiveMode, accent);
+                root.cacheAccent(sourcePath, light, dark);
             }
         }
     }

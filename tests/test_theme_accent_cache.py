@@ -57,20 +57,29 @@ def main() -> None:
     assert "root.wallpaperAccent =" not in theme
     assert "wallpaperAccent = " not in theme
 
-    # Derivation is gated on a stale cache for the CURRENT wallpaper+mode, so a
-    # warm cache skips matugen at boot but a real wallpaper change still derives.
+    # Derivation is gated on a stale cache for the current wallpaper, so a warm
+    # cache skips matugen at boot but a real wallpaper change still derives. Both
+    # modes must be cached to count as warm: gating on only the active mode left
+    # the other one empty, so a later mode flip fell back to accentColor.
     needs = handler_body(theme, "function needsDerive")
     assert "useWallpaperColor" in needs
     assert "accentCacheData.path === wp" in needs
-    assert "wallpaperAccent.length" in needs
+    assert "accentCacheData.light.length" in needs
+    assert "accentCacheData.dark.length" in needs
     maybe = handler_body(theme, "function maybeExtractFromWallpaper")
     assert "needsDerive()" in maybe
 
-    # Extraction persists via the path-keyed writer; no imperative accent write.
+    # One extraction seeds BOTH modes (matugen's JSON carries light and dark for
+    # any -m), persisted through the path-keyed writer; no imperative accent write.
     exited = handler_body(theme, "onExited: function")
-    assert "cacheAccent(root.effectiveMode, accent)" in exited
+    assert 'root.parseAccent(stdout.text, "light")' in exited
+    assert 'root.parseAccent(stdout.text, "dark")' in exited
+    # Keyed to the image the colors came from, not whatever is current on exit.
+    assert "cacheAccent(sourcePath, light, dark)" in exited
     cache_fn = handler_body(theme, "function cacheAccent")
-    assert "accentCacheData.path" in cache_fn
+    assert "accentCacheData.path = path" in cache_fn
+    assert "accentCacheData.light = light" in cache_fn
+    assert "accentCacheData.dark = dark" in cache_fn
     assert "writeAdapter()" in cache_fn
 
     print("PASS")
