@@ -17,9 +17,11 @@ function volumeIcon(volume, muted) {
 }
 
 // Single source of truth for the battery_alert / error-color / show-percent
-// threshold used by the pill.
+// threshold used by the pill. 10% matches the level GNOME and Windows first
+// warn at, so the alert glyph, the error tint and the percent readout all
+// arrive while there is still time to reach a charger.
 function batteryCritical(percent, charging) {
-    return !charging && percent <= 5;
+    return !charging && percent <= 10;
 }
 
 // GNOME-style level+mode icon (GNOME uses 10% steps; Material Symbols only

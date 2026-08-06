@@ -90,10 +90,10 @@ assert(context.batteryIcon(100, false) === "battery_full", "full only at exactly
 assert(context.batteryIcon(99, false) === "battery_6_bar", "99% is near-full, not full");
 assert(context.batteryIcon(92, false) === "battery_6_bar", "top band is 6_bar");
 assert(context.batteryIcon(50, false) === "battery_3_bar", "half battery");
-assert(context.batteryIcon(6, false) === "battery_0_bar", "low battery keeps level");
-assert(context.batteryCritical(5, false) && !context.batteryCritical(6, false), "critical threshold");
-assert(!context.batteryCritical(5, true), "charging is never critical");
-assert(context.batteryIcon(5, false) === "battery_alert", "critical battery alerts");
+assert(context.batteryIcon(11, false) === "battery_1_bar", "low battery keeps level");
+assert(context.batteryCritical(10, false) && !context.batteryCritical(11, false), "critical threshold");
+assert(!context.batteryCritical(10, true), "charging is never critical");
+assert(context.batteryIcon(10, false) === "battery_alert", "critical battery alerts");
 assert(context.batteryIcon(2, false) === "battery_alert", "empty battery alerts");
 assert(context.batteryIcon(100, false, true) === "battery_charging_full", "charged uses charging-full");
 assert(context.batteryIcon(80, false, true) === "battery_charging_full", "charged wins over level");
