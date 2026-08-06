@@ -447,6 +447,13 @@ Item {
                     color: root.batteryColor
                     typescale: MD.Token.typescale.label_large
                     font.family: Theme.textTypeface
+                    // MD.Text pins its line box to the typescale's line height
+                    // (Text.FixedHeight), which leaves slack the default
+                    // AlignTop parks entirely below the glyphs — the readout
+                    // then rides ~1.5px above the 16px status icons beside it.
+                    // Centring the line in that box is what MD.IconLabel does
+                    // for the bar clock's weather pair (DateTime.qml).
+                    verticalAlignment: Text.AlignVCenter
                 }
             }
         }
