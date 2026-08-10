@@ -99,9 +99,10 @@ def main() -> None:
     assert "property real elevation: 3" in settings_qml
     assert "property real elevation: 0" in settings_qml
     assert "property real opacity: 0.92" in settings_qml
-    assert "property real blur: 8.0" in settings_qml
+    # Per-shape blur is an on/off compositor toggle, not a strength.
+    assert "property bool blur: true" in settings_qml
     assert "property real opacity: 1.0" in settings_qml
-    assert "property real blur: 0.0" in settings_qml
+    assert "property bool blur: false" in settings_qml
     assert "property bool scrollLoop: true" in settings_qml
     assert "property bool urgentPulse: true" in settings_qml
     appearance_body = handler_body(settings_qml, "property JsonObject appearance")

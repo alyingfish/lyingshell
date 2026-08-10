@@ -134,6 +134,8 @@ Singleton {
                 // Per-shape fields; `radius` applied per shape by BarSurface.
                 // height + exclusiveZone are per-shape: the bar reserves exactly
                 // exclusiveZone from the top edge.
+                // `blur` toggles compositor background blur behind the surface
+                // (on/off only — the compositor picks the strength).
                 // NOTE: all shapes default to the same exclusiveZone to avoid
                 // stuttering during window resizing — an unequal value re-tiles
                 // the output on that shape/hide switch.
@@ -143,7 +145,7 @@ Singleton {
                         property int radius: 16
                         property real elevation: 3
                         property real opacity: 0.92
-                        property real blur: 8.0
+                        property bool blur: true
                         property int height: 32
                         property int exclusiveZone: 32
                     }
@@ -152,7 +154,7 @@ Singleton {
                         property int radius: 16
                         property real elevation: 3
                         property real opacity: 0.92
-                        property real blur: 8.0
+                        property bool blur: true
                         property int height: 32
                         property int exclusiveZone: 32
                     }
@@ -161,7 +163,7 @@ Singleton {
                         property int radius: 0
                         property real elevation: 0
                         property real opacity: 1.0
-                        property real blur: 0.0
+                        property bool blur: false
                         property int height: 32
                         property int exclusiveZone: 32
                     }
@@ -170,7 +172,7 @@ Singleton {
                         property int radius: 16
                         property real elevation: 0
                         property real opacity: 1.0
-                        property real blur: 0.0
+                        property bool blur: false
                         property int height: 32
                         property int exclusiveZone: 32
                     }

@@ -66,12 +66,20 @@ Item {
     // Fade MUST ride on elevation: RRectShadowImpl drops color alpha pre-render.
     property real shadowElevation: config.elevation
 
-    // Best-effort background blur (compositor effect; not animated).
-    readonly property real blurSigma: config.blur
-    // Keep blur alive while the surface is still translucent so it doesn't pop
-    // off at frame 0 of a morph to an opaque shape: blur is only visible while
-    // opacity < 1 anyway, so it fades in/out in lockstep with the opacity morph.
-    readonly property bool blurEnabled: blurSigma > 0 || animOpacity < 0.999
+    // Best-effort background blur (compositor effect; on/off only — the
+    // compositor picks the strength). The per-shape setting is authoritative:
+    // translucency alone never turns blur on, and an opaque surface never
+    // keeps a (useless) blur region alive behind it.
+    readonly property bool blurConfigured: config.blur
+    // Leaving a blurred shape for an opaque one holds the region until the
+    // fade covers it (blur only shows through while opacity < 1), so blur
+    // exits under the fade instead of popping off at frame 0. Morphs to a
+    // translucent unblurred shape drop it immediately instead — every point
+    // of a translucent→translucent morph pops, and frame 0 beats the end.
+    property bool blurLinger: false
+    onBlurConfiguredChanged: blurLinger = !blurConfigured && config.opacity >= 0.999 && animOpacity < 0.999
+    onAnimOpacityChanged: if (animOpacity >= 0.999) blurLinger = false
+    readonly property bool blurEnabled: (blurConfigured || blurLinger) && animOpacity < 0.999
 
     Behavior on animMargin {
         NumberAnimation {

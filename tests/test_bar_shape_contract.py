@@ -90,10 +90,13 @@ def main() -> None:
     assert "shadowBuffer" in surface
 
     # --- BarSurface: best-effort blur exposure ----------------------------
-    assert "readonly property real blurSigma: config.blur" in surface
-    # Blur stays enabled while the surface is still translucent so it fades with
-    # the opacity morph instead of popping off at frame 0 of a morph to opaque.
-    assert "readonly property bool blurEnabled: blurSigma > 0 || animOpacity < 0.999" in surface
+    # Per-shape `blur` is an on/off gate (strength is the compositor's) and is
+    # authoritative: translucency alone never turns blur on. Leaving a blurred
+    # shape for an opaque one lingers the region so blur exits under the fade
+    # instead of popping off at frame 0.
+    assert "readonly property bool blurConfigured: config.blur" in surface
+    assert "property bool blurLinger: false" in surface
+    assert "readonly property bool blurEnabled: (blurConfigured || blurLinger) && animOpacity < 0.999" in surface
 
     # --- Bar.qml: window wiring -------------------------------------------
     assert "import Quickshell.Wayland" in bar
