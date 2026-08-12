@@ -3,11 +3,13 @@
 // M3 Expressive motion-scheme springs. QmlMaterial ships only the classic
 // MD3 easing set (standard/emphasized QEasingCurves, no springs), so the
 // plus kit carries the expressive scheme: official dampingRatio/stiffness
-// pairs from androidx ExpressiveMotionTokens.kt, projected for QML as a
-// settle `duration` (|y-1| envelope < 1%) plus an Easing.BezierSpline
-// `curve` fitted to the exact unit-mass spring step response (max fit
-// error ~1%; QtQuick SpringAnimation cannot reach M3 stiffness, its
-// useful spring constant caps at 5 vs omega^2 of 380..3800).
+// pairs from androidx ExpressiveMotionTokens.kt. One-shot QML Behaviors use a
+// settle `duration` (|y-1| envelope < 1%) plus an Easing.BezierSpline `curve`
+// fitted to the exact unit-mass spring step response (max fit error ~1%;
+// QtQuick SpringAnimation cannot reach M3 stiffness, its useful spring
+// constant caps at 5 vs omega^2 of 380..3800). Interactive motion uses
+// stepSpring() below so retargeting retains velocity instead of restarting a
+// duration curve from rest.
 //
 // Spatial springs move geometry (position/size/corners; only these may
 // overshoot), effects springs run color/opacity (critically damped, never
@@ -66,3 +68,59 @@ var effectsSlow = {
     "duration": 235,
     "curve": [0.0556, 0.0, 0.1111, 0.1684, 0.1667, 0.3033, 0.2222, 0.4383, 0.2778, 0.5593, 0.3333, 0.6485, 0.3889, 0.7378, 0.4444, 0.7994, 0.5, 0.8437, 0.5556, 0.888, 0.6111, 0.9155, 0.6667, 0.9351, 0.7222, 0.9546, 0.7778, 0.9661, 0.8333, 0.9741, 0.8889, 0.9822, 0.9444, 1.0, 1.0, 1.0]
 };
+
+// Advance a unit-mass spring by `seconds`, retaining velocity across calls and
+// target changes. This is the actual spring behind the M3 tokens above; the
+// Bezier projections remain useful for one-shot QML Behaviors, but an
+// interactive target must carry velocity when it is interrupted. The closed
+// form solution is frame-rate independent and stays stable across a long
+// compositor frame, unlike an Euler integrator.
+function stepSpring(value, velocity, target, spring, seconds) {
+    var dt = Math.max(0, seconds);
+    if (dt === 0 || !isFinite(dt)) {
+        return {
+            "value": value,
+            "velocity": velocity
+        };
+    }
+
+    var zeta = spring.damping;
+    var omega = Math.sqrt(spring.stiffness);
+    var displacement = value - target;
+    var nextDisplacement;
+    var nextVelocity;
+
+    if (zeta < 1) {
+        var decay = zeta * omega;
+        var damped = omega * Math.sqrt(1 - zeta * zeta);
+        var phase = damped * dt;
+        var envelope = Math.exp(-decay * dt);
+        var cosine = Math.cos(phase);
+        var sine = Math.sin(phase);
+
+        nextDisplacement = envelope * (displacement * cosine + (velocity + decay * displacement) / damped * sine);
+        nextVelocity = envelope * (velocity * cosine - (decay * velocity + omega * omega * displacement) / damped * sine);
+    } else if (zeta === 1) {
+        var criticalEnvelope = Math.exp(-omega * dt);
+        var coefficient = velocity + omega * displacement;
+
+        nextDisplacement = criticalEnvelope * (displacement + coefficient * dt);
+        nextVelocity = criticalEnvelope * (velocity - omega * coefficient * dt);
+    } else {
+        var root = Math.sqrt(zeta * zeta - 1);
+        var slowRoot = -omega * (zeta - root);
+        var fastRoot = -omega * (zeta + root);
+        var slowCoefficient = (velocity - fastRoot * displacement) / (slowRoot - fastRoot);
+        var fastCoefficient = displacement - slowCoefficient;
+        var slowEnvelope = Math.exp(slowRoot * dt);
+        var fastEnvelope = Math.exp(fastRoot * dt);
+
+        nextDisplacement = slowCoefficient * slowEnvelope + fastCoefficient * fastEnvelope;
+        nextVelocity = slowRoot * slowCoefficient * slowEnvelope + fastRoot * fastCoefficient * fastEnvelope;
+    }
+
+    return {
+        "value": target + nextDisplacement,
+        "velocity": nextVelocity
+    };
+}

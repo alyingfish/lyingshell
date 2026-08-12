@@ -127,18 +127,33 @@ def main() -> None:
     assert "minimized: root.approached" in scene
 
     # --- the clock --------------------------------------------------------
-    # Grows and shrinks on ONE MD3 Expressive spring, and what travels is the
-    # type size: scaling a Text blows up a texture drawn once at layout size.
-    assert "property real fontSize: root.targetSize" in clock
-    assert "font.pixelSize: root.fontSize" in clock
-    assert clock.count("spring: Motion.spatialSlow") == 2
-    assert "scale:" not in clock
-    # Both poses are pinned by their TOP edge, from a resting size. Deriving
-    # the position from the animated `fontSize` makes blockY a spring chasing
-    # another spring's output: the travel lags the shrink, and the hover moves
-    # the crown instead of growing it from its top edge.
+    # The hero pose uses the actual MD3 Expressive slow-spatial physics, not a
+    # duration-based Bezier replay. One dimensionless value keeps size and
+    # travel synchronized, while a separate default-spatial channel lets hover
+    # resize the crown without moving its top edge.
+    assert "FrameAnimation {" in clock
+    assert "Motion.stepSpring(root.pose, root.poseVelocity, root.targetPose, Motion.spatialSlow" in clock
+    assert "Motion.stepSpring(root.hoverPose, root.hoverVelocity, root.targetHover, Motion.spatialDefault" in clock
+    assert "Behavior on fontSize" not in clock
+    assert "Behavior on blockY" not in clock
+    # Surface geometry is applied after the dimensionless pose. A real lock
+    # surface is born at 0x0, so cqh must not itself be an animated property or
+    # the sweep handoff exposes a second clock growing from zero.
     assert "readonly property real crownTop: crownCentreY - crownSize * lineHeightScale" in clock
-    assert "readonly property real targetY: minimized ? crownTop : 25 * cqh" in clock
+    assert "readonly property real blockY: crownTop + (fullTop - crownTop) * pose" in clock
+    # Text is laid out once at maximum size. CurveRendering is intended for
+    # large/transformed text and avoids the default distance field's facets;
+    # continuous transform scale also avoids integer pixelSize stepping.
+    assert "font.pixelSize: root.fullSize" in clock
+    assert "renderType: Text.CurveRendering" in clock
+    assert "scale: root.clockScale" in clock
+    assert "font.weight: 700" in clock
+    # Hover owns a fixed maximum-size target rather than the changing glyph
+    # bounds, preventing geometry -> hover -> geometry feedback.
+    assert "readonly property real hoverOvershootScale: hoverScale * 1.016" in clock
+    assert "readonly property real glyphOverhang:" in clock
+    assert "width: column.width * root.hoverOvershootScale" in clock
+    assert "height: (column.height + 2 * root.glyphOverhang) * root.hoverOvershootScale" in clock
     # Two tones, stacked, each line centred, proportional figures.
     assert "ink: LockTheme.clockHours" in clock
     assert "ink: LockTheme.clockMinutes" in clock

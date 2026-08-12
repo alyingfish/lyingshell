@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
-"""M3 Expressive motion-token contract: Material/Motion.js carries
-the official androidx ExpressiveMotionTokens spring physics, and each
-duration/BezierSpline projection tracks the exact analytic step response."""
+"""M3 Expressive motion-token and spring-integrator contract.
+
+Material/Motion.js carries the official AndroidX physics, its QML Bezier
+fallbacks track a from-rest response, and interactive callers can retain
+velocity through a target change with the analytic integrator.
+"""
 
 from __future__ import annotations
 
@@ -43,6 +46,12 @@ process.stdout.write(JSON.stringify({
     effectsFast: context.effectsFast,
     effectsDefault: context.effectsDefault,
     effectsSlow: context.effectsSlow,
+    integrated: context.stepSpring(0, 0, 1, context.spatialSlow, 0.137),
+    interrupted: (() => {
+        const outward = context.stepSpring(0, 0, 1, context.spatialSlow, 0.08);
+        const retargeted = context.stepSpring(outward.value, outward.velocity, 0, context.spatialSlow, 0.001);
+        return { outward, retargeted };
+    })(),
 }));
 """
 
@@ -107,7 +116,10 @@ def main() -> None:
         check=False,
     )
     assert result.returncode == 0, result.stderr.strip()
-    tokens = json.loads(result.stdout)
+    payload = json.loads(result.stdout)
+    integrated = payload.pop("integrated")
+    interrupted = payload.pop("interrupted")
+    tokens = payload
 
     assert set(tokens) == set(OFFICIAL), "token set drifted"
 
@@ -142,6 +154,20 @@ def main() -> None:
         elif name == "spatialFast":
             # zeta 0.6 => exp(-pi*zeta/sqrt(1-zeta^2)) ~ 9.5% overshoot.
             assert 1.05 < peak < 1.12, f"{name}: expected ~9.5% overshoot, got {peak:.4f}"
+
+    # The closed-form step must match the same official spring exactly.
+    exact, _ = response(*OFFICIAL["spatialSlow"])
+    assert abs(integrated["value"] - exact(0.137)) < 1e-12
+
+    # Retargeting carries positive outward velocity into the first return
+    # frame. A restarted duration/easing curve would reset that velocity and
+    # reverse immediately, which is the artificial hover bounce this API
+    # exists to prevent.
+    outward = interrupted["outward"]
+    retargeted = interrupted["retargeted"]
+    assert outward["velocity"] > 0
+    assert retargeted["value"] > outward["value"]
+    assert retargeted["velocity"] > 0
 
     print("OK: motion token contract holds")
 

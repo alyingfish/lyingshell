@@ -83,14 +83,22 @@ layer.
 
 ## Motion
 
-**7. The clock rides an MD3 Expressive spring instead of the prototype's
+**7. The clock rides a real MD3 Expressive spring instead of the prototype's
 hand-tuned curve.**
-As asked, the type size animates rather than `scale`. The prototype's
-`transform .62s cubic-bezier(.34,1.42,.46,1)` is replaced by the spec's slow
-spatial spring (`Motion.spatialSlow`, ζ 0.8 / k 200, 452ms) — the brief asked
-for one MD3 Expressive spring, and `Material/Motion.js` deliberately carries
-only androidx's own token values. The visible difference is a little less
-overshoot.
+The prototype's `transform .62s cubic-bezier(.34,1.42,.46,1)` is replaced by
+the spec's slow spatial spring (`Motion.spatialSlow`, ζ 0.8 / k 200). Unlike a
+fixed-duration Bezier approximation, the analytic spring retains velocity when
+the target reverses; that matters when the crown is clicked before its hover
+response has landed. A single dimensionless pose drives both scale and travel,
+while the small hover tug has its own default-spatial channel because it must
+not move the crown's top edge.
+
+The glyphs are laid out at the full pose and transformed only downward. Qt's
+GPU curve rasterizer keeps that transformed outline sharp; its default distance
+field renderer visibly facets text at this size. Keeping layout size fixed also
+avoids `font.pixelSize`'s integer relayout steps, and lets a fixed hit target
+enclose the complete hover gesture without feeding animated bounds back into
+hover state.
 
 **8. The loading indicator is QmlMaterial's, not the prototype's.**
 `MD.BusyIndicator` is the real MD3 Expressive seven-shape morphing indicator
