@@ -21,6 +21,7 @@ Implemented:
 - Niri workspace and focused-window UI.
 - System tray.
 - Quick settings.
+- Lock screen (`ext-session-lock` + PAM), with its own wallpaper and palette.
 
 Planned:
 
@@ -65,6 +66,7 @@ wraps the instance addressing:
 scripts/ctl.sh panels toggle quicksettings   # toggle the panel on the focused monitor
 scripts/ctl.sh panels list                   # registered panel names
 scripts/ctl.sh tools colorPicker             # run the color picker flow
+scripts/ctl.sh lock lock                     # raise the lock screen
 scripts/ctl.sh show                          # list every IPC target/function
 ```
 
@@ -75,6 +77,7 @@ niri cannot register keybindings at runtime, so bind keys in your niri
 binds {
     Mod+G hotkey-overlay-title="Toggle Quick Settings" { spawn "/path/to/lyingshell/scripts/ctl.sh" "panels" "toggle" "quicksettings"; }
     Mod+P hotkey-overlay-title="Pick Color" { spawn "/path/to/lyingshell/scripts/ctl.sh" "tools" "colorPicker"; }
+    Mod+L hotkey-overlay-title="Lock Screen" { spawn "/path/to/lyingshell/scripts/ctl.sh" "lock" "lock"; }
 }
 ```
 
@@ -88,6 +91,30 @@ On first launch, Lying Shell creates
 `~/.config/lyingshell/settings.json` from the defaults in
 `Commons/Settings/Settings.qml`. The file is plain JSON and is primarily a
 persistence target for the planned settings window.
+
+### Lock screen
+
+The lock screen keeps its own photo and its own matugen palette, apart from the
+desktop's, and follows the one shared `appearance.mode`:
+
+```jsonc
+"lock": {
+  "wallpaper": "~/Pictures/lock.jpg",  // "" reuses the desktop wallpaper
+  "avatar": "~/.face",                 // "" draws the account's initial
+  "fullName": "",                      // "" uses $USER
+  "focusedOutputOnly": true,           // other monitors get wallpaper + clock
+  "pamConfig": ""                      // "" uses the shipped assets/pam.d/lyingshell
+}
+```
+
+Authentication runs through `PamContext`. The shipped service is
+`assets/pam.d/lyingshell` (`pam_unix`, which reads `/etc/shadow` through the
+setuid `unix_chkpwd` helper, so the shell itself stays unprivileged). Set
+`lock.pamConfig` to a service name under `/etc/pam.d` to use a system config —
+for fingerprint, faillock, or smartcard rules.
+
+`appearance.reducedMotion` cuts the lock/unlock sweep to nothing; the avatar's
+success step still plays.
 
 ## Development
 
@@ -106,10 +133,19 @@ Repository layout:
 +-- App/                   Top-level shell composition
 +-- Commons/               I18n, settings, theme, and shared icon mappings
 +-- Material/              Custom Material building blocks (wrappers, motion)
-+-- Modules/               User-facing shell surfaces (Bar, QuickSettings, ...)
++-- Modules/               User-facing shell surfaces (Bar, QuickSettings, Lock, ...)
 +-- Services/              Runtime system and compositor services
++-- assets/                Fragment shaders (+ compiled .qsb) and the PAM service
 +-- scripts/               Public install and run scripts
 +-- tests/                 Product regression tests
+```
+
+Shaders are checked in compiled. After editing anything in
+`assets/shaders/frag/`, rebuild it with the Qt 6 shader baker:
+
+```bash
+qsb --glsl "100 es,120,150" --hlsl 50 --msl 12 \
+    -o assets/shaders/qsb/NAME.frag.qsb assets/shaders/frag/NAME.frag
 ```
 
 Development rules:

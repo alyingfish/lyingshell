@@ -101,9 +101,14 @@ Item {
             // localized label.
             width: Math.max(158, rowLock.implicitWidth, rowSleep.implicitWidth, rowLogout.implicitWidth, rowRestart.implicitWidth, rowShut.implicitWidth)
 
+            // Locking again is meaningless from behind the lock, and logging
+            // out would tear the session down without ever authenticating —
+            // neither is offered on the lock screen (GNOME's own rule). Sleep,
+            // restart and power off stay: they are physical-button parity.
             SessionRow {
                 id: rowLock
 
+                visible: !Lock.locked
                 label: I18n.t("quickSettings.lock")
                 iconName: "lock"
                 topRadius: 14
@@ -119,6 +124,8 @@ Item {
 
                 label: I18n.t("quickSettings.session.suspend")
                 iconName: "bedtime"
+                // Inherits the card's top corner when the lock row is gone.
+                topRadius: rowLock.visible ? 0 : 14
 
                 onActivated: {
                     root.panelCloseRequested();
@@ -129,6 +136,7 @@ Item {
             SessionRow {
                 id: rowLogout
 
+                visible: !Lock.locked
                 label: I18n.t("quickSettings.session.logOut")
                 iconName: "logout"
 

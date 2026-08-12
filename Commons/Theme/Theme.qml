@@ -22,6 +22,17 @@ Singleton {
     readonly property string wallpaperAccent: effectiveMode === "dark" ? accentCacheData.dark : accentCacheData.light
     readonly property string requestedAccentColor: Settings.options.appearance.useWallpaperColor && wallpaperAccent.length > 0 ? wallpaperAccent : Settings.options.appearance.accentColor
 
+    // While the lock screen is up the process wears the LOCK wallpaper's seed
+    // instead of the desktop's (Commons/Theme/LockTheme.qml sets it). The
+    // desktop is not on screen while locked, and the quick-settings panel the
+    // lock surface raises has to follow the surface it serves — the prototype
+    // re-points the panel's tokens at the lock scheme (css/lock.css) for
+    // exactly that reason. Dark/light is untouched: it stays one setting.
+    // External apps never see this — pushAccentColor() keeps using the
+    // desktop's own accent, so no terminal or GTK theme is rewritten on lock.
+    property string accentOverride: ""
+    readonly property string effectiveAccentColor: accentOverride.length > 0 ? accentOverride : requestedAccentColor
+
     // Source screen for wallpaper-derived accent: first screen.
     // ponytail: single source screen; add a setting if multi-monitor ever needs
     // separate accents.
@@ -93,11 +104,18 @@ Singleton {
         apply();
         pushAccentColor();
     }
+    // Lock/unlock only re-seeds the in-process scheme; nothing is pushed out.
+    onAccentOverrideChanged: {
+        if (!Settings.isLoaded) {
+            return;
+        }
+        apply();
+    }
 
     function apply() {
         MD.Token.color.useSysColorSM = false;
         MD.Token.color.useSysAccentColor = false;
-        MD.Token.color.accentColor = requestedAccentColor;
+        MD.Token.color.accentColor = effectiveAccentColor;
         MD.Token.color.paletteType = MD.Enum.PaletteTonalSpot;
         MD.Token.color.mode = effectiveMode === "dark" ? MD.Enum.Dark : MD.Enum.Light;
     }

@@ -128,6 +128,28 @@ Singleton {
                 // The derived color stays in memory (Theme.wallpaperAccent);
                 // it never overwrites accentColor in this file.
                 property bool useWallpaperColor: true
+                // Drop spatial motion that travels a long way (the lock/unlock
+                // sweep). Fades and small settles keep running: a fade is not
+                // motion, and dropping them would only remove feedback.
+                property bool reducedMotion: false
+            }
+            property JsonObject lock: JsonObject {
+                // The lock screen dresses itself from its own photo and its own
+                // matugen palette, on the shared appearance.mode. "" falls back
+                // to the desktop wallpaper of the output it is shown on.
+                property string wallpaper: ""
+                // Portrait clipped by the scallop; "" draws the tonal plate with
+                // the account's initial instead.
+                property string avatar: ""
+                // Display name above the password pill; "" uses $USER.
+                property string fullName: ""
+                // The full scene (avatar, prompt, tray) on the focused output
+                // only; every other output gets wallpaper and clock. False puts
+                // the full scene on every output.
+                property bool focusedOutputOnly: true
+                // PAM service under /etc/pam.d; "" picks the first of
+                // lyingshell / system-auth / login that exists.
+                property string pamConfig: ""
             }
             property JsonObject bar: JsonObject {
                 property string currentShape: "autoShape"

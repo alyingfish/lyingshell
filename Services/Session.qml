@@ -2,6 +2,7 @@ pragma Singleton
 
 import QtQml
 import Quickshell
+import qs.Services
 
 // One-shot session actions for the quick-settings system row. Commands are
 // detached launches, not state: nothing here is polled or parsed. Niri IPC
@@ -10,10 +11,11 @@ Singleton {
     id: root
 
     function lock() {
-        // Direct ext-session-lock client; `loginctl lock-session` only works
-        // when an idle daemon subscribes to the lock signal, which this
+        // The shell is its own ext-session-lock client now (Services/Lock.qml
+        // + Modules/Lock). `loginctl lock-session` is still not used: it only
+        // works when an idle daemon subscribes to the lock signal, which this
         // session does not guarantee.
-        Quickshell.execDetached(["swaylock", "-f"]);
+        Lock.lock();
     }
 
     function suspend() {

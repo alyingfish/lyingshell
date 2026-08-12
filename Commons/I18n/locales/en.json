@@ -17,6 +17,14 @@
     },
     "windowTitle": "Lying Shell Bar"
   },
+  "lock": {
+    "capsLock": "Caps Lock is on",
+    "dateFormat": "ddd, MMM d",
+    "hourFormat": "HH",
+    "minuteFormat": "mm",
+    "passwordLabel": "Password",
+    "wrongPassword": "Wrong password — try again"
+  },
   "quickSettings": {
     "acPower": "AC",
     "active": "Active",

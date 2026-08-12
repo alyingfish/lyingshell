@@ -1,0 +1,9 @@
+#%PAM-1.0
+
+# Password authentication for the lock screen. Shipped with the shell so a
+# stock machine needs no root-owned file to unlock: pam_unix reads /etc/shadow
+# through the setuid unix_chkpwd helper, so the shell itself stays unprivileged.
+#
+# Point Settings `lock.pamConfig` at a service name under /etc/pam.d to use a
+# system config instead (fingerprint, smartcard, faillock, ...).
+auth       required    pam_unix.so

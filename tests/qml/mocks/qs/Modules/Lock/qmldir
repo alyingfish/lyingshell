@@ -1,0 +1,7 @@
+module qs.Modules.Lock
+LockScene 1.0 LockScene.qml
+LockClock 1.0 LockClock.qml
+LockAvatar 1.0 LockAvatar.qml
+LockPasswordField 1.0 LockPasswordField.qml
+LockChip 1.0 LockChip.qml
+LockTray 1.0 LockTray.qml

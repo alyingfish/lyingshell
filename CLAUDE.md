@@ -23,6 +23,12 @@ Material Design 3 via the QmlMaterial library. Import namespace is `qs.*`
   via `qml6` offscreen with mocks from `tests/qml/mocks/`; they print `SKIP`
   and exit 0 when `qml6` is missing. A failing `verify()` under `qml6` aborts
   silently — the wrappers treat a missing `PASS:` marker as failure.
+- `tests/qml/visual_*.qml` dump PNGs for eyeballing against the web prototype;
+  they are not part of the gate. `visual_lock*.qml` must run in a REAL graphics
+  session (no `QT_QPA_PLATFORM=offscreen`): the offscreen plugin loads the
+  software scene-graph backend, which silently draws nothing for a
+  `ShaderEffect`, and both the avatar's scallop and the sweep's circle are
+  shaders. They open a 48px stub window and grab a full-size item instead.
 - `tests/e2e/` tests need a live Niri session, refuse to run if quickshell is
   already running, and restore any system state they touch.
 
@@ -42,7 +48,9 @@ Material Design 3 via the QmlMaterial library. Import namespace is `qs.*`
   source of truth for compositor state (event-stream protocol in
   `NiriProtocol.js` / `NiriState.js`).
 - `Modules/` — user-facing surfaces composed from Services + Commons:
-  `Bar/` (per-monitor top bar with widgets), `QuickSettings/`, `Wallpaper/`.
+  `Bar/` (per-monitor top bar with widgets), `QuickSettings/`, `Wallpaper/`,
+  `Lock/` (ext-session-lock surfaces + the layer-shell surfaces the lock/unlock
+  sweep runs on; state and PAM live in `Services/Lock.qml`).
 - `Material/` — custom MD3 building blocks and motion tokens (`Motion.js`,
   `MotionAnimation.qml`); motion values are contract-tested by
   `tests/test_motion_tokens.py`.

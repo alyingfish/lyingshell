@@ -1,0 +1,1 @@
+../../../../../../Modules/Lock/LockAvatar.qml

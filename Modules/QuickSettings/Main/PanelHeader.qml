@@ -100,6 +100,10 @@ Item {
                 id: toolsButton
 
                 anchors.verticalCenter: parent.verticalCenter
+                // Restricted panel: every tool acts on the desktop behind the
+                // lock — a screenshot, a colour pick, the clipboard history —
+                // so the row is not offered while locked.
+                visible: !Lock.locked
                 mdState.type: MD.Enum.IBtFilledTonal
                 mdState.size: MD.Enum.XS
                 flat: true
@@ -273,6 +277,9 @@ Item {
             MD.IconButton {
                 id: settingsButton
 
+                // Restricted panel: this launches an application, which is the
+                // oldest lock-screen bypass there is.
+                visible: !Lock.locked
                 mdState.type: MD.Enum.IBtStandard
                 mdState.size: MD.Enum.XS
                 icon.name: "settings"

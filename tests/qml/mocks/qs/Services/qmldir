@@ -14,3 +14,6 @@ singleton HiddenNetwork 1.0 HiddenNetwork.qml
 singleton ConnectFeedback 1.0 ConnectFeedback.qml
 singleton LinkDetails 1.0 LinkDetails.qml
 singleton WifiScan 1.0 WifiScan.qml
+singleton Lock 1.0 Lock.qml
+singleton Time 1.0 Time.qml
+singleton Weather 1.0 Weather.qml
