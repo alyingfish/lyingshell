@@ -1,6 +1,9 @@
 pragma Singleton
 
 import QtQml
+import QtQuick
+
+import "../../../../../Modules/Lock/LockMotion.js" as LockMotion
 
 // Test stand-in for qs.Services.Lock under plain qml6.
 //
@@ -21,7 +24,18 @@ QtObject {
     property bool secure: true
     property bool sweepActive: false
     property bool sweepPainting: false
+    // The one animated value the harnesses drive directly. It carries the
+    // product's own curve and duration so a recording of the sweep shows what
+    // the real service would produce rather than an instant cut.
     property real deskHole: 0
+
+    Behavior on deskHole {
+        NumberAnimation {
+            duration: LockMotion.sweepMs
+            easing.type: Easing.Bezier
+            easing.bezierCurve: LockMotion.sweepCurve
+        }
+    }
 
     property string phase: root.phaseGlance
     property bool succeeded: false
