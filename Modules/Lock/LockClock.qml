@@ -42,10 +42,24 @@ Item {
     readonly property real lineHeightScale: 0.80
 
     readonly property real targetSize: minimized ? (returnable && hover.hovered ? hoverSize : crownSize) : fullSize
-    // Full size hangs from 25cqh; minimized, the block's centre is what has to
-    // land on crownCentreY, so the two poses are declared the way each is
-    // actually anchored rather than as one number plus an offset.
-    readonly property real targetY: minimized ? crownCentreY - fontSize * lineHeightScale : 25 * cqh
+
+    // Where the crown's box top has to sit for the block's centre to land on
+    // crownCentreY at REST. Both poses are pinned by their top edge, never by
+    // their centre, and both tops are computed from a resting size — the one
+    // thing this must not do is derive from `fontSize`, which is itself
+    // animated:
+    //
+    //   * `blockY` would then be a spring chasing another spring's output, so
+    //     the travel would lag the shrink and the clock would keep creeping
+    //     upward for ~300ms after it had finished getting smaller. The brief
+    //     asks for one spring, and two filters in series is not it.
+    //   * the hover would MOVE the crown instead of growing it, because a
+    //     bigger `fontSize` would push the top up to keep the centre fixed.
+    //
+    // Pinning the top is also what the prototype does: its transform-origin is
+    // 50% 0, so scaling never moves the top edge and only translateY does.
+    readonly property real crownTop: crownCentreY - crownSize * lineHeightScale
+    readonly property real targetY: minimized ? crownTop : 25 * cqh
 
     // The one animated pair. Both ride the same spring so the crown never
     // arrives before the ink has finished shrinking into it.

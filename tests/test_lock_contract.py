@@ -133,6 +133,12 @@ def main() -> None:
     assert "font.pixelSize: root.fontSize" in clock
     assert clock.count("spring: Motion.spatialSlow") == 2
     assert "scale:" not in clock
+    # Both poses are pinned by their TOP edge, from a resting size. Deriving
+    # the position from the animated `fontSize` makes blockY a spring chasing
+    # another spring's output: the travel lags the shrink, and the hover moves
+    # the crown instead of growing it from its top edge.
+    assert "readonly property real crownTop: crownCentreY - crownSize * lineHeightScale" in clock
+    assert "readonly property real targetY: minimized ? crownTop : 25 * cqh" in clock
     # Two tones, stacked, each line centred, proportional figures.
     assert "ink: LockTheme.clockHours" in clock
     assert "ink: LockTheme.clockMinutes" in clock
