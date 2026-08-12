@@ -6,6 +6,7 @@ import Qcm.Material as MD
 import qs.Commons.I18n
 import qs.Commons.Settings
 import qs.Commons.Theme
+import qs.Material
 import qs.Services
 import qs.Modules.QuickSettings
 import "../../../Commons/Icons/StatusIcons.js" as StatusIcons
@@ -24,9 +25,30 @@ Item {
     // external commands route to the focused monitor's panel.
     property string screenName: ""
 
+    // --- reuse on the lock surface ---------------------------------------
+    // The prototype reparents the shell's own #tray pill onto the lock stage
+    // rather than mocking a second one up; a QML surface cannot borrow an item
+    // from another window, so the lock raises a second instance of this widget
+    // instead. These three properties are everything that differs.
+
+    // The lock instance shares its output with the bar's, and ShellIpc keys by
+    // output name — a second registration would silently replace the bar's and
+    // leave `panels toggle quicksettings` driving a dead panel after unlock.
+    property bool registerIpc: true
+    // The bar strip has no pill background of its own; the lock surface gives
+    // it the glass the prototype's `body.locked #tray` wears.
+    property color surfaceColor: "transparent"
+    property color surfaceHoverColor: "transparent"
+    // A WlSessionLockSurface is not a QsWindow, so the card cannot find a
+    // content item on its own — see QuickSettingsPopup.overlayParent.
+    property Item overlayParent: menu.QsWindow.window ? menu.QsWindow.window.contentItem : null
+
     property bool panelOpen: false
     // Bar.qml: full-screen window + full input mask while true.
     readonly property bool expanded: menu.expanded
+    // The panel itself, for callers that unwind its layers (the lock screen's
+    // Escape order).
+    readonly property alias panel: menu.panel
 
     readonly property color batteryColor: SystemStatus.batteryLow ? MD.Token.color.error : SystemStatus.batteryCharging ? MD.Token.color.tertiary : pillButton.mdState.textColor
     // always | never | whenLow (unknown values fall back to whenLow).
@@ -154,12 +176,14 @@ Item {
     // External command surface (Services/ShellIpc.qml): registered per
     // screen so `panels toggle quicksettings` / `tools colorPicker` act on
     // the focused monitor's panel.
-    Component.onCompleted: ShellIpc.registerPanel("quicksettings", screenName, ({
-        "isOpen": () => root.panelOpen,
-        "setOpen": open => root.panelOpen = open,
-        "pickColor": () => menu.panel.beginColorPick()
-    }))
-    Component.onDestruction: ShellIpc.unregisterPanel("quicksettings", root.screenName)
+    Component.onCompleted: if (root.registerIpc)
+        ShellIpc.registerPanel("quicksettings", screenName, ({
+            "isOpen": () => root.panelOpen,
+            "setOpen": open => root.panelOpen = open,
+            "pickColor": () => menu.panel.beginColorPick()
+        }))
+    Component.onDestruction: if (root.registerIpc)
+        ShellIpc.unregisterPanel("quicksettings", root.screenName)
 
     // --- e2e surface ------------------------------------------------------
     // Plain functions consumed by the test-only IPC driver
@@ -297,8 +321,15 @@ Item {
         // mirrors Button.qml's background but forces the ripple to
         // on_surface_variant to match the workspaces pill.
         background: MD.ElevationRectangle {
-            color: "transparent"
+            // Transparent on the bar (the strip is the surface); the lock
+            // surface hands it glass, and the MD3 8% hover state layer is
+            // mixed into the raised glass rather than laid over it.
+            color: pillButton.hovered && root.surfaceHoverColor.a > 0 ? root.surfaceHoverColor : root.surfaceColor
             corners: pillButton.mdState.corners
+
+            Behavior on color {
+                MotionColorAnimation {}
+            }
 
             MD.Ripple {
                 anchors.fill: parent
@@ -465,6 +496,7 @@ Item {
         anchorItem: pillButton
         barBottom: root.barSurfaceRect.y + root.barSurfaceRect.height
         open: root.panelOpen
+        overlayParent: root.overlayParent
 
         onCloseRequested: root.panelOpen = false
         // A completed colour pick reopens the panel on its readout page.

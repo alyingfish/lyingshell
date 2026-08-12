@@ -18,6 +18,12 @@ Item {
     property real barBottom: 0
     property bool open: false
 
+    // Where the card and its click-catcher are reparented to. The bar's own
+    // window supplies its content item through the QsWindow attached object;
+    // a WlSessionLockSurface is NOT a QsWindow (it wraps a raw QQuickWindow),
+    // so the lock passes its scene root explicitly instead.
+    property Item overlayParent: root.QsWindow.window ? root.QsWindow.window.contentItem : null
+
     signal closeRequested
     // Panel asks to be reopened (a colour pick completed while closed);
     // bubbles to the bar button that owns the open state.
@@ -46,7 +52,7 @@ Item {
     Item {
         id: overlay
 
-        parent: root.QsWindow.window ? root.QsWindow.window.contentItem : null
+        parent: root.overlayParent
         width: parent ? parent.width : 0
         height: parent ? parent.height : 0
         z: 90
