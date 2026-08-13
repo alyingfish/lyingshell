@@ -197,6 +197,8 @@ Scope {
                 id: enterSweep
 
                 Item {
+                    id: live
+
                     LockScene {
                         id: sweepScene
 
@@ -234,6 +236,21 @@ Scope {
                         property real feather: 1.0 / sweep.width
 
                         fragmentShader: Qt.resolvedUrl(Quickshell.shellDir + "/assets/shaders/qsb/lock_sweep.frag.qsb")
+                    }
+
+                    // The first presented frame means this output's cover is
+                    // mapped; report it so the circle starts shrinking on a
+                    // painted surface everywhere, not on a blind tick.
+                    property bool announced: false
+
+                    Connections {
+                        target: live.Window.window
+                        enabled: !live.announced
+
+                        function onFrameSwapped() {
+                            live.announced = true;
+                            Lock.sweepSurfacePainted();
+                        }
                     }
                 }
             }

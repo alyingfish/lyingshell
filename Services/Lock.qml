@@ -59,7 +59,8 @@ Singleton {
     // first frame: a freshly created window's swapchain can always produce
     // one frame without waiting on the compositor, which is what lets the
     // cover be buffered under the lock before it drops. Every state advance
-    // below runs on timers; rendering is only ever decoration on top.
+    // below is bounded by a timer; the windows' first-frame reports only ever
+    // end a wait early, so rendering is never load-bearing.
     property string sweepMode: ""
     readonly property bool sweepActive: sweepMode !== ""
 
@@ -131,21 +132,40 @@ Singleton {
             takeLock();
             return;
         }
+        sweepArmed = false;
+        sweepSurfaceGoal = Quickshell.screens.length;
+        sweepFramesPainted = 0;
         sweepMode = "enter";
-        // One tick for the sweep windows to map and paint before the circle
-        // starts shrinking, or the first frames land on an empty surface.
+        // The circle starts shrinking once every window has put up its first
+        // frame, so no travel lands on an unmapped surface; the cap keeps a
+        // slow map from stalling the entry.
         sweepArmTimer.restart();
+    }
+
+    // Set once the entry circle is moving, so a late first-frame report and
+    // the cap firing after it cannot start the shrink twice.
+    property bool sweepArmed: false
+
+    function armEnterSweep() {
+        if (sweepMode !== "enter" || sweepArmed) {
+            return;
+        }
+        sweepArmed = true;
+        sweepArmTimer.stop();
+        deskHole = 0;
+        lockLandTimer.restart();
     }
 
     function takeLock() {
         deskHole = 0;
         locked = true;
-        // The sweep surfaces keep covering the screen until the compositor
-        // confirms every output is locked (`secure`). Dropping them on
-        // `locked` alone would leave a gap before the lock surfaces map. They
-        // stop rendering the instant `locked` goes up — the windows park
-        // themselves (updatesEnabled) — so the cover they hold is their last
-        // painted frame, which is the finished sweep.
+        // The sweep windows stay mapped until the compositor confirms every
+        // output is locked (`secure`), as insurance across compositor
+        // timings — niri actually stops drawing overlays the moment the lock
+        // request lands, and fills the gap to the lock surface's first commit
+        // with its own lock colour. They park the instant `locked` goes up
+        // (updatesEnabled), so keeping them renders nothing and costs
+        // nothing.
         secureFallback.restart();
     }
 
@@ -170,11 +190,8 @@ Singleton {
 
     Timer {
         id: sweepArmTimer
-        interval: LockMotion.handoffMs
-        onTriggered: {
-            root.deskHole = 0;
-            lockLandTimer.restart();
-        }
+        interval: LockMotion.sweepHandoffMs
+        onTriggered: root.armEnterSweep()
     }
 
     Timer {
@@ -215,9 +232,9 @@ Singleton {
             sweepMode = "";
         }
         sweepSnapshots = {};
-        sweepSnapshotGoal = Quickshell.screens.length;
+        sweepSurfaceGoal = Quickshell.screens.length;
         sweepFramesPainted = 0;
-        if (sweepSnapshotGoal === 0) {
+        if (sweepSurfaceGoal === 0) {
             beginExitSweep();
             return;
         }
@@ -235,7 +252,9 @@ Singleton {
     // alive until the sweep lands.
     signal sweepSnapshotWanted()
     property var sweepSnapshots: ({})
-    property int sweepSnapshotGoal: 0
+    // One goal serves both waits — snapshots wanted and first frames
+    // reported — because both are one-per-output.
+    property int sweepSurfaceGoal: 0
     property int sweepFramesPainted: 0
 
     function deliverSweepSnapshot(name, grab) {
@@ -248,7 +267,7 @@ Singleton {
         }
         held[name] = grab;
         sweepSnapshots = held;
-        if (Object.keys(held).length >= sweepSnapshotGoal) {
+        if (Object.keys(held).length >= sweepSurfaceGoal) {
             beginExitSweep();
         }
     }
@@ -268,23 +287,30 @@ Singleton {
         unlockHandoff.restart();
     }
 
-    // Called by each exit window on its first presented frame: its cover is
-    // committed on the compositor's side, buffered below the lock surface.
-    // When every output has one, the lock can drop and the covers are what
-    // the compositor reveals in its place — one Wayland connection, so the
-    // commits are ordered before the release request.
+    // Called by each sweep window on its first presented frame. Entry: every
+    // output's cover is mapped, so the circle can start shrinking with no
+    // travel lost on an unmapped surface. Exit: every cover is committed on
+    // the compositor's side, buffered below the lock surface, so the lock can
+    // drop and the covers are what the compositor reveals in its place — one
+    // Wayland connection, so the commits are ordered before the release
+    // request.
     function sweepSurfacePainted() {
         sweepFramesPainted++;
-        if (sweepFramesPainted >= sweepSnapshotGoal) {
+        if (sweepFramesPainted < sweepSurfaceGoal) {
+            return;
+        }
+        if (sweepMode === "enter") {
+            armEnterSweep();
+        } else if (sweepMode === "exit") {
             releaseAndOpen();
         }
     }
 
-    // The upper bound on that wait. Rendering is decoration: if no cover ever
-    // reports, the unlock proceeds as a plain cut.
+    // The upper bound on the exit wait. Rendering is decoration: if no cover
+    // ever reports, the unlock proceeds as a plain cut.
     Timer {
         id: unlockHandoff
-        interval: LockMotion.exitHandoffMs
+        interval: LockMotion.sweepHandoffMs
         onTriggered: root.releaseAndOpen()
     }
 
@@ -311,7 +337,7 @@ Singleton {
     function finishUnlock() {
         sweepMode = "";
         sweepSnapshots = {};
-        sweepSnapshotGoal = 0;
+        sweepSurfaceGoal = 0;
         sweepFramesPainted = 0;
         deskHole = 1;
         reset();

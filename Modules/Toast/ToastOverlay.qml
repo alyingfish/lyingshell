@@ -20,7 +20,12 @@ PanelWindow {
     margins.top: 48
     color: "transparent"
     exclusiveZone: 0
-    visible: Toast.active
+    // Never while locked: the compositor draws no overlay surfaces behind the
+    // session lock, so the toast would animate invisibly on a window that
+    // gets no frame callbacks (see RENDERING SAFETY in
+    // Modules/Lock/LockScreen.qml). A toast still pending when the lock drops
+    // shows for whatever time it has left.
+    visible: Toast.active && !Lock.locked
     implicitWidth: card.implicitWidth + 48
     implicitHeight: card.implicitHeight + 32
     WlrLayershell.layer: WlrLayer.Overlay

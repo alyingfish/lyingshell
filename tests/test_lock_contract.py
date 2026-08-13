@@ -30,6 +30,7 @@ PANEL_HEADER = ROOT / "Modules" / "QuickSettings" / "Main" / "PanelHeader.qml"
 SESSION_MENU = ROOT / "Modules" / "QuickSettings" / "Main" / "SessionMenu.qml"
 POPUP = ROOT / "Modules" / "QuickSettings" / "QuickSettingsPopup.qml"
 QS_BUTTON = ROOT / "Modules" / "Bar" / "Widgets" / "QuickSettingsButton.qml"
+TOAST = ROOT / "Modules" / "Toast" / "ToastOverlay.qml"
 
 PAM_CONFIG = ROOT / "assets" / "pam.d" / "lyingshell"
 SCALLOP_FRAG = ROOT / "assets" / "shaders" / "frag" / "lock_scallop.frag"
@@ -128,6 +129,11 @@ def main() -> None:
     # the compositor confirms every output is covered.
     assert "updatesEnabled: !(entering && Lock.locked)" in screen
     assert "function endEnterSweep()" in service
+    # Both sweeps start on evidence, not on a blind tick: each window reports
+    # its first presented frame, and the entry circle only moves once every
+    # output has one (or the cap gives up waiting).
+    assert "function armEnterSweep()" in service
+    assert screen.count("Lock.sweepSurfacePainted();") == 2
     # The exit sweep holds a STILL of the hello pose, grabbed from the real
     # lock surface (which the compositor is actively drawing); the fresh exit
     # window buffers it as its first frame — the one render a hidden window
@@ -142,7 +148,10 @@ def main() -> None:
     assert "id: snapshotBail" in service
     assert "id: unlockHandoff" in service
     assert "var snapshotBailMs" in motion
-    assert "var exitHandoffMs" in motion
+    assert "var sweepHandoffMs" in motion
+    # Nothing else may animate an overlay the lock hides: toasts wait.
+    toast = read(TOAST)
+    assert "visible: Toast.active && !Lock.locked" in toast
     # Only the entry sweep may hold the keyboard, and only before the lock is
     # taken; the exit sweep runs over a live desktop and is click-through.
     assert "WlrLayershell.keyboardFocus: entering && !Lock.locked ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None" in screen

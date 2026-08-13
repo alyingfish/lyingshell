@@ -38,10 +38,12 @@ moment the avatar's success step finished. So the windows exist only while
 their sweep runs, and nothing may require one to render while `locked` is
 true:
 
-- *Entry* paints a live copy of the scene while it is visible, parks the
-  window (`updatesEnabled: false`) the instant the lock is requested — the
+- *Entry* paints a live copy of the scene while it is visible — the circle
+  starts shrinking only once every window has reported its first frame
+  presented, so no travel lands on an unmapped surface — parks the window
+  (`updatesEnabled: false`) the instant the lock is requested, because the
   avatar's endless drift would otherwise keep forcing frames onto a hidden
-  surface — and is destroyed once the compositor confirms coverage.
+  surface, and is destroyed once the compositor confirms coverage.
 - *Exit* never paints a scene at all. Each lock surface grabs its frozen
   hello pose into an image (an offscreen render of the one window the
   compositor is still drawing), a fresh window buffers that still at full
@@ -51,9 +53,13 @@ true:
   cover commit and the unlock request travel the same Wayland connection in
   that order, so the compositor swaps the lock surface for the pre-buffered
   cover with no gap, and the circle opens over the live desktop.
-- Every state advance is timer-driven (`snapshotBailMs`, `exitHandoffMs`);
+- Every state advance is bounded by a timer (`snapshotBailMs`,
+  `sweepHandoffMs`) and the first-frame reports only ever end a wait early;
   a lost grab or an unpainted cover degrades the sweep to a plain cut. The
-  unlock is never gated on rendering.
+  unlock is never gated on rendering. Toasts obey the same rule from the
+  other side: `ToastOverlay` does not show while the session is locked,
+  since the compositor would not draw it and its springs would animate an
+  invisible, callback-starved window.
 
 **2. Masks are fragment shaders, not clip-paths.**
 QML has no path clipping and cannot punch a hole in a surface, and

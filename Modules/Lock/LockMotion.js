@@ -15,15 +15,11 @@ var sweepCurve = [0.3, 1.06, 0.35, 1.0, 1.0, 1.0];
 // stops, the check pops. Only then does the circle open the desktop.
 var successHoldMs = 520;
 
-// Long enough for a freshly raised surface to map and paint one frame before
-// the circle moves over it. Three frames at 60Hz.
-var handoffMs = 48;
-
-// The unlock handoff's upper bound. The exit windows normally end the wait
-// themselves by reporting their cover frame presented; if none of those
-// reports land in this long, the lock is released anyway. Unlocking must
-// never wait on rendering.
-var exitHandoffMs = 150;
+// The cap on waiting for the sweep windows to report their first presented
+// frame — entry before the circle starts shrinking, exit before the lock is
+// released. The reports normally end the wait within a frame or two; the
+// bound only exists so the sweep can never gate the lock or the unlock.
+var sweepHandoffMs = 150;
 
 // How long the hello pose waits for its snapshots before sweeping without
 // them. A grab is one offscreen render of a surface the compositor is
