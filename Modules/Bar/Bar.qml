@@ -5,6 +5,7 @@ import Qcm.Material as MD
 import qs.Modules.Bar.Widgets
 import qs.Modules.Bar.Widgets.SystemTray
 import qs.Modules.Bar.Widgets.Workspaces
+import qs.Services
 import qs.Services.Niri
 
 PanelWindow {
@@ -17,6 +18,16 @@ PanelWindow {
     }
 
     color: "transparent"
+
+    // While the session is locked the compositor draws only the lock
+    // surfaces: a window that tries to render then stalls its render thread
+    // on buffers that are never released, and the stall can wedge the whole
+    // shell — dead keyboard on the lock screen included (see RENDERING
+    // SAFETY in Modules/Lock/LockScreen.qml). Park the bar for the duration;
+    // the clock and any stray animation must not force frames onto a surface
+    // nobody draws. It unparks on release, so the desktop the unlock sweep
+    // reveals already carries a fresh bar.
+    updatesEnabled: !Lock.locked
     // Size the window off the SETTLED margin, not animMargin: an animated height
     // resizes the Wayland layer-surface buffer every morph frame, which drops
     // ~3 frames per morph (visible stutter). The surface still animates inside the

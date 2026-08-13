@@ -32,11 +32,17 @@ POPUP = ROOT / "Modules" / "QuickSettings" / "QuickSettingsPopup.qml"
 QS_BUTTON = ROOT / "Modules" / "Bar" / "Widgets" / "QuickSettingsButton.qml"
 TOAST = ROOT / "Modules" / "Toast" / "ToastOverlay.qml"
 
+BAR_WINDOW = ROOT / "Modules" / "Bar" / "Bar.qml"
+AUTO_SHAPE = ROOT / "Modules" / "Bar" / "AutoShape.js"
+BACKGROUND = ROOT / "Modules" / "Wallpaper" / "Background.qml"
+
 PAM_CONFIG = ROOT / "assets" / "pam.d" / "lyingshell"
 SCALLOP_FRAG = ROOT / "assets" / "shaders" / "frag" / "lock_scallop.frag"
 SWEEP_FRAG = ROOT / "assets" / "shaders" / "frag" / "lock_sweep.frag"
+DESK_FRAG = ROOT / "assets" / "shaders" / "frag" / "lock_desk.frag"
 SCALLOP_QSB = ROOT / "assets" / "shaders" / "qsb" / "lock_scallop.frag.qsb"
 SWEEP_QSB = ROOT / "assets" / "shaders" / "qsb" / "lock_sweep.frag.qsb"
+DESK_QSB = ROOT / "assets" / "shaders" / "qsb" / "lock_desk.frag.qsb"
 
 
 def read(path: Path) -> str:
@@ -109,31 +115,46 @@ def main() -> None:
     # Reduced motion cuts the sweep to nothing; the avatar step still plays.
     assert "readonly property int sweepDuration: reducedMotion ? 0 : LockMotion.sweepMs" in service
     assert "enabled: !root.reducedMotion" in service
-    # The circle rides layer-shell surfaces above the desktop, because nothing
-    # can be composited beneath a session-lock surface.
+    # The capture and exit windows ride the Overlay layer above the desktop;
+    # the entry circle itself rides the lock surfaces, because nothing can be
+    # composited beneath a session-lock surface.
     assert "WlrLayershell.layer: WlrLayer.Overlay" in screen
     assert "lock_sweep.frag.qsb" in screen
+    assert "lock_desk.frag.qsb" in screen
     assert SWEEP_FRAG.exists() and SWEEP_QSB.exists()
+    assert DESK_FRAG.exists() and DESK_QSB.exists()
 
-    # --- the sweep never renders behind the lock ---------------------------
+    # --- nothing renders behind the lock -----------------------------------
     # The compositor sends frame callbacks only to surfaces it draws, and
-    # while locked it draws nothing but the lock surfaces: a sweep window
-    # forced to render then stalls its render thread and can wedge the whole
-    # shell. These are the load-bearing pieces of the fix.
+    # while locked it draws nothing but the lock surfaces: a window forced to
+    # render then stalls its render thread and can wedge the whole shell.
+    # These are the load-bearing pieces of the fix.
     #
     # The windows exist only while a sweep runs, and only ever for one mode.
     assert 'property string sweepMode: ""' in service
     assert 'readonly property bool sweepActive: sweepMode !== ""' in service
     assert "model: Lock.sweepActive ? Quickshell.screens : []" in screen
-    # Entry windows park the moment the lock goes up, and are destroyed once
-    # the compositor confirms every output is covered.
+    # The session locks BEFORE the circle moves: each capture window grabs
+    # one frozen screencopy frame of its desktop, the lock is requested the
+    # moment every output has answered (or the cap gives up waiting), and
+    # a late delivery changes nothing.
+    assert "ScreencopyView {" in screen
+    assert "live: false" in screen
+    assert screen.count("Lock.deliverDesktopStill(") == 2
+    assert "function deliverDesktopStill(name, grab)" in service
+    assert 'if (sweepMode !== "enter" || locked) {' in service
+    assert "id: captureBail" in service
+    assert "var captureBailMs" in motion
+    # Capture windows park the moment the lock is requested, and are
+    # destroyed once the compositor confirms every output is covered — only
+    # then does the circle start to move, on the lock surfaces themselves.
     assert "updatesEnabled: !(entering && Lock.locked)" in screen
-    assert "function endEnterSweep()" in service
-    # Both sweeps start on evidence, not on a blind tick: each window reports
-    # its first presented frame, and the entry circle only moves once every
-    # output has one (or the cap gives up waiting).
-    assert "function armEnterSweep()" in service
-    assert screen.count("Lock.sweepSurfacePainted();") == 2
+    assert "function beginEntryReveal()" in service
+    # The entry circle is the desktop still drawn ABOVE the scene, clipped to
+    # the circle: every failure resolves to transparency and a plain cut to
+    # the scene, never to a hole over nothing.
+    assert 'readonly property var entryStill: Lock.desktopStills[surface.screen ? surface.screen.name : ""] || null' in screen
+    assert "active: surface.entryStill !== null" in screen
     # The exit sweep holds a STILL of the hello pose, grabbed from the real
     # lock surface (which the compositor is actively drawing); the fresh exit
     # window buffers it as its first frame — the one render a hidden window
@@ -142,18 +163,21 @@ def main() -> None:
     assert "function onSweepSnapshotWanted()" in screen
     assert "Lock.deliverSweepSnapshot(name, grab);" in screen
     assert "function onFrameSwapped()" in screen
-    assert "Lock.sweepSurfacePainted();" in screen
-    # The unlock is timer-driven end to end: a lost grab or an unpainted
-    # cover degrades the sweep to a cut, it never gates the release.
+    assert screen.count("Lock.sweepSurfacePainted();") == 1
+    # Both gates are timer-driven end to end: a lost capture or grab, an
+    # unpainted cover — each degrades its sweep to a cut, and never gates
+    # the lock or the release.
     assert "id: snapshotBail" in service
     assert "id: unlockHandoff" in service
     assert "var snapshotBailMs" in motion
     assert "var sweepHandoffMs" in motion
-    # Nothing else may animate an overlay the lock hides: toasts wait.
+    # Nothing else may animate an overlay the lock hides: toasts wait, and
+    # the bar and wallpaper windows park (asserted with the bar below).
     toast = read(TOAST)
     assert "visible: Toast.active && !Lock.locked" in toast
-    # Only the entry sweep may hold the keyboard, and only before the lock is
-    # taken; the exit sweep runs over a live desktop and is click-through.
+    # Only the capture window may hold the keyboard, and only before the lock
+    # is taken — a keystroke aimed at the lock must not reach the desktop;
+    # the exit sweep runs over a live desktop and is click-through.
     assert "WlrLayershell.keyboardFocus: entering && !Lock.locked ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None" in screen
     assert "mask: entering ? null : blockNothing" in screen
     # The circle is anchored on where the avatar rests, from the one set of
@@ -297,8 +321,16 @@ def main() -> None:
     session = read(SESSION)
     assert "swaylock" not in session
     assert "Lock.lock();" in session
+    # The bar deliberately does NOT track the lock: no shape morph on
+    # lock/unlock (the desktop the sweep reveals already looks like the
+    # desktop), and the window parks while locked so nothing forces frames
+    # onto a surface the compositor no longer draws. The wallpaper parks for
+    # the same reason.
     bar_surface = read(BAR_SURFACE)
-    assert "readonly property bool locked: Lock.locked" in bar_surface
+    assert "Lock.locked" not in bar_surface
+    assert "lockscreenShape" not in read(AUTO_SHAPE)
+    assert "updatesEnabled: !Lock.locked" in read(BAR_WINDOW)
+    assert "updatesEnabled: !Lock.locked" in read(BACKGROUND)
 
     # --- the lock's own palette ------------------------------------------
     lock_theme = read(LOCK_THEME)

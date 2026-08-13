@@ -10,40 +10,56 @@ Each entry says what changed and what forced it.
 
 ## Platform
 
-**1. The sweep rides layer-shell surfaces, not the lock surface.**
+**1. The entry circle rides the lock surface; only the captures ride
+layer-shell.**
 The prototype clips the desktop (`#desk`) to a circle and rides it above the
 lock scene. Under Wayland nothing can be composited beneath an
 `ext-session-lock` surface — niri renders the lock surface plus an opaque
 colour and returns (`ref-libs/niri/src/niri.rs`) — and a screencopy taken while
-locked captures the lock screen, not the desktop. So the circle is instead a
-hole cut in the lock scene, drawn on ordinary layer-shell surfaces on the
-Overlay layer, which sit above the desktop and below the lock. The gesture the
-user sees is the prototype's: a circle of desktop, centred on the avatar,
-riding above a lock scene that never moves — and the desktop showing through it
-is live rather than a still.
+locked captures the lock screen, not the desktop. So the desktop in the entry
+circle is a still, captured BEFORE the lock is requested: one frozen
+wlr-screencopy frame per output (`ScreencopyView` + `grabToImage`), taken by
+short-lived capture windows on the Overlay layer, and the session locks the
+moment every output has answered (bounded by `captureBailMs`). Each lock
+surface then draws that still above its scene, clipped to the shrinking circle
+(`lock_desk.frag`), once the compositor confirms coverage (`secure`). The
+gesture the user sees is the prototype's: a circle of desktop, centred on the
+avatar, riding above a lock scene that never moves — the price is that the
+desktop inside the circle is frozen for the ~900ms of travel.
 
-*Cost:* the session is strictly locked only for the second half of the entry
-gesture. For the ~900ms the circle takes to shrink, the sweep surface holds
-exclusive keyboard focus over the desktop, and `WlSessionLock.locked` goes true
-when the circle lands. Locking first and animating after would mean animating
-over a black screen, since there is nothing to reveal.
+*What this buys:* the session is strictly locked BEFORE the circle moves, not
+after it lands; the animation runs on the one window the locked compositor
+draws, so it always has frame callbacks; and a keystroke lands on the live
+scene from the first locked frame — typing mid-sweep wakes the prompt instead
+of dying against an overlay that swallows keys. The capture window holds
+exclusive keyboard focus only for the few frames before the lock is taken, so
+nothing leaks to the desktop.
 
 *Constraint the sweep windows live under:* niri sends frame callbacks only to
 surfaces it draws, and while locked it draws nothing but the lock surfaces
-(`Niri::send_frame_callbacks` gates on the primary scanout output). A sweep
-window forced to render in that state stalls its render thread on buffers the
+(`Niri::send_frame_callbacks` gates on the primary scanout output). A window
+forced to render in that state stalls its render thread on buffers the
 compositor never releases, and the stall can wedge the shell's GUI thread —
 the original port did exactly that on unlock, which froze the lock screen the
-moment the avatar's success step finished. So the windows exist only while
-their sweep runs, and nothing may require one to render while `locked` is
-true:
+moment the avatar's success step finished, and again on lock, where the bar's
+shape morph starved and deadened the keyboard for seconds. So the windows
+exist only while their sweep runs, and nothing may require one to render while
+`locked` is true:
 
-- *Entry* paints a live copy of the scene while it is visible — the circle
-  starts shrinking only once every window has reported its first frame
-  presented, so no travel lands on an unmapped surface — parks the window
-  (`updatesEnabled: false`) the instant the lock is requested, because the
-  avatar's endless drift would otherwise keep forcing frames onto a hidden
-  surface, and is destroyed once the compositor confirms coverage.
+- *Entry* captures are delivered before the lock is requested; the capture
+  window keeps showing its frozen still (identical to the desktop it covers,
+  and what carries the handoff while niri waits for the lock surfaces), parks
+  (`updatesEnabled: false`) the instant the lock is requested, and is
+  destroyed once the compositor confirms coverage. The circle itself animates
+  on the lock surfaces, which the locked compositor draws. The still is drawn
+  ABOVE the scene and clipped to the circle, so a lost capture or an
+  undecoded image degrades to a plain cut — never to a hole over black.
+- The bar and the wallpaper follow the same rule from the desktop's side:
+  their windows park while `Lock.locked` (`Modules/Bar/Bar.qml`,
+  `Modules/Wallpaper/Background.qml`), and the bar deliberately has no
+  lockscreen shape — no morph at lock (it would force frames onto a starved
+  window), none at unlock (the desktop the sweep reveals already carries the
+  bar in place).
 - *Exit* never paints a scene at all. Each lock surface grabs its frozen
   hello pose into an image (an offscreen render of the one window the
   compositor is still drawing), a fresh window buffers that still at full
@@ -64,10 +80,11 @@ true:
 **2. Masks are fragment shaders, not clip-paths.**
 QML has no path clipping and cannot punch a hole in a surface, and
 `QtQuick.Effects.MultiEffect`'s `maskSource` produces no usable texture in this
-environment (verified: a trivial masked effect renders nothing). Both masked
-surfaces are `ShaderEffect`s over a `ShaderEffectSource`, following the repo's
-existing wallpaper-shader pipeline — `assets/shaders/frag/lock_scallop.frag`
-and `lock_sweep.frag`, compiled to `.qsb` and checked in.
+environment (verified: a trivial masked effect renders nothing). The masked
+surfaces are `ShaderEffect`s over a texture source, following the repo's
+existing wallpaper-shader pipeline — `assets/shaders/frag/lock_scallop.frag`,
+`lock_sweep.frag` (the exit hole) and `lock_desk.frag` (the entry disc),
+compiled to `.qsb` and checked in.
 
 **3. The quick-settings pill is a second instance, not a reparented one.**
 The prototype reparents the shell's own `#tray` onto the lock stage. A QML item

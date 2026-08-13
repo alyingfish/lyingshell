@@ -15,11 +15,17 @@ var sweepCurve = [0.3, 1.06, 0.35, 1.0, 1.0, 1.0];
 // stops, the check pops. Only then does the circle open the desktop.
 var successHoldMs = 520;
 
-// The cap on waiting for the sweep windows to report their first presented
-// frame — entry before the circle starts shrinking, exit before the lock is
-// released. The reports normally end the wait within a frame or two; the
-// bound only exists so the sweep can never gate the lock or the unlock.
+// The cap on waiting for the exit windows to report their first presented
+// frame before the lock is released. The reports normally end the wait
+// within a frame or two; the bound only exists so the sweep can never gate
+// the unlock.
 var sweepHandoffMs = 150;
+
+// The cap on waiting for the pre-lock desktop captures — one wlr-screencopy
+// frame plus one grab per output, ~3 frames end to end. A capture that has
+// not answered in this long is not coming, and the lock must never wait on
+// it: the output it belonged to degrades to a plain cut.
+var captureBailMs = 250;
 
 // How long the hello pose waits for its snapshots before sweeping without
 // them. A grab is one offscreen render of a surface the compositor is

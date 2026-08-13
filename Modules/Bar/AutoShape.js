@@ -11,16 +11,12 @@
 // `outputWidth` is this output's logical width (the bar spans the whole
 // output, so the caller passes its own width). niri's event stream does not
 // emit OutputsChanged at connect, so outputsByName is unreliable for geometry.
-function resolve(autoShape, niri, outputName, locked, outputWidth) {
+function resolve(autoShape, niri, outputName, outputWidth) {
     var pick = function(name) {
         return (typeof name === "string" && name.length > 0) ? name : null;
     };
 
-    // 1. locked  2. overview  3. unfocused output
-    if (locked) {
-        var l = pick(autoShape.lockscreenShape);
-        if (l) return l;
-    }
+    // 1. overview  2. unfocused output
     if (niri && niri.overviewOpen) {
         var o = pick(autoShape.overviewShape);
         if (o) return o;
@@ -74,7 +70,6 @@ function _demo() {
         floatingWindowShape: "softAttach",
         maximizedColumnShape: "hug",
         overviewShape: "hidden",
-        lockscreenShape: "hidden",
         unfocusedOutputShape: ""
     };
     var tiled = { isFloating: false, layout: { tile_size: [800, 1000] } };
@@ -101,29 +96,27 @@ function _demo() {
     };
 
     var W = 2000; // output logical width
-    // rule order: locked beats everything
-    assert(resolve(defaults, withWindow(tiled), "DP-1", true, W) === "hidden", "locked");
-    // overview beats window state
+    // rule order: overview beats window state
     var ov = withWindow(tiled); ov.overviewOpen = true;
-    assert(resolve(defaults, ov, "DP-1", false, W) === "hidden", "overview");
+    assert(resolve(defaults, ov, "DP-1", W) === "hidden", "overview");
     // unfocused output: default "" falls through to THIS output's own window state
-    assert(resolve(defaults, withWindow(tiled, "DP-2"), "DP-2", false, W) === "fullWidth", "unfocused null falls through");
+    assert(resolve(defaults, withWindow(tiled, "DP-2"), "DP-2", W) === "fullWidth", "unfocused null falls through");
     // unfocused output: when set, wins over window state
     var d2 = Object.assign({}, defaults, { unfocusedOutputShape: "hug" });
-    assert(resolve(d2, withWindow(tiled, "DP-2"), "DP-2", false, W) === "hug", "unfocused set");
+    assert(resolve(d2, withWindow(tiled, "DP-2"), "DP-2", W) === "hug", "unfocused set");
     // no window
-    assert(resolve(defaults, niri({}), "DP-1", false, W) === "floating", "no window");
+    assert(resolve(defaults, niri({}), "DP-1", W) === "floating", "no window");
     // floating focused
-    assert(resolve(defaults, withWindow(floating), "DP-1", false, W) === "softAttach", "floating");
+    assert(resolve(defaults, withWindow(floating), "DP-1", W) === "softAttach", "floating");
     // maximized column (width heuristic)
-    assert(resolve(defaults, withWindow(maxed), "DP-1", false, W) === "hug", "maximized");
+    assert(resolve(defaults, withWindow(maxed), "DP-1", W) === "hug", "maximized");
     // maximized column but output width unknown -> falls through to hasWindowShape
-    assert(resolve(defaults, withWindow(maxed), "DP-1", false, 0) === "fullWidth", "maximized needs width");
+    assert(resolve(defaults, withWindow(maxed), "DP-1", 0) === "fullWidth", "maximized needs width");
     // normal tiled window
-    assert(resolve(defaults, withWindow(tiled), "DP-1", false, W) === "fullWidth", "has window");
+    assert(resolve(defaults, withWindow(tiled), "DP-1", W) === "fullWidth", "has window");
     // null fall-through: floating field null -> hasWindowShape
     var d3 = Object.assign({}, defaults, { floatingWindowShape: "" });
-    assert(resolve(d3, withWindow(floating), "DP-1", false, W) === "fullWidth", "floating null falls through");
+    assert(resolve(d3, withWindow(floating), "DP-1", W) === "fullWidth", "floating null falls through");
 
     console.log("AutoShape: all checks passed");
 }

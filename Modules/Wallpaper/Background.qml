@@ -3,6 +3,7 @@ import Quickshell
 import Quickshell.Wayland
 import Qcm.Material as MD
 import qs.Commons.Settings
+import qs.Services
 import qs.Services.Wallpaper
 
 // Per-output wallpaper surface on the background layer, with six GPU transitions.
@@ -23,6 +24,11 @@ Variants {
             property bool wallpaperReady: false
 
             visible: wallpaperReady
+            // Parked while the session is locked: a wallpaper transition
+            // firing then would force frames onto a surface the compositor
+            // no longer draws, and the resulting stall can wedge the shell
+            // (see RENDERING SAFETY in Modules/Lock/LockScreen.qml).
+            updatesEnabled: !Lock.locked
 
             readonly property real edgeSmoothness: Settings.options.wallpaper.transitionEdgeSmoothness
             readonly property var allTransitions: Wallpaper.allTransitions

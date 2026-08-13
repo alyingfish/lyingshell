@@ -2,7 +2,6 @@ import QtQuick
 import QtQuick.Shapes
 import Qcm.Material as MD
 import qs.Commons.Settings
-import qs.Services
 import qs.Services.Niri
 import "AutoShape.js" as AutoShape
 
@@ -13,20 +12,21 @@ Item {
 
     // Output for per-output autoShape resolution.
     property string outputName: ""
-    // The shell is its own session-lock client, so this is real state now: the
-    // bar takes its lockscreenShape (hidden, by default) for as long as the
-    // lock surfaces are up. It is invisible under them either way; what this
-    // buys is that the bar is already in its locked pose when the unlock sweep
-    // uncovers the desktop, instead of morphing into it in front of the user.
-    readonly property bool locked: Lock.locked
 
+    // The bar deliberately does NOT track the session lock: while locked it
+    // is invisible under the lock surfaces, a shape morph would force frames
+    // onto a window the locked compositor no longer draws (Bar.qml parks the
+    // window instead), and at unlock the desktop the sweep reveals should
+    // already look like the desktop — bar in place, not morphing in front of
+    // the user.
+    //
     // Touch Niri.lastEventVersion so the binding re-runs on Niri changes: QML
     // capture can't see the Niri.* reads inside resolve()'s .pragma library.
     readonly property string shape: {
         if (Settings.options.bar.currentShape !== "autoShape")
             return Settings.options.bar.currentShape;
         void Niri.lastEventVersion;
-        return AutoShape.resolve(Settings.options.bar.shape.autoShape, Niri, outputName, locked, width);
+        return AutoShape.resolve(Settings.options.bar.shape.autoShape, Niri, outputName, width);
     }
     readonly property var shapeOptions: Settings.options.bar.shape
     readonly property bool isHidden: shape === "hidden"

@@ -212,7 +212,6 @@ Singleton {
                         property string floatingWindowShape: "softAttach"
                         property string maximizedColumnShape: "hug"
                         property string overviewShape: "hidden"
-                        property string lockscreenShape: "hidden"
                         property string unfocusedOutputShape: ""
                     }
                 }

@@ -61,7 +61,10 @@ def main() -> None:
     assert 'property string floatingWindowShape: "softAttach"' in settings_qml
     assert 'property string maximizedColumnShape: "hug"' in settings_qml
     assert 'property string overviewShape: "hidden"' in settings_qml
-    assert 'property string lockscreenShape: "hidden"' in settings_qml
+    # No lockscreenShape on purpose: the bar must not morph on lock/unlock —
+    # while locked it is invisible and parked (Modules/Bar/Bar.qml), and the
+    # desktop the unlock sweep reveals should already carry the bar in place.
+    assert "lockscreenShape" not in settings_qml
     assert 'property string unfocusedOutputShape: ""' in settings_qml
     # Per-widget settings nest under bar.widgets / quickSettings.widgets.
     bar_widgets = handler_body(settings_qml, "property JsonObject widgets")

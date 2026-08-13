@@ -44,8 +44,10 @@ Singleton {
     // Which sweep the windows in Modules/Lock/LockScreen.qml are raised for:
     //
     //   ""       no sweep windows exist.
-    //   "enter"  the entry sweep: a live copy of the scene over the desktop,
-    //            with the circle shrinking into the avatar's spot.
+    //   "enter"  the capture windows: one frozen wlr-screencopy frame of each
+    //            output's desktop, grabbed BEFORE the lock is requested. The
+    //            circle itself runs on the lock surfaces, which draw the
+    //            still above the scene and shrink it into the avatar's spot.
     //   "exit"   the unlock sweep: a still of the hello pose, pre-buffered
     //            while the lock is still up, with the circle growing back.
     //
@@ -55,12 +57,15 @@ Singleton {
     // thread on buffers the compositor will never release, and the stall can
     // wedge the whole shell — which is exactly how the old unlock sweep froze
     // the lock screen. So nothing here may require a sweep window to render
-    // while `locked` is true. The one exception is the exit window's very
-    // first frame: a freshly created window's swapchain can always produce
-    // one frame without waiting on the compositor, which is what lets the
-    // cover be buffered under the lock before it drops. Every state advance
-    // below is bounded by a timer; the windows' first-frame reports only ever
-    // end a wait early, so rendering is never load-bearing.
+    // while `locked` is true: the entry circle animates on the lock surfaces
+    // themselves — the one kind of window the locked compositor does draw —
+    // and the capture windows park the instant the lock is requested. The
+    // one exception is the exit window's very first frame: a freshly created
+    // window's swapchain can always produce one frame without waiting on the
+    // compositor, which is what lets the cover be buffered under the lock
+    // before it drops. Every state advance below is bounded by a timer;
+    // still deliveries and first-frame reports only ever end a wait early,
+    // so rendering is never load-bearing.
     property string sweepMode: ""
     readonly property bool sweepActive: sweepMode !== ""
 
@@ -125,79 +130,101 @@ Singleton {
         }
         reset();
         LockTheme.active = true;
-        // The scene the circle uncovers is already at rest: nothing in front
-        // of or behind the circle animates on its own.
-        deskHole = 1;
-        if (reducedMotion) {
+        if (reducedMotion || Quickshell.screens.length === 0) {
+            deskHole = 0;
             takeLock();
             return;
         }
-        sweepArmed = false;
+        // The scene the circle uncovers is already at rest: nothing in front
+        // of or behind the circle animates on its own.
+        deskHole = 1;
+        desktopStills = {};
         sweepSurfaceGoal = Quickshell.screens.length;
-        sweepFramesPainted = 0;
         sweepMode = "enter";
-        // The circle starts shrinking once every window has put up its first
-        // frame, so no travel lands on an unmapped surface; the cap keeps a
-        // slow map from stalling the entry.
-        sweepArmTimer.restart();
+        // The lock is requested the moment every output has delivered its
+        // still; the cap keeps a lost capture from ever delaying it.
+        captureBail.restart();
     }
 
-    // Set once the entry circle is moving, so a late first-frame report and
-    // the cap firing after it cannot start the shrink twice.
-    property bool sweepArmed: false
+    // The frozen desktop, one grab per output, keyed by screen name — what
+    // the entry circle shows shrinking over the scene. Captured BEFORE the
+    // lock is requested: a screencopy taken while locked captures the lock
+    // screen, not the desktop. The grab results are QObjects; holding them
+    // here is what keeps the images alive until the circle lands.
+    property var desktopStills: ({})
 
-    function armEnterSweep() {
-        if (sweepMode !== "enter" || sweepArmed) {
+    function deliverDesktopStill(name, grab) {
+        // Late deliveries — after the bail, after the reveal — change nothing.
+        if (sweepMode !== "enter" || locked) {
             return;
         }
-        sweepArmed = true;
-        sweepArmTimer.stop();
-        deskHole = 0;
-        lockLandTimer.restart();
+        var held = {};
+        for (var key in desktopStills) {
+            held[key] = desktopStills[key];
+        }
+        held[name] = grab;
+        desktopStills = held;
+        if (Object.keys(held).length >= sweepSurfaceGoal) {
+            takeLock();
+        }
+    }
+
+    Timer {
+        id: captureBail
+        interval: LockMotion.captureBailMs
+        onTriggered: root.takeLock()
     }
 
     function takeLock() {
-        deskHole = 0;
+        if (locked) {
+            return;
+        }
+        captureBail.stop();
         locked = true;
-        // The sweep windows stay mapped until the compositor confirms every
-        // output is locked (`secure`), as insurance across compositor
-        // timings — niri actually stops drawing overlays the moment the lock
-        // request lands, and fills the gap to the lock surface's first commit
-        // with its own lock colour. They park the instant `locked` goes up
-        // (updatesEnabled), so keeping them renders nothing and costs
+        // The capture windows stay mapped until the compositor confirms every
+        // output is locked (`secure`): niri keeps drawing the desktop until
+        // its lock surfaces are ready, and the frozen still each window shows
+        // is what covers the handoff to the lock surfaces — which open on the
+        // same still at full radius. The windows park the instant `locked`
+        // goes up (updatesEnabled), so keeping them renders nothing and costs
         // nothing.
         secureFallback.restart();
     }
 
     onSecureChanged: if (secure && locked) {
         secureFallback.stop();
-        endEnterSweep();
+        beginEntryReveal();
     }
 
-    // If `secure` never lands the parked windows would sit mapped forever.
-    // The lock itself is unaffected either way.
+    // If `secure` never lands the parked windows would sit mapped forever and
+    // the circle would never move. The lock itself is unaffected either way.
     Timer {
         id: secureFallback
         interval: 1000
-        onTriggered: root.endEnterSweep()
+        onTriggered: root.beginEntryReveal()
     }
 
-    function endEnterSweep() {
-        if (sweepMode === "enter") {
-            sweepMode = "";
+    // Every output is confirmed covered, each lock surface already holding
+    // its desktop still at full radius. Drop the capture windows and let the
+    // circle shrink into the avatar's spot — on the lock surfaces themselves,
+    // the one kind of window the locked compositor draws.
+    function beginEntryReveal() {
+        if (sweepMode !== "enter") {
+            return;
         }
+        sweepMode = "";
+        deskHole = 0;
+        entryLandTimer.restart();
     }
 
     Timer {
-        id: sweepArmTimer
-        interval: LockMotion.sweepHandoffMs
-        onTriggered: root.armEnterSweep()
-    }
-
-    Timer {
-        id: lockLandTimer
+        id: entryLandTimer
         interval: root.sweepDuration
-        onTriggered: root.takeLock()
+        onTriggered: root.finishEntry()
+    }
+
+    function finishEntry() {
+        desktopStills = {};
     }
 
     // PAM said yes. The avatar goes first, alone.
@@ -225,12 +252,14 @@ Singleton {
             finishUnlock();
             return;
         }
-        // A stale entry sweep can only exist here if `secure` never landed;
-        // its windows hold the wrong scene, so drop them before the exit pair
-        // is raised.
+        // A stale entry can only exist here if `secure` never landed; its
+        // windows hold the wrong scene, so drop them — and the desktop
+        // stills — before the exit pair is raised.
         if (sweepMode === "enter") {
             sweepMode = "";
         }
+        entryLandTimer.stop();
+        desktopStills = {};
         sweepSnapshots = {};
         sweepSurfaceGoal = Quickshell.screens.length;
         sweepFramesPainted = 0;
@@ -287,21 +316,17 @@ Singleton {
         unlockHandoff.restart();
     }
 
-    // Called by each sweep window on its first presented frame. Entry: every
-    // output's cover is mapped, so the circle can start shrinking with no
-    // travel lost on an unmapped surface. Exit: every cover is committed on
-    // the compositor's side, buffered below the lock surface, so the lock can
-    // drop and the covers are what the compositor reveals in its place — one
-    // Wayland connection, so the commits are ordered before the release
-    // request.
+    // Called by each exit window on its first presented frame: every cover is
+    // committed on the compositor's side, buffered below the lock surface, so
+    // the lock can drop and the covers are what the compositor reveals in its
+    // place — one Wayland connection, so the commits are ordered before the
+    // release request.
     function sweepSurfacePainted() {
         sweepFramesPainted++;
         if (sweepFramesPainted < sweepSurfaceGoal) {
             return;
         }
-        if (sweepMode === "enter") {
-            armEnterSweep();
-        } else if (sweepMode === "exit") {
+        if (sweepMode === "exit") {
             releaseAndOpen();
         }
     }
@@ -337,6 +362,7 @@ Singleton {
     function finishUnlock() {
         sweepMode = "";
         sweepSnapshots = {};
+        desktopStills = {};
         sweepSurfaceGoal = 0;
         sweepFramesPainted = 0;
         deskHole = 1;
