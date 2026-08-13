@@ -391,6 +391,11 @@ def main() -> None:
     # eye, and both are gated on the approach.
     assert "blurEnabled: true" in scene
     assert "color: LockTheme.authScrim" in scene
+    # The prototype's 108% Ask-state wallpaper remains the default, but its
+    # overscan can be disabled without also removing blur or the auth wash.
+    assert "Settings.options.lock.wallpaperZoom ? 0.04 : 0" in scene
+    assert "x: -root.wallpaperZoomInset * root.width" in scene
+    assert "width: (1 + 2 * root.wallpaperZoomInset) * root.width" in scene
     # Both are invisible at glance and both fade on the approach, so nothing
     # sits on the photograph until the prompt is asked for. The glance line is
     # the one thing that goes the other way.

@@ -13,6 +13,7 @@ QtObject {
         }
         readonly property QtObject lock: QtObject {
             property string wallpaper: ""
+            property bool wallpaperZoom: true
             property string fullName: ""
             property bool focusedOutputOnly: true
             property string pamConfig: ""

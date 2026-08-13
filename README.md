@@ -100,6 +100,7 @@ desktop's, and follows the one shared `appearance.mode`:
 ```jsonc
 "lock": {
   "wallpaper": "~/Pictures/lock.jpg",  // "" reuses the desktop wallpaper
+  "wallpaperZoom": true,                // zoom between Glance and Ask
   "fullName": "",                      // "" uses $USER
   "focusedOutputOnly": true,           // other monitors get wallpaper + clock
   "pamConfig": ""                      // "" uses the shipped assets/pam.d/lyingshell

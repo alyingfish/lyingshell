@@ -138,6 +138,8 @@ Singleton {
                 // matugen palette, on the shared appearance.mode. "" falls back
                 // to the desktop wallpaper of the output it is shown on.
                 property string wallpaper: ""
+                // Zoom the wallpaper while moving between Glance and Ask.
+                property bool wallpaperZoom: true
                 // Display name above the password pill; "" uses $USER.
                 property string fullName: ""
                 // The full scene (avatar, prompt, tray) on the focused output

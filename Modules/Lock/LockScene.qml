@@ -44,6 +44,7 @@ FocusScope {
     // than shrinking to crown a cluster that is not there.
     readonly property bool approached: root.full && Lock.phase !== Lock.phaseGlance
     readonly property bool prompting: root.full && Lock.phase === Lock.phaseAsk
+    readonly property real wallpaperZoomInset: Settings.options.lock.wallpaperZoom ? 0.04 : 0
 
     // ---- the identity column's one beat ---------------------------------
     // The pill's distance below the avatar sets it, and the crown above the
@@ -96,14 +97,16 @@ FocusScope {
         sourceSize: Qt.size(Math.ceil(root.width), Math.ceil(root.height))
     }
 
-    // The approach blur. Inset by -4% so the blur's own transparent margin
-    // never reaches the screen edge, exactly as the prototype's 108% box does.
+    // The approach blur. With wallpaperZoom enabled, inset by -4% so the
+    // blur's own transparent margin never reaches the screen edge, exactly as
+    // the prototype's 108% box does. A zero inset preserves the blur and wash
+    // while removing the Glance <-> Ask zoom.
     MultiEffect {
         source: wall
-        x: -0.04 * root.width
-        y: -0.04 * root.height
-        width: 1.08 * root.width
-        height: 1.08 * root.height
+        x: -root.wallpaperZoomInset * root.width
+        y: -root.wallpaperZoomInset * root.height
+        width: (1 + 2 * root.wallpaperZoomInset) * root.width
+        height: (1 + 2 * root.wallpaperZoomInset) * root.height
         blurEnabled: true
         blur: 1.0
         blurMax: 34
