@@ -75,11 +75,11 @@ def main() -> None:
 
     # The lock is only ever released after PAM reports success: releaseLock()
     # is the single writer of `locked = false`, and only the unlock sequence
-    # calls it — releaseAndOpen() behind its own mode-and-locked guard, plus
-    # the reduced-motion cut.
+    # calls it — releaseAndOpen() behind its own stage-and-locked guard, the
+    # cover bail, plus the reduced-motion cut.
     assert service.count("locked = false") == 1
     assert "function releaseLock() {\n        locked = false;\n    }" in service
-    assert 'if (sweepMode !== "exit" || !locked) {' in service
+    assert 'if (exitStage !== "cover" || !locked) {' in service
 
     # --- PAM --------------------------------------------------------------
     assert "import Quickshell.Services.Pam" in service
@@ -121,6 +121,31 @@ def main() -> None:
     assert "var sweepCurve = [0.3, 1.06, 0.35, 1.0, 1.0, 1.0];" in motion
     assert "var successHoldMs = 520;" in motion
     assert "1.42 * Math.hypot(width, height) / Math.SQRT2" in motion
+    # The entry runs the SAME curve split in two: the lead-in (the ~102ms the
+    # circle spends beyond every screen corner, where nothing visible moves)
+    # is spent on the capture pipeline instead of in front of it, and the
+    # visible tail replays the curve from the split point on. The constants
+    # are the de Casteljau split at s=0.14 and must move together; the hold
+    # point must stay above every aspect ratio's farthest-corner radius
+    # (0.52-0.57 of fullRadius).
+    assert "var entryLeadInMs = 102;" in motion
+    assert "var entryHoldPoint = 0.6174;" in motion
+    assert "var entryTailMs = 798;" in motion
+    assert "var entryTailCurve = [0.2393, 1.0719, 0.3693, 1.0, 1.0, 1.0];" in motion
+    # The sweep clock starts on the tap, and the arming gates hold the visible
+    # tail until the compositor confirmed coverage, the lead-in elapsed, and
+    # every delivered still painted — each bounded, all raced by entryBail.
+    assert "leadIn.restart();" in service
+    assert 'if (entryStage !== "arming" || !secure || !leadInElapsed) {' in service
+    assert "entryStillsPainted < Object.keys(desktopStills).length" in service
+    assert "id: entryBail" in service
+    assert "var entryBailMs" in motion
+    # The snap to the hold point may never animate and may never be visible:
+    # snapDeskHole() is the one writer that bypasses the Behavior, and the
+    # sweep continues on the split tail.
+    assert "function snapDeskHole(value)" in service
+    assert "snapDeskHole(LockMotion.entryHoldPoint);" in service
+    assert "sweepPhaseCurve = LockMotion.entryTailCurve;" in service
     # Two steps, in order, never overlapping: the avatar alone, then the circle.
     assert "interval: root.successHoldDuration" in service
     assert "onTriggered: root.runUnlockSweep()" in service
@@ -143,9 +168,10 @@ def main() -> None:
     # These are the load-bearing pieces of the fix.
     #
     # Only the exit raises windows; the entry needs none of its own.
-    assert 'property string sweepMode: ""' in service
-    assert 'readonly property bool sweepActive: sweepMode !== ""' in service
-    assert 'model: Lock.sweepMode === "exit" ? Quickshell.screens : []' in screen
+    assert 'property string entryStage: ""' in service
+    assert 'property string exitStage: ""' in service
+    assert 'readonly property bool sweepActive: entryStage !== "" || exitStage !== ""' in service
+    assert 'model: Lock.exitStage === "cover" || Lock.exitStage === "open" ? Quickshell.screens : []' in screen
     # The session locks BEFORE the circle moves: each output's bar window
     # grabs one frozen screencopy frame of its desktop OFFSCREEN — mapping
     # fresh fullscreen windows at lock time stuttered the entry and provoked
@@ -156,45 +182,70 @@ def main() -> None:
     assert "ScreencopyView {" in still_capture
     assert "live: false" in still_capture
     assert still_capture.count("Lock.deliverDesktopStill(") == 2
-    assert 'readonly property bool armed: Lock.sweepMode === "enter" && root.screen !== null && !root.hold' in still_capture
-    # The shot is serialized behind the host window's own overlays fading
-    # shut plus a two-frame settle: a still taken mid-fade carries the
-    # half-closed quick-settings panel through the whole entry sweep, and
-    # firing the screencopy in the same dispatch as the panel teardown is
-    # where the stale-screen wl_surface.enter crash reproduced.
+    assert 'readonly property bool armed: Lock.entryStage === "capture" && root.screen !== null && !root.hold' in still_capture
+    # The shot is serialized behind the host window's own overlays cutting
+    # shut plus a ONE-FRAME handshake: the copy request is ordered after the
+    # host's cut-carrying commit on the same Wayland connection, so a still
+    # can never carry the open panel. The nudge forces that frame even when
+    # nothing else is dirty, and the bail covers a host that never swaps.
     assert "property bool hold: false" in still_capture
-    assert "id: settle" in still_capture
+    assert "function completeHandshake()" in still_capture
+    assert "id: nudge" in still_capture
+    assert "id: handshakeBail" in still_capture
+    assert "function onFrameSwapped()" in still_capture
+    assert "var captureHandshakeBailMs" in motion
     bar_window = read(BAR_WINDOW)
     assert "LockStillCapture {" in bar_window
     assert "hold: root.overlayExpanded" in bar_window
     assert "function deliverDesktopStill(name, grab)" in service
-    assert 'if (sweepMode !== "enter" || locked) {' in service
+    assert 'if (entryStage !== "capture" || locked) {' in service
     assert "id: captureBail" in service
     assert "var captureBailMs" in motion
-    # The circle starts to move only once the compositor confirms every
-    # output is covered — on the lock surfaces themselves.
-    assert "function beginEntryReveal()" in service
+    # A failed grab is counted, never stored: its output degrades to a plain
+    # cut and must not hold the painted gate.
+    assert "entryStillsDelivered++;" in service
+    assert "if (grab !== null) {" in service
+    # The visible sweep begins on the lock surfaces themselves, once the
+    # arming gates pass or entryBail gives up waiting.
+    assert "function tryEntrySweep()" in service
+    assert "function beginEntrySweep()" in service
+    # The first wlr-screencopy of a session can lose a race inside a cold
+    # capture backend; the screen scope primes it once at startup.
+    assert "id: captureWarmup" in screen
     # The entry circle is the desktop still drawn ABOVE the scene, clipped to
     # the circle: every failure resolves to transparency and a plain cut to
-    # the scene, never to a hole over nothing.
+    # the scene, never to a hole over nothing. Each cover reports the first
+    # frame that carries its still — one of the arming gates.
     assert 'readonly property var entryStill: Lock.desktopStills[surface.screen ? surface.screen.name : ""] || null' in screen
     assert "active: surface.entryStill !== null" in screen
+    assert "function entryStillPainted()" in service
+    assert screen.count("Lock.entryStillPainted();") == 1
     # The exit sweep holds a STILL of the hello pose, grabbed from the real
     # lock surface (which the compositor is actively drawing); the fresh exit
     # window buffers it as its first frame — the one render a hidden window
-    # can always complete — and reports the frame so the release follows it.
+    # can always complete — and reports the frame presented.
     assert "grabToImage" in screen
     assert "function onSweepSnapshotWanted()" in screen
     assert "Lock.deliverSweepSnapshot(name, grab);" in screen
     assert "function onFrameSwapped()" in screen
     assert screen.count("Lock.sweepSurfacePainted();") == 1
-    # Both gates are timer-driven end to end: a lost capture or grab, an
-    # unpainted cover — each degrades its sweep to a cut, and never gates
-    # the lock or the release.
+    # The release is GATED on every cover's first presented frame — that is
+    # what makes the handoff seamless — and the gate's deadline is a safety
+    # net that must tear the covers down BEFORE releasing, or a late cover
+    # would map over the live desktop and flash the lock scene.
+    assert "coverFramesPainted >= Quickshell.screens.length" in service
+    abort = service[service.index("function abortExitCovers()"):service.index("function releaseAndOpen()")]
+    assert abort.index('exitStage = "";') < abort.index("releaseLock();"), "the cover bail must drop the covers before the release"
+    # A lock tapped while the exit circle is still opening re-locks instead
+    # of being dropped.
+    assert 'if (!locked && exitStage === "open") {' in service
+    # Every wait is timer-bounded end to end: a lost capture or grab, a cover
+    # that cannot paint — each degrades its sweep to a cut, and none can stop
+    # the lock or the unlock.
     assert "id: snapshotBail" in service
-    assert "id: unlockHandoff" in service
+    assert "id: coverBail" in service
     assert "var snapshotBailMs" in motion
-    assert "var sweepHandoffMs" in motion
+    assert "var coverBailMs" in motion
     # Nothing else may animate an overlay the lock hides: toasts wait, and
     # the bar and wallpaper windows park (asserted with the bar below).
     toast = read(TOAST)

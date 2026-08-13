@@ -518,7 +518,7 @@ Item {
                 // cut: the pre-lock desktop capture waits for `expanded` to
                 // clear (Bar.qml holds LockStillCapture on it), and the slide
                 // would be lock latency the user feels.
-                enabled: Lock.sweepMode !== "enter"
+                enabled: Lock.entryStage === ""
 
                 NumberAnimation {
                     duration: MD.Token.duration.medium2

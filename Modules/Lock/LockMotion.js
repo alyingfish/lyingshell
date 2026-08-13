@@ -11,31 +11,70 @@
 var sweepMs = 900;
 var sweepCurve = [0.3, 1.06, 0.35, 1.0, 1.0, 1.0];
 
+// The entry sweep, split in two at the moment the circle's edge first shows.
+//
+// The circle starts beyond every screen corner (fullRadius overshoots), so
+// the sweep's opening ~102ms move nothing a viewer can see. The prototype
+// spends that lead-in anyway; the port spends it on the capture pipeline
+// instead — the sweep CLOCK starts on the tap, the stills and the lock race
+// it, and when both are ready the circle continues from where the prototype's
+// own curve would have it. The constants are the exact de Casteljau split of
+// sweepCurve at s=0.14 (tests/test_motion_tokens is not the checker here —
+// scripts cannot rerun the derivation — so the numbers carry it):
+//
+//   split point: x=0.1136 (102ms of 900), y=0.3826 (deskHole 0.6174)
+//   tail: the same curve from that point on, renormalized. Replaying
+//   holdPoint -> 0 over entryTailMs on entryTailCurve reproduces the
+//   original sweep's tail to machine precision.
+//
+// entryHoldPoint must cover every screen whole: the farthest-corner radius is
+// 0.52-0.57 of fullRadius across landscape and portrait aspect ratios (the
+// avatar's resting centre sits at 41.7cqh), so 0.6174 leaves margin on all of
+// them and the snap from 1 to the hold point cannot show.
+var entryLeadInMs = 102;
+var entryHoldPoint = 0.6174;
+var entryTailMs = 798;
+var entryTailCurve = [0.2393, 1.0719, 0.3693, 1.0, 1.0, 1.0];
+
 // The avatar goes first, alone: the scallop morphs to a circle, the turning
 // stops, the check pops. Only then does the circle open the desktop.
 var successHoldMs = 520;
 
-// The cap on waiting for the exit windows to report their first presented
-// frame before the lock is released. The reports normally end the wait
-// within a frame or two; the bound only exists so the sweep can never gate
-// the unlock.
-var sweepHandoffMs = 150;
+// The deadline on the exit covers' first presented frames. The release is
+// gated on every cover reporting — that is what makes the handoff seamless,
+// and the reports normally land within a few frames — so this bound exists
+// only for a wedged graphics stack: when it fires the covers are torn down
+// first and the unlock degrades to a plain cut, never to a late cover
+// flashing the lock over the desktop.
+var coverBailMs = 800;
 
 // The cap on waiting for the pre-lock desktop captures. The capture itself
-// is ~3 frames (one wlr-screencopy frame plus one grab per output), behind
-// a ~3-frame settle so the bar's overlay cut (the quick-settings panel and
-// tray popover snap shut on the entry gesture) has reached the compositor
-// before the screencopy renders — a still taken too early carries the open
-// panel through the whole entry sweep. A capture that has not answered in
+// is ~3 frames (one wlr-screencopy frame plus one grab per output) behind a
+// one-frame handshake: the host window commits the frame that carries its
+// overlay cut, and only then is the copy requested, so the still can never
+// carry the open quick-settings panel. A capture that has not answered in
 // this long is not coming, and the lock must never wait on it: the output
 // it belonged to degrades to a plain cut.
 var captureBailMs = 450;
 
+// The handshake's own bound, for a host window that never swaps another
+// frame (nothing dirty, updates throttled). One frame normally ends it.
+var captureHandshakeBailMs = 50;
+
+// The cap on arming the entry sweep once the lock is requested: the gates —
+// the compositor confirming coverage, the lead-in elapsing, every delivered
+// still reporting its first painted frame — normally all land within a few
+// frames of the lock (niri only confirms AFTER each output presents a locked
+// frame). niri's own surface deadline is 1000ms, so this sits just past it;
+// when it fires the sweep runs over whatever is actually up.
+var entryBailMs = 1200;
+
 // How long the hello pose waits for its snapshots before sweeping without
 // them. A grab is one offscreen render of a surface the compositor is
 // actively drawing (a frame or two); if it has not answered in this long the
-// graphics stack is in trouble and the unlock must not be gated on it.
-var snapshotBailMs = 350;
+// graphics stack is in trouble and the unlock must not be gated on it. The
+// pose holds still while this runs, so the wait is invisible.
+var snapshotBailMs = 600;
 
 // The identity column's landmarks, in container units (1cqh = 1% of the
 // surface's height). LockScene lays the avatar out with them, and the sweep

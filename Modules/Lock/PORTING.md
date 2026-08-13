@@ -22,10 +22,30 @@ wlr-screencopy frame per output (`ScreencopyView` + `grabToImage`), taken by
 short-lived capture windows on the Overlay layer, and the session locks the
 moment every output has answered (bounded by `captureBailMs`). Each lock
 surface then draws that still above its scene, clipped to the shrinking circle
-(`lock_desk.frag`), once the compositor confirms coverage (`secure`). The
-gesture the user sees is the prototype's: a circle of desktop, centred on the
-avatar, riding above a lock scene that never moves — the price is that the
-desktop inside the circle is frozen for the ~900ms of travel.
+(`lock_desk.frag`). The gesture the user sees is the prototype's: a circle of
+desktop, centred on the avatar, riding above a lock scene that never moves —
+the price is that the desktop inside the circle is frozen for the ~900ms of
+travel.
+
+*Where the time goes:* the sweep CLOCK starts on the tap, not on the lock.
+The circle's full radius overshoots every screen corner, so the prototype's
+own curve spends its first ~102ms beyond the corners where nothing visible
+moves — and the capture pipeline runs inside that lead-in instead of in
+front of it. `LockMotion.entryLeadInMs/entryHoldPoint/entryTailMs/
+entryTailCurve` are the exact de Casteljau split of the sweep curve at that
+point: when the gates pass, `deskHole` snaps (invisibly — the hold point
+still covers every corner on any aspect ratio) to where the prototype would
+be and replays the curve's own tail. The gates are `secure` (niri sends it
+only after every output has PRESENTED a locked frame), the lead-in, and
+each delivered still's first painted frame; `entryBailMs` bounds them all,
+sitting just past niri's own 1s surface deadline. A panel open at the tap is
+cut, not faded (the quick-settings close transition and the tray popover
+slide are disabled during the entry), and the capture handshakes one
+committed host frame (`captureHandshakeBailMs`) so the copy — ordered after
+that commit on the same Wayland connection — can never carry the panel. The
+first wlr-screencopy of a session can lose a race inside a cold capture
+backend, so `LockScreen.qml` primes it once at startup with a throwaway
+view.
 
 *What this buys:* the session is strictly locked BEFORE the circle moves, not
 after it lands; the animation runs on the one window the locked compositor
@@ -40,16 +60,17 @@ logging "Ignoring unexpected wl_surface.enter"). The price is that the few
 pre-lock frames of capture leave keys on the desktop — the same exposure any
 external locker has between invocation and lock.
 
-*Constraint the sweep windows live under:* niri sends frame callbacks only to
-surfaces it draws, and while locked it draws nothing but the lock surfaces
-(`Niri::send_frame_callbacks` gates on the primary scanout output). A window
-forced to render in that state stalls its render thread on buffers the
-compositor never releases, and the stall can wedge the shell's GUI thread —
-the original port did exactly that on unlock, which froze the lock screen the
-moment the avatar's success step finished, and again on lock, where the bar's
-shape morph starved and deadened the keyboard for seconds. So the windows
-exist only while their sweep runs, and nothing may require one to render while
-`locked` is true:
+*Constraint the sweep windows live under:* niri sends per-frame callbacks
+only to surfaces it draws, and while locked it draws nothing but the lock
+surfaces (`Niri::send_frame_callbacks` gates on the primary scanout output;
+everything else falls back to `send_frame_callbacks_on_fallback_timer`,
+~1Hz). A window forced to render in that state stalls its render thread on
+buffers the compositor releases only at that trickle, and the stall can
+wedge the shell's GUI thread — the original port did exactly that on unlock,
+which froze the lock screen the moment the avatar's success step finished,
+and again on lock, where the bar's shape morph starved and deadened the
+keyboard for seconds. So the windows exist only while their sweep runs, and
+nothing may require one to render per-frame while `locked` is true:
 
 - *Entry* captures are delivered before the lock is requested, offscreen in
   the bar windows, which park while locked. The circle itself animates on
@@ -66,18 +87,27 @@ exist only while their sweep runs, and nothing may require one to render while
   hello pose into an image (an offscreen render of the one window the
   compositor is still drawing), a fresh window buffers that still at full
   cover as its FIRST frame — the one render a hidden window can always
-  complete, because a fresh swapchain owes the compositor nothing — and each
-  window reports the frame presented. Only then is the lock released: the
-  cover commit and the unlock request travel the same Wayland connection in
-  that order, so the compositor swaps the lock surface for the pre-buffered
-  cover with no gap, and the circle opens over the live desktop.
-- Every state advance is bounded by a timer (`snapshotBailMs`,
-  `sweepHandoffMs`) and the first-frame reports only ever end a wait early;
-  a lost grab or an unpainted cover degrades the sweep to a plain cut. The
-  unlock is never gated on rendering. Toasts obey the same rule from the
-  other side: `ToastOverlay` does not show while the session is locked,
-  since the compositor would not draw it and its springs would animate an
-  invisible, callback-starved window.
+  complete, because a fresh swapchain owes the compositor nothing; niri
+  configures and maps new layer surfaces while locked, it merely does not
+  draw them — and each window reports the frame presented. The release is
+  GATED on every cover's report: the cover commits and the unlock request
+  travel the same Wayland connection in that order, so the compositor swaps
+  the lock surface for the pre-buffered covers with no gap, and the circle
+  opens over the live desktop. The gate is what makes the handoff reliable;
+  its deadline (`coverBailMs`) is a safety net for a wedged graphics stack,
+  and when it fires the covers are torn down BEFORE the release — a cover
+  left up would map late and flash the lock scene over the live desktop —
+  so the failure is a clean cut.
+- Every wait is bounded by a timer (`captureBailMs`, `entryBailMs`,
+  `snapshotBailMs`, `coverBailMs`); deliveries and first-frame reports only
+  ever end a wait early or hold a bounded gate. A lost grab degrades its
+  output's sweep to a plain cut. The unlock can be DELAYED by rendering only
+  up to `coverBailMs`; it can never be stopped by it. Toasts obey the same
+  rule from the other side: `ToastOverlay` does not show while the session
+  is locked, since the compositor would not draw it and its springs would
+  animate an invisible, callback-starved window. A lock tapped while the
+  exit circle is still opening cuts the tail and re-locks instead of being
+  dropped.
 
 **2. Masks are fragment shaders, not clip-paths.**
 QML has no path clipping and cannot punch a hole in a surface, and

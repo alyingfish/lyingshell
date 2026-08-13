@@ -9,7 +9,7 @@ import qs.Services.Niri
 import "LockMotion.js" as LockMotion
 
 // The lock screen as the compositor sees it: one ext-session-lock surface per
-// output, plus the pair of layer-shell surfaces the sweep runs on.
+// output, plus the pair of layer-shell surfaces the exit sweep runs on.
 //
 // MULTI-MONITOR. Every output is covered — that is the protocol's own
 // requirement and what makes the lock secure. The focused output gets the
@@ -21,7 +21,7 @@ import "LockMotion.js" as LockMotion
 //
 // THE SWEEP. The prototype clips the DESKTOP to a circle and rides it above
 // the lock scene. Under Wayland nothing can be composited under a session-lock
-// surface — niri renders the lock surface and an opaque colour and returns —
+// surface — niri renders the lock surface over a solid colour and returns —
 // so a live desktop cannot be shown through it, and a screencopy taken while
 // locked captures the lock screen, not the desktop. Each half of the gesture
 // therefore rides on whatever the compositor is actually drawing at the time:
@@ -31,35 +31,41 @@ import "LockMotion.js" as LockMotion
 //           (Modules/Lock/LockStillCapture.qml — no new windows are mapped,
 //           which both smoothed the entry and dodged a Qt surface.enter
 //           crash) and hands it to the Lock singleton; the session locks
-//           the moment every output has answered. Each lock surface then
-//           draws that still over its scene, clipped to the circle
-//           (lock_desk.frag), and the circle shrinks into the avatar's spot
-//           on the lock surface itself — the one window the locked
-//           compositor draws, so the animation always has frame callbacks
-//           and a keystroke lands on the live scene from the first locked
-//           frame.
+//           the moment every output has answered. Each lock surface draws
+//           that still over its scene, clipped to the circle
+//           (lock_desk.frag), and reports the first frame that carries it.
+//           The circle then shrinks into the avatar's spot on the lock
+//           surface itself — the one window the locked compositor draws, so
+//           the animation always has frame callbacks and a keystroke lands
+//           on the live scene from the first locked frame. The sweep clock
+//           starts on the tap: its first ~102ms are beyond the screen
+//           corners where nothing shows, and the capture pipeline runs
+//           inside that lead-in (Services/Lock.qml).
 //   exit    each lock surface grabs its frozen hello pose into an image, a
 //           fresh window buffers that still — full cover, hole at nothing —
-//           under the lock, and only then is the lock released: the
-//           compositor swaps one for the other with no gap. The hole grows
-//           back out of the avatar over a desktop that is live, and the
-//           windows are dropped when it lands.
+//           under the lock, and the lock is released only after EVERY cover
+//           reports its first presented frame: the compositor swaps one for
+//           the other with no gap. The hole grows back out of the avatar
+//           over a desktop that is live, and the windows are dropped when
+//           it lands. A cover that cannot paint trips the bail instead,
+//           which tears the covers down and cuts (Services/Lock.qml).
 //
 // The visible result is the prototype's: a circle of desktop, centred on the
 // avatar, riding above a lock scene that never moves. What differs is that
 // the desktop in the entry circle is a still — the price of taking the real
 // lock BEFORE the circle moves rather than after it lands.
 //
-// RENDERING SAFETY: the compositor sends frame callbacks only to surfaces it
-// draws, and while locked it draws nothing but the lock surfaces. A window
-// forced to render in that state stalls its render thread on buffers that
-// are never released, and that stall can wedge the shell. Hence the shape of
-// everything below: the entry circle animates on the lock surfaces
-// themselves; the captures finish before the lock is requested, inside bar
-// windows that park while locked; exit windows hold a static still —
-// nothing in them can animate on its own — and render exactly one frame
-// while hidden, which a fresh swapchain can always produce without waiting
-// on the compositor.
+// RENDERING SAFETY: niri sends per-frame callbacks only to surfaces it
+// draws, and while locked it draws nothing but the lock surfaces (all other
+// windows fall back to a ~1Hz timer). A window forced to render in that
+// state stalls its render thread, and the stall can wedge the shell. Hence
+// the shape of everything below: the entry circle animates on the lock
+// surfaces themselves; the captures finish before the lock is requested,
+// inside bar windows that park while locked; exit covers hold a static
+// still — nothing in them can animate on its own — and render exactly one
+// frame while hidden, which a fresh swapchain can always produce without
+// waiting on the compositor (niri configures and maps new layer surfaces
+// while locked; it merely does not draw them until the lock drops).
 Scope {
     id: root
 
@@ -72,6 +78,32 @@ Scope {
         // Before niri has named a focused output (or on an output it no longer
         // reports) fall back to showing the prompt rather than hiding it.
         return focusedOutput.length === 0 || name === focusedOutput;
+    }
+
+    // The first wlr-screencopy of a session can lose a race inside a capture
+    // backend that is still initialising, and the first real capture this
+    // shell takes is the lock's own — a lost first capture would cost the
+    // first entry sweep its stills. Prime the backend once at startup with a
+    // throwaway view; it retires itself on the first delivered frame, or
+    // gives up quietly if the compositor never answers.
+    Loader {
+        id: captureWarmup
+
+        active: Quickshell.screens.length > 0
+        sourceComponent: ScreencopyView {
+            captureSource: Quickshell.screens.length > 0 ? Quickshell.screens[0] : null
+            live: false
+
+            onHasContentChanged: if (hasContent) {
+                captureWarmup.active = false;
+            }
+        }
+    }
+
+    Timer {
+        running: captureWarmup.active
+        interval: 3000
+        onTriggered: captureWarmup.active = false
     }
 
     WlSessionLock {
@@ -140,6 +172,22 @@ Scope {
 
                         fragmentShader: Qt.resolvedUrl(Quickshell.shellDir + "/assets/shaders/qsb/lock_desk.frag.qsb")
                     }
+
+                    // The first presented frame that carries the still: one
+                    // of the entry sweep's arming gates, so the circle never
+                    // moves over a cover that has not drawn. Not while the
+                    // still is decoding — the frame reported must carry it.
+                    property bool announced: false
+
+                    Connections {
+                        target: cover.Window.window
+                        enabled: !cover.announced && deskStill.status !== Image.Loading
+
+                        function onFrameSwapped() {
+                            cover.announced = true;
+                            Lock.entryStillPainted();
+                        }
+                    }
                 }
             }
 
@@ -174,10 +222,11 @@ Scope {
     // The entry needs no windows of its own: the captures ride the bar
     // windows (Modules/Lock/LockStillCapture.qml) and the circle rides the
     // lock surfaces above. Only the exit still needs a fresh window, to
-    // buffer the hello pose under the lock before it drops.
+    // buffer the hello pose under the lock before it drops — raised while
+    // the pose is grabbed ("cover") and held through the sweep ("open").
 
     Variants {
-        model: Lock.sweepMode === "exit" ? Quickshell.screens : []
+        model: Lock.exitStage === "cover" || Lock.exitStage === "open" ? Quickshell.screens : []
 
         PanelWindow {
             id: sweep
@@ -250,11 +299,12 @@ Scope {
                     fragmentShader: Qt.resolvedUrl(Quickshell.shellDir + "/assets/shaders/qsb/lock_sweep.frag.qsb")
                 }
 
-                // The first presented frame means the cover is committed
-                // on the compositor's side; report it so the release can
-                // follow the moment every output has one. Not while the
-                // still is decoding: the frame reported must carry the
-                // cover, not a blank the cover then replaces.
+                // The first presented frame means the cover is committed on
+                // the compositor's side; report it, because the release is
+                // GATED on every cover having one — that gate is what makes
+                // the handoff seamless. Not while the still is decoding: the
+                // frame reported must carry the cover, not a blank the
+                // cover then replaces.
                 property bool announced: false
 
                 Connections {

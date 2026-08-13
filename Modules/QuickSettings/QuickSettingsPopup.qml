@@ -125,9 +125,9 @@ Item {
                     // card's opacity to clear (Bar.qml holds LockStillCapture
                     // on `expanded`), and spending the fade here is lock
                     // latency the user feels. The lock screen's own panel
-                    // instance never sees "enter" (that stage is pre-lock),
-                    // so its close keeps the animation.
-                    enabled: Lock.sweepMode !== "enter"
+                    // instance never sees an entry stage (the capture is
+                    // pre-lock), so its close keeps the animation.
+                    enabled: Lock.entryStage === ""
 
                     NumberAnimation {
                         properties: "slideY,cardScale"

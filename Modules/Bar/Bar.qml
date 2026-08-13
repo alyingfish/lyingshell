@@ -99,10 +99,11 @@ PanelWindow {
         y: root.height
         screen: root.screen
         // The shot waits out this window's own overlays: the lock gesture
-        // force-closes the quick-settings panel and tray popover, but the
-        // close is an animation, and a still taken mid-fade would carry the
-        // half-closed panel through the whole entry sweep. Lock's
-        // captureBail bounds the wait.
+        // cuts the quick-settings panel and tray popover shut, and the
+        // capture then handshakes one committed frame so the cut has
+        // reached the compositor before the copy renders — a still taken
+        // too early would carry the open panel through the whole entry
+        // sweep. Lock's captureBail bounds the wait.
         hold: root.overlayExpanded
     }
 

@@ -22,8 +22,9 @@ QtObject {
 
     property bool locked: true
     property bool secure: true
-    property string sweepMode: ""
-    readonly property bool sweepActive: sweepMode !== ""
+    property string entryStage: ""
+    property string exitStage: ""
+    readonly property bool sweepActive: entryStage !== "" || exitStage !== ""
     // The one animated value the harnesses drive directly. It carries the
     // product's own curve and duration so a recording of the sweep shows what
     // the real service would produce rather than an instant cut.
