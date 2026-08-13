@@ -4,6 +4,7 @@ import Quickshell.Services.SystemTray as SysTray
 import Qcm.Material as MD
 import qs.Commons.Settings
 import qs.Commons.Theme
+import qs.Services
 import "TrayPinning.js" as TrayPinning
 
 // System tray: overflow button (left) + pinned zone (right). Unpinned items
@@ -76,6 +77,12 @@ Item {
     implicitHeight: trayRow.implicitHeight
 
     onBarHiddenChanged: if (barHidden)
+        popoverOpen = false
+
+    // Same as the quick-settings panel: the popover must be closed, not
+    // mid-close, when the lock parks this window (Modules/Bar/Bar.qml).
+    readonly property bool sessionLocking: Lock.locked || Lock.sweepActive
+    onSessionLockingChanged: if (sessionLocking)
         popoverOpen = false
     // Last overflow item pinned away: nothing left to show.
     onOverflowItemsChanged: if (overflowItems.length === 0 && !dragActive)

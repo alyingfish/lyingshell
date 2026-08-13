@@ -31,9 +31,14 @@ desktop inside the circle is frozen for the ~900ms of travel.
 after it lands; the animation runs on the one window the locked compositor
 draws, so it always has frame callbacks; and a keystroke lands on the live
 scene from the first locked frame — typing mid-sweep wakes the prompt instead
-of dying against an overlay that swallows keys. The capture window holds
-exclusive keyboard focus only for the few frames before the lock is taken, so
-nothing leaks to the desktop.
+of dying against an overlay that swallows keys. The captures raise no windows
+at all: they render offscreen inside the bar windows
+(`LockStillCapture.qml`), because mapping fresh fullscreen surfaces at lock
+time stuttered the entry's first frames and provoked a crash in Qt's
+`wl_surface.enter` handler (QtWaylandClient dereferences a stale screen while
+logging "Ignoring unexpected wl_surface.enter"). The price is that the few
+pre-lock frames of capture leave keys on the desktop — the same exposure any
+external locker has between invocation and lock.
 
 *Constraint the sweep windows live under:* niri sends frame callbacks only to
 surfaces it draws, and while locked it draws nothing but the lock surfaces
@@ -46,12 +51,9 @@ shape morph starved and deadened the keyboard for seconds. So the windows
 exist only while their sweep runs, and nothing may require one to render while
 `locked` is true:
 
-- *Entry* captures are delivered before the lock is requested; the capture
-  window keeps showing its frozen still (identical to the desktop it covers,
-  and what carries the handoff while niri waits for the lock surfaces), parks
-  (`updatesEnabled: false`) the instant the lock is requested, and is
-  destroyed once the compositor confirms coverage. The circle itself animates
-  on the lock surfaces, which the locked compositor draws. The still is drawn
+- *Entry* captures are delivered before the lock is requested, offscreen in
+  the bar windows, which park while locked. The circle itself animates on
+  the lock surfaces, which the locked compositor draws. The still is drawn
   ABOVE the scene and clipped to the circle, so a lost capture or an
   undecoded image degrades to a plain cut — never to a hole over black.
 - The bar and the wallpaper follow the same rule from the desktop's side:

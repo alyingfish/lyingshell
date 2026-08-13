@@ -41,31 +41,35 @@ Singleton {
     // is covered. Only then is the session actually secure.
     property bool secure: false
 
-    // Which sweep the windows in Modules/Lock/LockScreen.qml are raised for:
+    // Which stage of a sweep is running:
     //
-    //   ""       no sweep windows exist.
-    //   "enter"  the capture windows: one frozen wlr-screencopy frame of each
-    //            output's desktop, grabbed BEFORE the lock is requested. The
-    //            circle itself runs on the lock surfaces, which draw the
-    //            still above the scene and shrink it into the avatar's spot.
+    //   ""       idle; no exit windows exist, no captures run.
+    //   "enter"  the pre-lock captures: one frozen wlr-screencopy frame of
+    //            each output's desktop, grabbed inside the bar windows
+    //            (Modules/Lock/LockStillCapture.qml — no windows are raised
+    //            for this) BEFORE the lock is requested. The circle itself
+    //            runs on the lock surfaces, which draw the still above the
+    //            scene and shrink it into the avatar's spot.
     //   "exit"   the unlock sweep: a still of the hello pose, pre-buffered
-    //            while the lock is still up, with the circle growing back.
+    //            by fresh Overlay windows while the lock is still up, with
+    //            the circle growing back.
     //
     // RENDERING SAFETY: while the session is locked the compositor draws only
     // the lock surfaces, and a surface it does not draw receives no frame
     // callbacks. A window forced to render in that state stalls its render
     // thread on buffers the compositor will never release, and the stall can
     // wedge the whole shell — which is exactly how the old unlock sweep froze
-    // the lock screen. So nothing here may require a sweep window to render
-    // while `locked` is true: the entry circle animates on the lock surfaces
-    // themselves — the one kind of window the locked compositor does draw —
-    // and the capture windows park the instant the lock is requested. The
-    // one exception is the exit window's very first frame: a freshly created
-    // window's swapchain can always produce one frame without waiting on the
-    // compositor, which is what lets the cover be buffered under the lock
-    // before it drops. Every state advance below is bounded by a timer;
-    // still deliveries and first-frame reports only ever end a wait early,
-    // so rendering is never load-bearing.
+    // the lock screen. So nothing here may require an undrawn window to
+    // render while `locked` is true: the entry circle animates on the lock
+    // surfaces themselves — the one kind of window the locked compositor
+    // does draw — and the captures finish before the lock is requested,
+    // inside bar windows that park while locked. The one exception is the
+    // exit window's very first frame: a freshly created window's swapchain
+    // can always produce one frame without waiting on the compositor, which
+    // is what lets the cover be buffered under the lock before it drops.
+    // Every state advance below is bounded by a timer; still deliveries and
+    // first-frame reports only ever end a wait early, so rendering is never
+    // load-bearing.
     property string sweepMode: ""
     readonly property bool sweepActive: sweepMode !== ""
 
@@ -181,13 +185,10 @@ Singleton {
         }
         captureBail.stop();
         locked = true;
-        // The capture windows stay mapped until the compositor confirms every
-        // output is locked (`secure`): niri keeps drawing the desktop until
-        // its lock surfaces are ready, and the frozen still each window shows
-        // is what covers the handoff to the lock surfaces — which open on the
-        // same still at full radius. The windows park the instant `locked`
-        // goes up (updatesEnabled), so keeping them renders nothing and costs
-        // nothing.
+        // The desktop's windows (bar, wallpaper) park the moment `locked`
+        // goes up; the circle waits for the compositor to confirm every
+        // output is covered (`secure`), so it only ever moves over a lock
+        // that is actually up.
         secureFallback.restart();
     }
 
@@ -196,8 +197,8 @@ Singleton {
         beginEntryReveal();
     }
 
-    // If `secure` never lands the parked windows would sit mapped forever and
-    // the circle would never move. The lock itself is unaffected either way.
+    // If `secure` never lands the circle would never move. The lock itself
+    // is unaffected either way.
     Timer {
         id: secureFallback
         interval: 1000
@@ -205,7 +206,7 @@ Singleton {
     }
 
     // Every output is confirmed covered, each lock surface already holding
-    // its desktop still at full radius. Drop the capture windows and let the
+    // its desktop still at full radius. Retire the capture stage and let the
     // circle shrink into the avatar's spot — on the lock surfaces themselves,
     // the one kind of window the locked compositor draws.
     function beginEntryReveal() {
@@ -252,9 +253,9 @@ Singleton {
             finishUnlock();
             return;
         }
-        // A stale entry can only exist here if `secure` never landed; its
-        // windows hold the wrong scene, so drop them — and the desktop
-        // stills — before the exit pair is raised.
+        // A stale entry can only exist here if `secure` never landed; drop
+        // its capture stage — and the desktop stills — before the exit pair
+        // is raised.
         if (sweepMode === "enter") {
             sweepMode = "";
         }

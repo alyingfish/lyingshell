@@ -18,6 +18,7 @@ LOCK_SERVICE = ROOT / "Services" / "Lock.qml"
 SESSION = ROOT / "Services" / "Session.qml"
 SCREEN = ROOT / "Modules" / "Lock" / "LockScreen.qml"
 SCENE = ROOT / "Modules" / "Lock" / "LockScene.qml"
+STILL_CAPTURE = ROOT / "Modules" / "Lock" / "LockStillCapture.qml"
 CLOCK = ROOT / "Modules" / "Lock" / "LockClock.qml"
 AVATAR = ROOT / "Modules" / "Lock" / "LockAvatar.qml"
 FIELD = ROOT / "Modules" / "Lock" / "LockPasswordField.qml"
@@ -34,6 +35,7 @@ TOAST = ROOT / "Modules" / "Toast" / "ToastOverlay.qml"
 
 BAR_WINDOW = ROOT / "Modules" / "Bar" / "Bar.qml"
 AUTO_SHAPE = ROOT / "Modules" / "Bar" / "AutoShape.js"
+SYSTEM_TRAY = ROOT / "Modules" / "Bar" / "Widgets" / "SystemTray" / "SystemTray.qml"
 BACKGROUND = ROOT / "Modules" / "Wallpaper" / "Background.qml"
 
 PAM_CONFIG = ROOT / "assets" / "pam.d" / "lyingshell"
@@ -130,25 +132,28 @@ def main() -> None:
     # render then stalls its render thread and can wedge the whole shell.
     # These are the load-bearing pieces of the fix.
     #
-    # The windows exist only while a sweep runs, and only ever for one mode.
+    # Only the exit raises windows; the entry needs none of its own.
     assert 'property string sweepMode: ""' in service
     assert 'readonly property bool sweepActive: sweepMode !== ""' in service
-    assert "model: Lock.sweepActive ? Quickshell.screens : []" in screen
-    # The session locks BEFORE the circle moves: each capture window grabs
-    # one frozen screencopy frame of its desktop, the lock is requested the
-    # moment every output has answered (or the cap gives up waiting), and
-    # a late delivery changes nothing.
-    assert "ScreencopyView {" in screen
-    assert "live: false" in screen
-    assert screen.count("Lock.deliverDesktopStill(") == 2
+    assert 'model: Lock.sweepMode === "exit" ? Quickshell.screens : []' in screen
+    # The session locks BEFORE the circle moves: each output's bar window
+    # grabs one frozen screencopy frame of its desktop OFFSCREEN — mapping
+    # fresh fullscreen windows at lock time stuttered the entry and provoked
+    # a Qt wl_surface.enter crash — the lock is requested the moment every
+    # output has answered (or the cap gives up waiting), and a late delivery
+    # changes nothing.
+    still_capture = read(STILL_CAPTURE)
+    assert "ScreencopyView {" in still_capture
+    assert "live: false" in still_capture
+    assert still_capture.count("Lock.deliverDesktopStill(") == 2
+    assert 'active: Lock.sweepMode === "enter" && root.screen !== null' in still_capture
+    assert "LockStillCapture {" in read(BAR_WINDOW)
     assert "function deliverDesktopStill(name, grab)" in service
     assert 'if (sweepMode !== "enter" || locked) {' in service
     assert "id: captureBail" in service
     assert "var captureBailMs" in motion
-    # Capture windows park the moment the lock is requested, and are
-    # destroyed once the compositor confirms every output is covered — only
-    # then does the circle start to move, on the lock surfaces themselves.
-    assert "updatesEnabled: !(entering && Lock.locked)" in screen
+    # The circle starts to move only once the compositor confirms every
+    # output is covered — on the lock surfaces themselves.
     assert "function beginEntryReveal()" in service
     # The entry circle is the desktop still drawn ABOVE the scene, clipped to
     # the circle: every failure resolves to transparency and a plain cut to
@@ -175,11 +180,13 @@ def main() -> None:
     # the bar and wallpaper windows park (asserted with the bar below).
     toast = read(TOAST)
     assert "visible: Toast.active && !Lock.locked" in toast
-    # Only the capture window may hold the keyboard, and only before the lock
-    # is taken — a keystroke aimed at the lock must not reach the desktop;
-    # the exit sweep runs over a live desktop and is click-through.
-    assert "WlrLayershell.keyboardFocus: entering && !Lock.locked ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None" in screen
-    assert "mask: entering ? null : blockNothing" in screen
+    # The exit sweep runs over a live desktop it must never take anything
+    # from: no keyboard, click-through from its first frame. (The entry
+    # holds no grab either — the capture is offscreen and invisible, and the
+    # few pre-lock frames where keys still reach the desktop are the price
+    # of raising no surface that could crash or stutter the entry.)
+    assert "WlrLayershell.keyboardFocus: WlrKeyboardFocus.None" in screen
+    assert "mask: blockNothing" in screen
     # The circle is anchored on where the avatar rests, from the one set of
     # landmarks the scene also lays out with.
     assert "var sweepOriginYCqh = authTopCqh + avatarCqh / 2;" in motion
@@ -286,7 +293,7 @@ def main() -> None:
 
     # --- Escape unwinds one layer at a time -------------------------------
     assert "function unwind()" in tray
-    assert "if (tray.unwind()) {" in scene
+    assert "if (tray && tray.unwind()) {" in scene
     # The prompt is the only thing that takes typing, so everything that can
     # steal focus from it has to give it back — the tray pill is a Button and
     # claims focus on click, and a hidden panel field does not release it.
@@ -327,10 +334,18 @@ def main() -> None:
     # onto a surface the compositor no longer draws. The wallpaper parks for
     # the same reason.
     bar_surface = read(BAR_SURFACE)
+    bar_window = read(BAR_WINDOW)
     assert "Lock.locked" not in bar_surface
     assert "lockscreenShape" not in read(AUTO_SHAPE)
-    assert "updatesEnabled: !Lock.locked" in read(BAR_WINDOW)
+    assert "updatesEnabled: !Lock.locked" in bar_window
     assert "updatesEnabled: !Lock.locked" in read(BACKGROUND)
+    # A parked window keeps its stale buffer, and unparking does not repaint
+    # by itself: the panel and popover close the moment the lock gesture
+    # starts, and one tick after unlock the bar pokes a pixel so a current
+    # frame replaces whatever the park froze.
+    assert "onSessionLockingChanged: if (sessionLocking)" in read(QS_BUTTON)
+    assert "onSessionLockingChanged: if (sessionLocking)" in read(SYSTEM_TRAY)
+    assert "unparkNudge" in bar_window
 
     # --- the lock's own palette ------------------------------------------
     lock_theme = read(LOCK_THEME)

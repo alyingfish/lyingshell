@@ -171,6 +171,15 @@ Item {
 
     onBarHiddenChanged: if (barHidden)
         panelOpen = false
+    // The lock gesture must not park the bar with the panel mid-close — the
+    // stale half-faded frame is what the desktop would show again at
+    // unlock — and a panel left open must not still be up on return. Close
+    // it the moment the gesture starts. The lock screen's own instance is
+    // unaffected: its panel only exists while the prompt is up, and this
+    // same moment takes the prompt down.
+    readonly property bool sessionLocking: Lock.locked || Lock.sweepActive
+    onSessionLockingChanged: if (sessionLocking)
+        panelOpen = false
     onPanelOpenChanged: console.info("[QuickSettings] panel " + (panelOpen ? "open" : "closed"))
 
     // External command surface (Services/ShellIpc.qml): registered per

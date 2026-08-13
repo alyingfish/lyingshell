@@ -5,6 +5,7 @@ import Qcm.Material as MD
 import qs.Modules.Bar.Widgets
 import qs.Modules.Bar.Widgets.SystemTray
 import qs.Modules.Bar.Widgets.Workspaces
+import qs.Modules.Lock
 import qs.Services
 import qs.Services.Niri
 
@@ -87,6 +88,47 @@ PanelWindow {
 
         anchors.fill: parent
         outputName: root.screen ? root.screen.name : ""
+    }
+
+    // This output's pre-lock desktop capture, parked below the strip where
+    // the viewport never shows it. It lives HERE because the bar window
+    // already exists on every output: raising fresh fullscreen windows at
+    // lock time stuttered the entry and provoked a Qt wl_surface.enter
+    // crash (see LockStillCapture.qml).
+    LockStillCapture {
+        y: root.height
+        screen: root.screen
+    }
+
+    // A parked window drops the frames its animations would have drawn, and
+    // re-enabling updates does not repaint by itself: with no fresh damage
+    // the compositor keeps showing the stale pre-lock buffer — a ghost of
+    // the quick-settings panel mid-close. One tick after unlock (so
+    // updatesEnabled is already true), poke an invisible pixel to force a
+    // current frame.
+    Rectangle {
+        id: unparkNudge
+
+        width: 1
+        height: 1
+        color: "transparent"
+    }
+
+    Timer {
+        id: unparkRepaint
+
+        interval: 0
+        onTriggered: unparkNudge.rotation = unparkNudge.rotation === 0 ? 1 : 0
+    }
+
+    Connections {
+        target: Lock
+
+        function onLockedChanged() {
+            if (!Lock.locked) {
+                unparkRepaint.restart();
+            }
+        }
     }
 
     Item {

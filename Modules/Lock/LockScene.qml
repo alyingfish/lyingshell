@@ -354,18 +354,38 @@ FocusScope {
     }
 
     // ---- the tray --------------------------------------------------------
+    // The pill drags the whole quick-settings tree with it (~90ms to
+    // construct), and a lock surface pays that on the GUI thread at the
+    // worst moment — between the lock request and the compositor confirming
+    // coverage. Defer it one tick past the scene's first paint: the lock
+    // covers the screen that much sooner, and at glance the pill is
+    // invisible anyway.
 
-    LockTray {
-        id: tray
+    readonly property Item tray: trayLoader.item
+
+    property bool trayReady: false
+
+    Timer {
+        interval: 0
+        running: true
+        onTriggered: root.trayReady = true
+    }
+
+    Loader {
+        id: trayLoader
 
         anchors.right: parent.right
         anchors.top: parent.top
-        visible: root.full
-        enabled: root.interactive
-        overlayParent: root
+        active: root.trayReady
 
-        onPanelOpenChanged: if (!panelOpen)
-            root.returnFocus()
+        sourceComponent: LockTray {
+            visible: root.full
+            enabled: root.interactive
+            overlayParent: root
+
+            onPanelOpenChanged: if (!panelOpen)
+                root.returnFocus()
+        }
     }
 
     // ---- keys ------------------------------------------------------------
@@ -378,8 +398,9 @@ FocusScope {
         if (event.key === Qt.Key_Escape) {
             event.accepted = true;
             // One layer at a time: the panel's own layers first (detail view,
-            // expanded row, then the panel), then the lock's.
-            if (tray.unwind()) {
+            // expanded row, then the panel), then the lock's. The tray is
+            // deferred a tick, so it can be absent for the first frames.
+            if (tray && tray.unwind()) {
                 return;
             }
             Lock.back();
@@ -387,20 +408,22 @@ FocusScope {
             return;
         }
 
+        var panelUp = tray ? tray.panelOpen : false;
+
         if (Lock.phase !== Lock.phaseGlance) {
             // The prompt has exactly one place to type. Qt's default tab
             // navigation would move focus to the reveal eye or the tray pill,
             // and the field declines tab focus, so it could never be reached
             // again — every following keystroke would land nowhere. Swallow it
             // unless the panel is up, where its own fields may want it.
-            if ((event.key === Qt.Key_Tab || event.key === Qt.Key_Backtab) && !tray.panelOpen) {
+            if ((event.key === Qt.Key_Tab || event.key === Qt.Key_Backtab) && !panelUp) {
                 event.accepted = true;
                 root.returnFocus();
             }
             return;
         }
 
-        var verdict = WakeRules.classify(event.key, event.text, event.modifiers, tray.panelOpen);
+        var verdict = WakeRules.classify(event.key, event.text, event.modifiers, panelUp);
         if (verdict === WakeRules.IGNORE) {
             return;
         }
