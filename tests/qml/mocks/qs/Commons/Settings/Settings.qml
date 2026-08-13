@@ -18,6 +18,15 @@ QtObject {
             property bool focusedOutputOnly: true
             property string pamConfig: ""
         }
+        readonly property QtObject bar: QtObject {
+            readonly property QtObject shape: QtObject {
+                readonly property QtObject floating: QtObject {
+                    property int margin: 8
+                    property int radius: 16
+                    property int height: 32
+                }
+            }
+        }
         readonly property QtObject quickSettings: QtObject {
             readonly property QtObject colorPicker: QtObject {
                 // Writable: QuickSettingsPanel records picks here and the

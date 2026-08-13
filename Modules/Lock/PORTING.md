@@ -165,8 +165,8 @@ layer.
 
 ## Motion
 
-**7. The clock rides a real MD3 Expressive spring instead of the prototype's
-hand-tuned curve.**
+**7. The lock transition rides real MD3 Expressive springs instead of the
+prototype's hand-tuned curves.**
 The prototype's `transform .62s cubic-bezier(.34,1.42,.46,1)` is replaced by
 the spec's slow spatial spring (`Motion.spatialSlow`, ζ 0.8 / k 200). Unlike a
 fixed-duration Bezier approximation, the analytic spring retains velocity when
@@ -181,6 +181,23 @@ field renderer visibly facets text at this size. Keeping layout size fixed also
 avoids `font.pixelSize`'s integer relayout steps, and lets a fixed hit target
 enclose the complete hover gesture without feeding animated bounds back into
 hover state.
+
+Glance, avatar, account name, and password-field visibility follow the same
+rule: travel uses `Motion.spatialDefault`, alpha uses
+`Motion.effectsDefault`, and the full-screen blur/wash uses
+`Motion.effectsSlow`. `MotionSpring` advances the token physics directly, so
+an Escape during Ask does not restart an easing curve and discard the current
+velocity. Each visual property is derived from a dimensionless spring value;
+mapping a 0×0 lock surface at its real pixel size therefore cannot replay an
+entrance accidentally. The shared spring driver also snaps these channels and
+removes their entrance delay when reduced motion is enabled.
+
+The lock quick-settings pill does not fade independently. It is treated as the
+floating bar's continuation and shares `BarMotion.hiddenOffset` plus the same
+default-spatial reveal spring as `BarSurface`: hidden clears the complete
+floating bar and shadow above the output, and Ask settles it at the bar's
+configured floating inset. The pill becomes non-interactive as soon as it
+leaves Ask.
 
 **8. The loading indicator is QmlMaterial's, not the prototype's.**
 `MD.BusyIndicator` is the real MD3 Expressive seven-shape morphing indicator

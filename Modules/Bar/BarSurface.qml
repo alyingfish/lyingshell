@@ -2,11 +2,16 @@ import QtQuick
 import QtQuick.Shapes
 import Qcm.Material as MD
 import qs.Commons.Settings
+import qs.Material
 import qs.Services.Niri
-import "AutoShape.js" as AutoShape
 
-// Animated Bar surface: one CurveRenderer Shape whose scalars each bind to the
-// active shape's target and have a Behavior, so switching currentShape morphs.
+import "../../Material/Motion.js" as Motion
+import "AutoShape.js" as AutoShape
+import "BarMotion.js" as BarMotion
+
+// Animated Bar surface: one CurveRenderer Shape whose shape scalars bind to the
+// active target while the visibility channel rides a live M3E spring, so a
+// reversal between floating and hidden preserves its current velocity.
 Item {
     id: root
 
@@ -58,17 +63,28 @@ Item {
     readonly property real contentRadiusTarget: activeShape === "hug" ? 0 : config.radius
 
     // Click-through headroom below the bar for the shadow and hug overhang.
-    readonly property real shadowBuffer: 24
+    readonly property real shadowBuffer: BarMotion.shadowBuffer
 
     property real animMargin: config.margin
     property real animTopRadius: activeShape === "softAttach" || activeShape === "hug" ? 0 : config.radius
     property real animBottomRadius: activeShape === "hug" ? 0 : config.radius
     property real animReversed: reversedTarget
     property real animOpacity: config.opacity
-    property real revealOffset: isHidden ? -(animMargin + barHeight + shadowBuffer + 8) : 0
+    readonly property real revealOffset: BarMotion.hiddenOffset(animMargin, barHeight) * (1 - revealMotion.value)
 
     // Fade MUST ride on elevation: RRectShadowImpl drops color alpha pre-render.
     property real shadowElevation: config.elevation
+
+    // A top bar is a partial-screen surface, so default-spatial is the M3
+    // motion role for its reveal. The lock-screen status pill consumes this
+    // same spring and hidden geometry instead of inventing a second entrance.
+    MotionSpring {
+        id: revealMotion
+
+        target: root.isHidden ? 0 : 1
+        spring: Motion.spatialDefault
+        motionEnabled: !Settings.options.appearance.reducedMotion
+    }
 
     // Best-effort background blur (compositor effect; on/off only — the
     // compositor picks the strength). The per-shape setting is authoritative:
@@ -121,13 +137,6 @@ Item {
             easing: MD.Token.easing.emphasized
         }
     }
-    Behavior on revealOffset {
-        NumberAnimation {
-            duration: MD.Token.duration.medium2
-            easing: MD.Token.easing.emphasized
-        }
-    }
-
     // Track fractional animMargin (no rounding) so the slide stays sub-pixel
     // smooth; centered-content wobble is handled in Bar.qml's centering binding.
     readonly property real totalHeight: animMargin + barHeight + Math.max(shadowBuffer, reversedTarget + 4)

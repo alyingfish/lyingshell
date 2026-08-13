@@ -9,6 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 BAR = ROOT / "Modules" / "Bar" / "Bar.qml"
 SURFACE = ROOT / "Modules" / "Bar" / "BarSurface.qml"
+MOTION = ROOT / "Modules" / "Bar" / "BarMotion.js"
 
 
 def read(path: Path) -> str:
@@ -18,6 +19,7 @@ def read(path: Path) -> str:
 def main() -> None:
     bar = read(BAR)
     surface = read(SURFACE)
+    motion = read(MOTION)
 
     assert SURFACE.exists()
 
@@ -52,9 +54,14 @@ def main() -> None:
     # Concave wings use SVG sweep-flag 0; convex corners use sweep-flag 1.
     assert "0 0 0 " in surface
     assert "0 0 1 " in surface
-    # hidden keeps the last visible shape's geometry while sliding away.
+    # hidden keeps the last visible shape's geometry while sliding away. The
+    # offset is shared with lock-screen bar continuations and clears the whole
+    # surface plus its shadow rather than using a viewport-relative guess.
     assert "property string lastVisibleShape" in surface
     assert "if (shape !== \"hidden\") lastVisibleShape = shape" in " ".join(surface.split())
+    assert "BarMotion.hiddenOffset(animMargin, barHeight)" in surface
+    assert "var shadowBuffer = 24;" in motion
+    assert "var hiddenClearance = 8;" in motion
 
     # --- BarSurface: MD3 tokens + directional drop shadow -----------------
     assert "MD.Token.duration." in surface
@@ -80,11 +87,18 @@ def main() -> None:
     assert "Qt.rgba(" in surface
     assert "fillColor:" in surface
 
-    # --- BarSurface: animated scalars all have Behaviors ------------------
+    # --- BarSurface: shape scalars + live visibility spring ---------------
     for scalar in ("animMargin", "animTopRadius", "animBottomRadius",
-                   "animReversed", "animOpacity", "shadowElevation", "revealOffset"):
+                   "animReversed", "animOpacity", "shadowElevation"):
         assert "property real " + scalar in surface, scalar
         assert "Behavior on " + scalar in surface, scalar
+    # Visibility can reverse as overview changes. It therefore uses the live
+    # default-spatial M3E spring, retaining velocity instead of replaying a
+    # duration curve from rest.
+    assert "readonly property real revealOffset:" in surface
+    assert "MotionSpring {" in surface
+    assert "spring: Motion.spatialDefault" in surface
+    assert "Behavior on revealOffset" not in surface
 
     # Shadow buffer keeps the shadow/hug overhang from being clipped.
     assert "shadowBuffer" in surface

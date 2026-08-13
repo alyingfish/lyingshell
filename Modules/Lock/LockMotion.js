@@ -84,10 +84,6 @@ var authTopCqh = 35.7;
 var avatarCqh = 12;
 var sweepOriginYCqh = authTopCqh + avatarCqh / 2;
 
-// The approach backdrop — the blur and the auth wash — and the glance line
-// leaving with them. MD3's standard easing at the prototype's own duration.
-var approachMs = 620;
-
 // The avatar's morph to a solid circle, and the check's pop.
 var avatarMorphMs = 520;
 var checkPopMs = 550;

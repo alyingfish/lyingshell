@@ -97,6 +97,17 @@ FocusScope {
         sourceSize: Qt.size(Math.ceil(root.width), Math.ceil(root.height))
     }
 
+    // Blur and wash are full-screen effects, so they share the Expressive
+    // slow-effects spring. Their critically damped channel never borrows the
+    // overshoot reserved for spatial movement.
+    MotionSpring {
+        id: approachEffects
+
+        target: root.approached ? 1 : 0
+        spring: Motion.effectsSlow
+        motionEnabled: !Settings.options.appearance.reducedMotion
+    }
+
     // The approach blur. With wallpaperZoom enabled, inset by -4% so the
     // blur's own transparent margin never reaches the screen edge, exactly as
     // the prototype's 108% box does. A zero inset preserves the blur and wash
@@ -112,29 +123,15 @@ FocusScope {
         blurMax: 34
         saturation: 0.12
         autoPaddingEnabled: false
-        opacity: root.approached ? 1 : 0
-        visible: opacity > 0.001
-
-        Behavior on opacity {
-            NumberAnimation {
-                duration: LockMotion.approachMs
-                easing: MD.Token.easing.standard
-            }
-        }
+        opacity: Math.max(0, Math.min(1, approachEffects.value))
+        visible: root.approached || approachEffects.animating || approachEffects.value > 0.001
     }
 
     Rectangle {
         anchors.fill: parent
         color: LockTheme.authScrim
-        opacity: root.approached ? 1 : 0
-        visible: opacity > 0.001
-
-        Behavior on opacity {
-            NumberAnimation {
-                duration: LockMotion.approachMs
-                easing: MD.Token.easing.standard
-            }
-        }
+        opacity: Math.max(0, Math.min(1, approachEffects.value))
+        visible: root.approached || approachEffects.animating || approachEffects.value > 0.001
     }
 
     // A click that reaches the wall wakes the prompt; interactive surfaces
@@ -148,29 +145,36 @@ FocusScope {
 
     // ---- glance line -----------------------------------------------------
 
+    // The line is a partial-screen element: position uses default-spatial and
+    // alpha uses default-effects. Separate channels are required by the M3E
+    // scheme, and both retain velocity if Escape reverses the approach.
+    MotionSpring {
+        id: glanceSpatialMotion
+
+        target: root.approached ? 0 : 1
+        spring: Motion.spatialDefault
+        motionEnabled: !Settings.options.appearance.reducedMotion
+    }
+
+    MotionSpring {
+        id: glanceEffectsMotion
+
+        target: root.approached ? 0 : 1
+        spring: Motion.effectsDefault
+        motionEnabled: !Settings.options.appearance.reducedMotion
+    }
+
     Row {
         id: glanceLine
 
         anchors.horizontalCenter: parent.horizontalCenter
         y: 20.6 * root.cqh
         spacing: 0.9 * root.cqw
-        opacity: root.approached ? 0 : 1
-        visible: opacity > 0.001
+        opacity: Math.max(0, Math.min(1, glanceEffectsMotion.value))
+        visible: !root.approached || glanceSpatialMotion.animating || glanceEffectsMotion.animating || glanceEffectsMotion.value > 0.001
 
         transform: Translate {
-            y: root.approached ? -2.2 * root.cqh : 0
-
-            Behavior on y {
-                MotionAnimation {
-                    spring: Motion.spatialSlow
-                }
-            }
-        }
-
-        Behavior on opacity {
-            NumberAnimation {
-                duration: 400
-            }
+            y: -2.2 * root.cqh * (1 - glanceSpatialMotion.value)
         }
 
         MD.Text {
@@ -223,48 +227,76 @@ FocusScope {
     }
 
     // ---- the identity column --------------------------------------------
-    // Rises together on the approach, each part a beat behind the last.
+    // Rises together on the approach after one shared entrance beat. One
+    // normalized spatial spring drives travel and one effects spring drives
+    // alpha, so pixel geometry arriving on a new lock surface cannot trigger a
+    // false 0px -> resting-pose animation.
 
     component Rising: Item {
         id: rising
 
-        property int riseDelay: 0
-        property real riseOffset: root.approached ? 0 : 3.2 * root.cqh
+        property int enterDelay: 0
+        property bool shown: root.approached
+        property bool revealReleased: shown
+        readonly property bool reducedMotion: Settings.options.appearance.reducedMotion
 
-        opacity: root.approached ? 1 : 0
-        visible: root.full && opacity > 0.001
+        opacity: Math.max(0, Math.min(1, effectsMotion.value))
+        visible: root.full && (shown || spatialMotion.animating || effectsMotion.animating || effectsMotion.value > 0.001)
         enabled: root.interactive && Lock.phase === Lock.phaseAsk
 
         transform: Translate {
-            y: rising.riseOffset
+            y: 3.2 * root.cqh * (1 - spatialMotion.value)
         }
 
-        Behavior on opacity {
-            SequentialAnimation {
-                PauseAnimation {
-                    duration: root.approached ? rising.riseDelay : 0
-                }
-                NumberAnimation {
-                    duration: 400
-                }
+        function retarget() {
+            enterPause.stop();
+            if (!shown || reducedMotion) {
+                revealReleased = shown;
+                return;
+            }
+            // Stagger only an entrance from hidden rest. Reversing a departure
+            // must retarget immediately and preserve the velocity already in
+            // both springs.
+            if (enterDelay > 0 && spatialMotion.atRest && effectsMotion.atRest && spatialMotion.value < 0.0005 && effectsMotion.value < 0.0005) {
+                revealReleased = false;
+                enterPause.restart();
+            } else {
+                revealReleased = true;
             }
         }
-        Behavior on riseOffset {
-            SequentialAnimation {
-                PauseAnimation {
-                    duration: root.approached ? rising.riseDelay : 0
-                }
-                MotionAnimation {
-                    spring: Motion.spatialSlow
-                }
-            }
+
+        onShownChanged: retarget()
+        onReducedMotionChanged: retarget()
+
+        Timer {
+            id: enterPause
+
+            interval: rising.enterDelay
+            onTriggered: if (rising.shown)
+                rising.revealReleased = true
+        }
+
+        MotionSpring {
+            id: spatialMotion
+
+            target: rising.revealReleased ? 1 : 0
+            spring: Motion.spatialDefault
+            motionEnabled: !Settings.options.appearance.reducedMotion
+        }
+
+        MotionSpring {
+            id: effectsMotion
+
+            target: rising.revealReleased ? 1 : 0
+            spring: Motion.effectsDefault
+            motionEnabled: !Settings.options.appearance.reducedMotion
         }
     }
 
     Rising {
         id: avatarSlot
 
-        riseDelay: 60
+        enterDelay: 60
         x: (root.width - width) / 2
         y: root.authTop
         width: root.avatarSize
@@ -277,7 +309,7 @@ FocusScope {
     }
 
     Rising {
-        riseDelay: 60
+        enterDelay: 60
         x: (root.width - width) / 2
         y: root.authTop + root.avatarSize + 1.85 * root.cqh
         width: nameLabel.implicitWidth
@@ -298,7 +330,7 @@ FocusScope {
     Rising {
         id: promptSlot
 
-        riseDelay: 140
+        enterDelay: 60
         x: (root.width - width) / 2
         y: root.authTop + root.avatarSize + 4.05 * root.cqh + root.labelLine
         width: prompt.implicitWidth

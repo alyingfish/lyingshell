@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the lock screen's pure-rule and clock-motion QML tests offscreen."""
+"""Run the lock screen's pure-rule and motion QML tests offscreen."""
 
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MOCKS = ROOT / "tests" / "qml" / "mocks"
 TEST_FILES = (
     (ROOT / "tests" / "qml" / "tst_lock_rules.qml", "PASS: lock rules"),
+    (ROOT / "tests" / "qml" / "tst_motion_spring.qml", "PASS: live motion spring"),
     (ROOT / "tests" / "qml" / "tst_lock_clock.qml", "PASS: lock clock motion"),
 )
 

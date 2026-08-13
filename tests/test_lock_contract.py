@@ -32,6 +32,8 @@ SESSION_MENU = ROOT / "Modules" / "QuickSettings" / "Main" / "SessionMenu.qml"
 POPUP = ROOT / "Modules" / "QuickSettings" / "QuickSettingsPopup.qml"
 QS_BUTTON = ROOT / "Modules" / "Bar" / "Widgets" / "QuickSettingsButton.qml"
 TOAST = ROOT / "Modules" / "Toast" / "ToastOverlay.qml"
+MOTION_SPRING = ROOT / "Material" / "MotionSpring.qml"
+BAR_MOTION = ROOT / "Modules" / "Bar" / "BarMotion.js"
 
 BAR_WINDOW = ROOT / "Modules" / "Bar" / "Bar.qml"
 AUTO_SHAPE = ROOT / "Modules" / "Bar" / "AutoShape.js"
@@ -60,6 +62,8 @@ def main() -> None:
     field = read(FIELD)
     tray = read(TRAY)
     motion = read(MOTION)
+    motion_spring = read(MOTION_SPRING)
+    bar_motion = read(BAR_MOTION)
 
     # --- the compositor seam ---------------------------------------------
     assert "import Quickshell.Wayland" in screen
@@ -311,6 +315,59 @@ def main() -> None:
     # Minimized, it is the way back out.
     assert "onTapped: Lock.back()" in clock
 
+    # --- Glance <-> Ask visibility motion --------------------------------
+    # Visibility is interactive state: Escape can reverse it before it lands.
+    # Every named lock element therefore consumes a live analytic spring, not
+    # a duration-based Behavior that restarts with zero velocity.
+    assert "FrameAnimation {" in motion_spring
+    assert "Motion.stepSpring(root.value, root.velocity, root.target, root.spring, frameTime)" in motion_spring
+    assert "property real visibilityThreshold: 0.01" in motion_spring
+    assert "visibilityThreshold * 1000 / 16" in motion_spring
+    assert "readonly property bool atRest:" in motion_spring
+    assert "readonly property bool animating: driver.running" in motion_spring
+    assert scene.count("MotionSpring {") == 5
+    assert scene.count("motionEnabled: !Settings.options.appearance.reducedMotion") == 5
+    assert "id: glanceSpatialMotion" in scene
+    assert "spring: Motion.spatialDefault" in scene
+    assert "id: glanceEffectsMotion" in scene
+    assert "spring: Motion.effectsDefault" in scene
+    assert "spring: Motion.effectsSlow" in scene, "the full-screen blur/wash uses the slow effects role"
+    # Spatial springs may overshoot; opacity is a bounded effects property.
+    assert "Math.max(0, Math.min(1, glanceEffectsMotion.value))" in scene
+    # Avatar, name, and field enter on one shared beat. The delay applies only
+    # from hidden rest, while an interrupted departure retargets at once.
+    rising = scene[scene.index("component Rising:"):scene.index("Rising {\n        id: avatarSlot")]
+    assert rising.count("MotionSpring {") == 2
+    assert "spring: Motion.spatialDefault" in rising
+    assert "spring: Motion.effectsDefault" in rising
+    assert "spatialMotion.atRest && effectsMotion.atRest" in rising
+    assert "if (!shown || reducedMotion)" in rising
+    assert "onReducedMotionChanged: retarget()" in rising
+    assert scene.count("enterDelay: 60") == 3
+    assert "enterDelay: 140" not in scene
+    assert "Behavior on opacity" not in scene
+    assert "duration: 400" not in scene
+
+    # The lock quick-settings pill is the floating bar's continuation: both
+    # surfaces share the exact clear-above-screen geometry and the live
+    # default-spatial spring. It slides rather than fading independently.
+    assert "var shadowBuffer = 24;" in bar_motion
+    assert "var hiddenClearance = 8;" in bar_motion
+    assert "BarMotion.hiddenOffset(floatingBar.margin, floatingBar.height)" in tray
+    assert "readonly property real slotTop: floatingBar.margin" in tray
+    assert "readonly property real slotSide: floatingBar.margin" in tray
+    assert "readonly property real slotHeight: floatingBar.height" in tray
+    assert "readonly property real slotPadding: Math.max(8, floatingBar.radius)" in tray
+    assert "spring: Motion.spatialDefault" in tray
+    assert "motionEnabled: !Settings.options.appearance.reducedMotion" in tray
+    assert "opacity: present ? 1 : 0" not in tray
+    assert "enabled: root.present" in tray
+    bar_surface = read(BAR_SURFACE)
+    assert "BarMotion.hiddenOffset(animMargin, barHeight)" in bar_surface
+    assert "spring: Motion.spatialDefault" in bar_surface
+    assert "motionEnabled: !Settings.options.appearance.reducedMotion" in bar_surface
+    assert "Behavior on revealOffset" not in bar_surface
+
     # --- the avatar -------------------------------------------------------
     # Turn the mask, not the picture: the rotation is a shader uniform, and
     # nothing counter-rotates.
@@ -447,11 +504,12 @@ def main() -> None:
     assert "Settings.options.lock.wallpaperZoom ? 0.04 : 0" in scene
     assert "x: -root.wallpaperZoomInset * root.width" in scene
     assert "width: (1 + 2 * root.wallpaperZoomInset) * root.width" in scene
-    # Both are invisible at glance and both fade on the approach, so nothing
-    # sits on the photograph until the prompt is asked for. The glance line is
-    # the one thing that goes the other way.
-    assert scene.count("opacity: root.approached ? 1 : 0") == 3
-    assert scene.count("opacity: root.approached ? 0 : 1") == 1
+    # Both are invisible at glance and share one full-screen effects spring,
+    # so nothing sits on the photograph until the prompt is asked for. The
+    # glance line's own effects target goes the other way.
+    assert scene.count("opacity: Math.max(0, Math.min(1, approachEffects.value))") == 2
+    assert "target: root.approached ? 1 : 0" in scene
+    assert scene.count("target: root.approached ? 0 : 1") == 2
     # No shadow on the ink, and nothing else laid over the photo.
     assert "layer.effect" not in scene
     assert "DropShadow" not in scene

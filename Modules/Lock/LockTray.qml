@@ -1,11 +1,13 @@
 import QtQuick
 import Qcm.Material as MD
+import qs.Commons.Settings
 import qs.Commons.Theme
 import qs.Services
 import qs.Material
 import qs.Modules.Bar.Widgets
 
 import "../../Material/Motion.js" as Motion
+import "../Bar/BarMotion.js" as BarMotion
 
 // The status pill on the lock surface, and the quick-settings panel it opens.
 //
@@ -17,8 +19,9 @@ import "../../Material/Motion.js" as Motion
 // registration (the bar's keeps it), and it hands the panel a content item to
 // live in, because a session-lock surface is not a QsWindow.
 //
-// It carries Foyer's reveal: lifted away on glance and hello, settling in on
-// approach, so the wall is uninterrupted at rest.
+// It is the floating desktop bar's continuation: Glance/Hello use the same
+// fully-hidden offset and Ask uses the same M3E default-spatial spring as the
+// desktop bar's hidden -> floating change.
 Item {
     id: root
 
@@ -27,33 +30,29 @@ Item {
 
     readonly property bool panelOpen: pill.panelOpen
     readonly property bool present: Lock.phase === Lock.phaseAsk || Lock.phase === Lock.phasePending
+    readonly property var floatingBar: Settings.options.bar.shape.floating
+    readonly property real hiddenOffset: BarMotion.hiddenOffset(floatingBar.margin, floatingBar.height)
 
-    // Bar-strip metrics, so the pill sits exactly where the bar's does.
-    readonly property real slotTop: 8
-    readonly property real slotSide: 8
-    readonly property real slotHeight: 32
-    readonly property real slotPadding: 16
+    // Floating-bar metrics, so both resting geometry and travel continue to
+    // follow user configuration instead of matching only the defaults.
+    readonly property real slotTop: floatingBar.margin
+    readonly property real slotSide: floatingBar.margin
+    readonly property real slotHeight: floatingBar.height
+    readonly property real slotPadding: Math.max(8, floatingBar.radius)
 
     implicitWidth: pill.implicitWidth + slotPadding * 2 + slotSide
     implicitHeight: slotTop + slotHeight
 
-    opacity: present ? 1 : 0
-    visible: opacity > 0.001
+    MotionSpring {
+        id: revealMotion
 
-    transform: Translate {
-        y: root.present ? 0 : -0.024 * root.parent.height
-
-        Behavior on y {
-            MotionAnimation {
-                spring: Motion.spatialSlow
-            }
-        }
+        target: root.present ? 1 : 0
+        spring: Motion.spatialDefault
+        motionEnabled: !Settings.options.appearance.reducedMotion
     }
 
-    Behavior on opacity {
-        NumberAnimation {
-            duration: 400
-        }
+    transform: Translate {
+        y: root.hiddenOffset * (1 - revealMotion.value)
     }
 
     onPresentChanged: if (!present)
@@ -94,6 +93,7 @@ Item {
         anchors.rightMargin: root.slotSide + root.slotPadding
         anchors.top: parent.top
         anchors.topMargin: root.slotTop + (root.slotHeight - implicitHeight) / 2
+        enabled: root.present
 
         // The lock's own instance: the bar keeps the output's IPC panel.
         registerIpc: false
