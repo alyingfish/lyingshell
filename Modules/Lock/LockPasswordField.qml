@@ -230,6 +230,10 @@ Item {
         implicitWidth: 3.7 * root.cqh
         implicitHeight: 3.7 * root.cqh
         enabled: !root.busy
+        // Revealing changes only the password's presentation. The eye must
+        // never take active focus away from the input, even for the pressed
+        // frame before onClicked runs.
+        focusPolicy: Qt.NoFocus
         mdState.type: MD.Enum.IBtStandard
         mdState.size: MD.Enum.XS
         icon.name: Lock.reveal ? "visibility_off" : "visibility"
@@ -243,7 +247,6 @@ Item {
             var selStart = input.selectionStart;
             var selEnd = input.selectionEnd;
             Lock.reveal = !Lock.reveal;
-            input.forceActiveFocus();
             if (selEnd > selStart) {
                 input.select(selStart, selEnd);
             } else {

@@ -296,6 +296,12 @@ def main() -> None:
     # A TextInput does not accept the lock key, so the field has to, or the
     # scene's handler toggles the same press straight back.
     assert "if (event.key === Qt.Key_CapsLock) {" in field
+    # Peeking changes presentation without transferring focus to the eye. A
+    # post-click forceActiveFocus is too late: the pressed frame has already
+    # dropped the field's focus styling and selection.
+    eye = field[field.index("MD.IconButton {"):field.index("// ---- the field")]
+    assert "focusPolicy: Qt.NoFocus" in eye
+    assert "input.forceActiveFocus()" not in eye
     # BusyIndicator writes its own `visible`; binding it strands the spinner.
     assert "visible: root.busy" not in field
     assert 'name: "arrow_forward"' in field
