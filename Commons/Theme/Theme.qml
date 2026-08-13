@@ -11,16 +11,15 @@ Singleton {
     id: root
 
     readonly property string textTypeface: Settings.options.appearance.font
-    readonly property string requestedMode: Settings.options.appearance.mode
-    readonly property string effectiveMode: requestedMode === "dark" ? "dark" : "light"
+    readonly property string effectiveMode: modeNow()
 
     // Wallpaper-derived accent, reactive on the persisted per-mode cache. This is
     // the source of truth at startup AND after a fresh extraction, so the correct
     // color is present on the very first frame with no matugen on the boot path.
     // useWallpaperColor selects whether it drives the theme; the matugen seed
     // never overwrites the user's accentColor in settings.json.
-    readonly property string wallpaperAccent: effectiveMode === "dark" ? accentCacheData.dark : accentCacheData.light
-    readonly property string requestedAccentColor: Settings.options.appearance.useWallpaperColor && wallpaperAccent.length > 0 ? wallpaperAccent : Settings.options.appearance.accentColor
+    readonly property string wallpaperAccent: wallpaperAccentNow()
+    readonly property string requestedAccentColor: requestedAccentNow()
 
     // While the lock screen is up the process wears the LOCK wallpaper's seed
     // instead of the desktop's (Commons/Theme/LockTheme.qml sets it). The
@@ -31,7 +30,40 @@ Singleton {
     // External apps never see this — pushAccentColor() keeps using the
     // desktop's own accent, so no terminal or GTK theme is rewritten on lock.
     property string accentOverride: ""
-    readonly property string effectiveAccentColor: accentOverride.length > 0 ? accentOverride : requestedAccentColor
+    readonly property string effectiveAccentColor: effectiveAccentNow()
+
+    // The properties above are for BINDINGS ONLY. Everything that applies a
+    // value imperatively (apply(), pushAccentColor()) calls the functions below
+    // instead, because a derived property lags inside a change handler for one
+    // of its own dependencies: QML evaluates bindings lazily, so while
+    // onRequestedAccentColorChanged runs, requestedAccentColor already holds the
+    // new color while effectiveAccentColor still holds the previous one.
+    // That is what broke the accent on boot, on the ordering where the accent
+    // cache landed after the settings load: apply() seeded the process from the
+    // STALE default while pushAccentColor(), reading the property that had just
+    // changed, sent the fresh wallpaper accent outward — the shell wore #6750A4
+    // while kitty, GTK and niri wore the wallpaper color, and nothing re-applied
+    // until the next mode flip or wallpaper change. Every later extraction,
+    // wallpaper change and lock/unlock runs through the same handlers, so the
+    // rule holds past startup. Reading the sources (both adapters and
+    // accentOverride, all plain properties) is always current, and the bindings
+    // stay reactive because QML tracks properties read inside a called function.
+    function modeNow() {
+        return Settings.options.appearance.mode === "dark" ? "dark" : "light";
+    }
+
+    function wallpaperAccentNow() {
+        return modeNow() === "dark" ? accentCacheData.dark : accentCacheData.light;
+    }
+
+    function requestedAccentNow() {
+        var derived = wallpaperAccentNow();
+        return Settings.options.appearance.useWallpaperColor && derived.length > 0 ? derived : Settings.options.appearance.accentColor;
+    }
+
+    function effectiveAccentNow() {
+        return accentOverride.length > 0 ? accentOverride : requestedAccentNow();
+    }
 
     // Source screen for wallpaper-derived accent: first screen.
     // ponytail: single source screen; add a setting if multi-monitor ever needs
@@ -48,6 +80,15 @@ Singleton {
     Component.onCompleted: {
         // FileView won't create the parent dir; ensure it before any write.
         ensureCacheDir.running = true;
+        // Pull the cached accent in NOW. blockLoading on its own does not do
+        // this — it only makes text()/data() block, so without this call the
+        // FileView loads asynchronously and the adapter is still empty here.
+        // The cached color would then land a tick or more later, after the
+        // first apply/push: the first frames wear the default seed and a full
+        // matugen regen of every app theme goes out in the wrong color before
+        // the right one follows. This one blocking read of a ~100-byte file is
+        // what the cache was for.
+        accentCache.text();
         // Don't theme off a not-yet-loaded mode. Settings load asynchronously;
         // until they land, appearance.mode falls back to the adapter default
         // ("light"). Acting on that stale mode makes accentPush regenerate every
@@ -115,15 +156,15 @@ Singleton {
     function apply() {
         MD.Token.color.useSysColorSM = false;
         MD.Token.color.useSysAccentColor = false;
-        MD.Token.color.accentColor = effectiveAccentColor;
+        MD.Token.color.accentColor = effectiveAccentNow();
         MD.Token.color.paletteType = MD.Enum.PaletteTonalSpot;
-        MD.Token.color.mode = effectiveMode === "dark" ? MD.Enum.Dark : MD.Enum.Light;
+        MD.Token.color.mode = modeNow() === "dark" ? MD.Enum.Dark : MD.Enum.Light;
     }
 
     // Push the accent to external apps via matugen, run once per installed app
     // (no conditional templates) with the mode's ANSI hues injected as JSON.
     function pushAccentColor() {
-        accentPush.run(requestedAccentColor, effectiveMode, matugenDir);
+        accentPush.run(requestedAccentNow(), modeNow(), matugenDir);
     }
 
     Process {
@@ -295,10 +336,11 @@ fi
         command: ["mkdir", "-p", root.cacheDir]
     }
 
-    // Per-mode derived accent + the wallpaper path it came from, read
-    // synchronously (blockLoading) so the wallpaperAccent binding has the color
-    // before the first frame. We own this file, so no watchChanges. printErrors
-    // off: a cold-cache miss is expected on first run.
+    // Per-mode derived accent + the wallpaper path it came from. blockLoading
+    // plus the text() call in Component.onCompleted is what makes the initial
+    // read synchronous, so the wallpaperAccent binding has the color before the
+    // first frame; blockLoading alone would not. We own this file, so no
+    // watchChanges. printErrors off: a cold-cache miss is expected on first run.
     FileView {
         id: accentCache
         path: root.cacheDir + "/wallpaper-accent.json"

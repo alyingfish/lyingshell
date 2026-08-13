@@ -501,9 +501,13 @@ def main() -> None:
     theme = read(THEME)
     assert "Theme.accentOverride" in lock_theme
     assert "property string accentOverride: " in theme
-    assert "MD.Token.color.accentColor = effectiveAccentColor;" in theme
+    # The override reaches the in-process scheme, and is read through the
+    # fresh-value helper: the derived property lags inside a change handler for
+    # one of its own dependencies (see test_theme_accent_cache.py).
+    assert "MD.Token.color.accentColor = effectiveAccentNow();" in theme
+    assert "accentOverride.length > 0 ? accentOverride : requestedAccentNow()" in theme
     # The desktop's own seed is what still goes out to external apps.
-    assert "accentPush.run(requestedAccentColor, effectiveMode, matugenDir);" in theme
+    assert "accentPush.run(requestedAccentNow(), modeNow(), matugenDir);" in theme
     # Off-spec roles are composed from spec roles, never invented.
     assert "readonly property color onWall: oppositeScheme.surface" in lock_theme
     assert "MD.MdColorMgr {" in lock_theme

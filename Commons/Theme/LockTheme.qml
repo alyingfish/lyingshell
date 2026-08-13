@@ -68,7 +68,14 @@ Singleton {
         Theme.accentOverride = active && accent.length > 0 ? accent : "";
     }
 
-    Component.onCompleted: maybeExtract()
+    Component.onCompleted: {
+        // Same blocking read as Theme.qml: blockLoading only makes text()/data()
+        // block, so without this the lock seed lands asynchronously and a warm
+        // cache still looks cold to needsDerive() — a matugen run at every boot,
+        // and a lock opened in that window wears the desktop palette.
+        accentCache.text();
+        maybeExtract();
+    }
     onWallpaperChanged: maybeExtract()
 
     Connections {
