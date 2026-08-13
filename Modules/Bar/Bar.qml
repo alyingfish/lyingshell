@@ -98,6 +98,12 @@ PanelWindow {
     LockStillCapture {
         y: root.height
         screen: root.screen
+        // The shot waits out this window's own overlays: the lock gesture
+        // force-closes the quick-settings panel and tray popover, but the
+        // close is an animation, and a still taken mid-fade would carry the
+        // half-closed panel through the whole entry sweep. Lock's
+        // captureBail bounds the wait.
+        hold: root.overlayExpanded
     }
 
     // A parked window drops the frames its animations would have drawn, and

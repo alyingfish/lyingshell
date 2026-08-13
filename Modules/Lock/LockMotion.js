@@ -21,11 +21,15 @@ var successHoldMs = 520;
 // the unlock.
 var sweepHandoffMs = 150;
 
-// The cap on waiting for the pre-lock desktop captures — one wlr-screencopy
-// frame plus one grab per output, ~3 frames end to end. A capture that has
-// not answered in this long is not coming, and the lock must never wait on
-// it: the output it belonged to degrades to a plain cut.
-var captureBailMs = 250;
+// The cap on waiting for the pre-lock desktop captures. The capture itself
+// is ~3 frames (one wlr-screencopy frame plus one grab per output), but the
+// shot may first wait out the bar's own overlays — the quick-settings panel
+// or tray popover fading shut (~200ms) plus a two-frame settle — because a
+// still taken mid-fade carries the half-closed panel through the whole
+// entry sweep. A capture that has not answered in this long is not coming,
+// and the lock must never wait on it: the output it belonged to degrades to
+// a plain cut.
+var captureBailMs = 700;
 
 // How long the hello pose waits for its snapshots before sweeping without
 // them. A grab is one offscreen render of a surface the compositor is

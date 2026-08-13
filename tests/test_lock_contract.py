@@ -146,8 +146,17 @@ def main() -> None:
     assert "ScreencopyView {" in still_capture
     assert "live: false" in still_capture
     assert still_capture.count("Lock.deliverDesktopStill(") == 2
-    assert 'active: Lock.sweepMode === "enter" && root.screen !== null' in still_capture
-    assert "LockStillCapture {" in read(BAR_WINDOW)
+    assert 'readonly property bool armed: Lock.sweepMode === "enter" && root.screen !== null && !root.hold' in still_capture
+    # The shot is serialized behind the host window's own overlays fading
+    # shut plus a two-frame settle: a still taken mid-fade carries the
+    # half-closed quick-settings panel through the whole entry sweep, and
+    # firing the screencopy in the same dispatch as the panel teardown is
+    # where the stale-screen wl_surface.enter crash reproduced.
+    assert "property bool hold: false" in still_capture
+    assert "id: settle" in still_capture
+    bar_window = read(BAR_WINDOW)
+    assert "LockStillCapture {" in bar_window
+    assert "hold: root.overlayExpanded" in bar_window
     assert "function deliverDesktopStill(name, grab)" in service
     assert 'if (sweepMode !== "enter" || locked) {' in service
     assert "id: captureBail" in service

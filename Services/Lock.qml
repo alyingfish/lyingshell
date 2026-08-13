@@ -47,7 +47,10 @@ Singleton {
     //   "enter"  the pre-lock captures: one frozen wlr-screencopy frame of
     //            each output's desktop, grabbed inside the bar windows
     //            (Modules/Lock/LockStillCapture.qml — no windows are raised
-    //            for this) BEFORE the lock is requested. The circle itself
+    //            for this) BEFORE the lock is requested. A bar first waits
+    //            out its own overlays (quick-settings panel, tray popover)
+    //            fading shut, so the still never freezes a half-closed
+    //            panel; captureBail bounds that wait too. The circle itself
     //            runs on the lock surfaces, which draw the still above the
     //            scene and shrink it into the avatar's spot.
     //   "exit"   the unlock sweep: a still of the hello pose, pre-buffered
