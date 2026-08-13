@@ -48,9 +48,11 @@ FocusScope {
     // ---- the identity column's one beat ---------------------------------
     // The pill's distance below the avatar sets it, and the crown above the
     // avatar answers with the same span, so clock, avatar and password read as
-    // three even steps down the centre of the screen.
-    readonly property real avatarSize: 12 * cqh
-    readonly property real authTop: 35.7 * cqh
+    // three even steps down the centre of the screen. The avatar's landmarks
+    // live in LockMotion.js: the sweep is anchored on where it rests, and the
+    // exit windows need that point without a scene to measure it.
+    readonly property real avatarSize: LockMotion.avatarCqh * cqh
+    readonly property real authTop: LockMotion.authTopCqh * cqh
     readonly property real avatarCentreY: authTop + avatarSize / 2
     readonly property real labelLine: 1.9375 * cqw
     readonly property real idStep: 6 * cqh + 4.05 * cqh + labelLine + 2.6 * cqh

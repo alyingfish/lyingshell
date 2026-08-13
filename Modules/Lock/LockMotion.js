@@ -19,6 +19,26 @@ var successHoldMs = 520;
 // the circle moves over it. Three frames at 60Hz.
 var handoffMs = 48;
 
+// The unlock handoff's upper bound. The exit windows normally end the wait
+// themselves by reporting their cover frame presented; if none of those
+// reports land in this long, the lock is released anyway. Unlocking must
+// never wait on rendering.
+var exitHandoffMs = 150;
+
+// How long the hello pose waits for its snapshots before sweeping without
+// them. A grab is one offscreen render of a surface the compositor is
+// actively drawing (a frame or two); if it has not answered in this long the
+// graphics stack is in trouble and the unlock must not be gated on it.
+var snapshotBailMs = 350;
+
+// The identity column's landmarks, in container units (1cqh = 1% of the
+// surface's height). LockScene lays the avatar out with them, and the sweep
+// is anchored on where the avatar RESTS — the exit windows hold a still, not
+// a scene, so they need the resting point without a scene to measure it.
+var authTopCqh = 35.7;
+var avatarCqh = 12;
+var sweepOriginYCqh = authTopCqh + avatarCqh / 2;
+
 // The approach backdrop — the blur and the auth wash — and the glance line
 // leaving with them. MD3's standard easing at the prototype's own duration.
 var approachMs = 620;

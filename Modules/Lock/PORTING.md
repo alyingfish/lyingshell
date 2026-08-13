@@ -28,6 +28,33 @@ exclusive keyboard focus over the desktop, and `WlSessionLock.locked` goes true
 when the circle lands. Locking first and animating after would mean animating
 over a black screen, since there is nothing to reveal.
 
+*Constraint the sweep windows live under:* niri sends frame callbacks only to
+surfaces it draws, and while locked it draws nothing but the lock surfaces
+(`Niri::send_frame_callbacks` gates on the primary scanout output). A sweep
+window forced to render in that state stalls its render thread on buffers the
+compositor never releases, and the stall can wedge the shell's GUI thread —
+the original port did exactly that on unlock, which froze the lock screen the
+moment the avatar's success step finished. So the windows exist only while
+their sweep runs, and nothing may require one to render while `locked` is
+true:
+
+- *Entry* paints a live copy of the scene while it is visible, parks the
+  window (`updatesEnabled: false`) the instant the lock is requested — the
+  avatar's endless drift would otherwise keep forcing frames onto a hidden
+  surface — and is destroyed once the compositor confirms coverage.
+- *Exit* never paints a scene at all. Each lock surface grabs its frozen
+  hello pose into an image (an offscreen render of the one window the
+  compositor is still drawing), a fresh window buffers that still at full
+  cover as its FIRST frame — the one render a hidden window can always
+  complete, because a fresh swapchain owes the compositor nothing — and each
+  window reports the frame presented. Only then is the lock released: the
+  cover commit and the unlock request travel the same Wayland connection in
+  that order, so the compositor swaps the lock surface for the pre-buffered
+  cover with no gap, and the circle opens over the live desktop.
+- Every state advance is timer-driven (`snapshotBailMs`, `exitHandoffMs`);
+  a lost grab or an unpainted cover degrades the sweep to a plain cut. The
+  unlock is never gated on rendering.
+
 **2. Masks are fragment shaders, not clip-paths.**
 QML has no path clipping and cannot punch a hole in a surface, and
 `QtQuick.Effects.MultiEffect`'s `maskSource` produces no usable texture in this

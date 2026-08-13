@@ -41,13 +41,27 @@ Singleton {
     // is covered. Only then is the session actually secure.
     property bool secure: false
 
-    // The sweep windows exist (see Modules/Lock/LockScreen.qml). They are
-    // raised before the lock is taken and dropped after it is released, so
-    // both halves of the sweep have a surface to run on.
-    property bool sweepActive: false
-    // Whether those windows paint the scene. Off while the real lock surfaces
-    // own the screen, so the scene is never built twice at once.
-    property bool sweepPainting: false
+    // Which sweep the windows in Modules/Lock/LockScreen.qml are raised for:
+    //
+    //   ""       no sweep windows exist.
+    //   "enter"  the entry sweep: a live copy of the scene over the desktop,
+    //            with the circle shrinking into the avatar's spot.
+    //   "exit"   the unlock sweep: a still of the hello pose, pre-buffered
+    //            while the lock is still up, with the circle growing back.
+    //
+    // RENDERING SAFETY: while the session is locked the compositor draws only
+    // the lock surfaces, and a surface it does not draw receives no frame
+    // callbacks. A window forced to render in that state stalls its render
+    // thread on buffers the compositor will never release, and the stall can
+    // wedge the whole shell — which is exactly how the old unlock sweep froze
+    // the lock screen. So nothing here may require a sweep window to render
+    // while `locked` is true. The one exception is the exit window's very
+    // first frame: a freshly created window's swapchain can always produce
+    // one frame without waiting on the compositor, which is what lets the
+    // cover be buffered under the lock before it drops. Every state advance
+    // below runs on timers; rendering is only ever decoration on top.
+    property string sweepMode: ""
+    readonly property bool sweepActive: sweepMode !== ""
 
     // ---- the state machine -----------------------------------------------
 
@@ -113,12 +127,11 @@ Singleton {
         // The scene the circle uncovers is already at rest: nothing in front
         // of or behind the circle animates on its own.
         deskHole = 1;
-        sweepActive = true;
-        sweepPainting = true;
         if (reducedMotion) {
             takeLock();
             return;
         }
+        sweepMode = "enter";
         // One tick for the sweep windows to map and paint before the circle
         // starts shrinking, or the first frames land on an empty surface.
         sweepArmTimer.restart();
@@ -127,25 +140,31 @@ Singleton {
     function takeLock() {
         deskHole = 0;
         locked = true;
-        // The sweep surfaces keep painting until the compositor confirms every
-        // output is covered (`secure`). Stopping on `locked` alone would drop
-        // the scene in the gap before the lock surfaces map, and that gap shows
-        // the desktop.
+        // The sweep surfaces keep covering the screen until the compositor
+        // confirms every output is locked (`secure`). Dropping them on
+        // `locked` alone would leave a gap before the lock surfaces map. They
+        // stop rendering the instant `locked` goes up — the windows park
+        // themselves (updatesEnabled) — so the cover they hold is their last
+        // painted frame, which is the finished sweep.
         secureFallback.restart();
     }
 
     onSecureChanged: if (secure && locked) {
         secureFallback.stop();
-        sweepPainting = false;
+        endEnterSweep();
     }
 
-    // If `secure` never lands the sweep surfaces would paint a second copy of
-    // the scene forever. The lock itself is unaffected either way.
+    // If `secure` never lands the parked windows would sit mapped forever.
+    // The lock itself is unaffected either way.
     Timer {
         id: secureFallback
         interval: 1000
-        onTriggered: if (root.locked) {
-            root.sweepPainting = false;
+        onTriggered: root.endEnterSweep()
+    }
+
+    function endEnterSweep() {
+        if (sweepMode === "enter") {
+            sweepMode = "";
         }
     }
 
@@ -189,21 +208,94 @@ Singleton {
             finishUnlock();
             return;
         }
-        // Paint the frozen pose into the sweep windows first — they are below
-        // the lock surfaces, so nothing shows yet — then hand over on the next
-        // tick, when they have a current buffer for the compositor to reveal.
-        sweepPainting = true;
-        unlockHandoff.restart();
+        // A stale entry sweep can only exist here if `secure` never landed;
+        // its windows hold the wrong scene, so drop them before the exit pair
+        // is raised.
+        if (sweepMode === "enter") {
+            sweepMode = "";
+        }
+        sweepSnapshots = {};
+        sweepSnapshotGoal = Quickshell.screens.length;
+        sweepFramesPainted = 0;
+        if (sweepSnapshotGoal === 0) {
+            beginExitSweep();
+            return;
+        }
+        // Each lock surface grabs its frozen pose into an image — one
+        // offscreen render of a surface the compositor is actively drawing,
+        // so it cannot stall — and the exit windows hold that still under the
+        // growing circle. The bail timer keeps a lost grab from ever gating
+        // the unlock.
+        snapshotBail.restart();
+        sweepSnapshotWanted();
+    }
+
+    // The frozen hello pose, one grab per output, keyed by screen name. The
+    // grab results are QObjects; holding them here is what keeps the images
+    // alive until the sweep lands.
+    signal sweepSnapshotWanted()
+    property var sweepSnapshots: ({})
+    property int sweepSnapshotGoal: 0
+    property int sweepFramesPainted: 0
+
+    function deliverSweepSnapshot(name, grab) {
+        if (phase !== root.phaseHello || sweepMode === "exit") {
+            return;
+        }
+        var held = {};
+        for (var key in sweepSnapshots) {
+            held[key] = sweepSnapshots[key];
+        }
+        held[name] = grab;
+        sweepSnapshots = held;
+        if (Object.keys(held).length >= sweepSnapshotGoal) {
+            beginExitSweep();
+        }
     }
 
     Timer {
-        id: unlockHandoff
-        interval: LockMotion.handoffMs
-        onTriggered: {
-            root.releaseLock();
-            root.deskHole = 1;
-            unlockLandTimer.restart();
+        id: snapshotBail
+        interval: LockMotion.snapshotBailMs
+        onTriggered: root.beginExitSweep()
+    }
+
+    function beginExitSweep() {
+        if (phase !== root.phaseHello || sweepMode === "exit") {
+            return;
         }
+        snapshotBail.stop();
+        sweepMode = "exit";
+        unlockHandoff.restart();
+    }
+
+    // Called by each exit window on its first presented frame: its cover is
+    // committed on the compositor's side, buffered below the lock surface.
+    // When every output has one, the lock can drop and the covers are what
+    // the compositor reveals in its place — one Wayland connection, so the
+    // commits are ordered before the release request.
+    function sweepSurfacePainted() {
+        sweepFramesPainted++;
+        if (sweepFramesPainted >= sweepSnapshotGoal) {
+            releaseAndOpen();
+        }
+    }
+
+    // The upper bound on that wait. Rendering is decoration: if no cover ever
+    // reports, the unlock proceeds as a plain cut.
+    Timer {
+        id: unlockHandoff
+        interval: LockMotion.exitHandoffMs
+        onTriggered: root.releaseAndOpen()
+    }
+
+    function releaseAndOpen() {
+        if (sweepMode !== "exit" || !locked) {
+            return;
+        }
+        unlockHandoff.stop();
+        releaseLock();
+        deskHole = 1;
+        unlockLandTimer.restart();
     }
 
     Timer {
@@ -217,8 +309,10 @@ Singleton {
     }
 
     function finishUnlock() {
-        sweepActive = false;
-        sweepPainting = false;
+        sweepMode = "";
+        sweepSnapshots = {};
+        sweepSnapshotGoal = 0;
+        sweepFramesPainted = 0;
         deskHole = 1;
         reset();
         // The desktop's own seed comes back only now: the scene the circle

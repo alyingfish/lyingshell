@@ -66,10 +66,11 @@ def main() -> None:
 
     # The lock is only ever released after PAM reports success: releaseLock()
     # is the single writer of `locked = false`, and only the unlock sequence
-    # calls it.
+    # calls it — releaseAndOpen() behind its own mode-and-locked guard, plus
+    # the reduced-motion cut.
     assert service.count("locked = false") == 1
     assert "function releaseLock() {\n        locked = false;\n    }" in service
-    assert "root.releaseLock();" in service
+    assert 'if (sweepMode !== "exit" || !locked) {' in service
 
     # --- PAM --------------------------------------------------------------
     assert "import Quickshell.Services.Pam" in service
@@ -110,10 +111,48 @@ def main() -> None:
     # The circle rides layer-shell surfaces above the desktop, because nothing
     # can be composited beneath a session-lock surface.
     assert "WlrLayershell.layer: WlrLayer.Overlay" in screen
-    assert "WlrLayershell.keyboardFocus: Lock.locked ? WlrKeyboardFocus.None : WlrKeyboardFocus.Exclusive" in screen
-    assert "mask: Lock.sweepPainting ? null : blockNothing" in screen
     assert "lock_sweep.frag.qsb" in screen
     assert SWEEP_FRAG.exists() and SWEEP_QSB.exists()
+
+    # --- the sweep never renders behind the lock ---------------------------
+    # The compositor sends frame callbacks only to surfaces it draws, and
+    # while locked it draws nothing but the lock surfaces: a sweep window
+    # forced to render then stalls its render thread and can wedge the whole
+    # shell. These are the load-bearing pieces of the fix.
+    #
+    # The windows exist only while a sweep runs, and only ever for one mode.
+    assert 'property string sweepMode: ""' in service
+    assert 'readonly property bool sweepActive: sweepMode !== ""' in service
+    assert "model: Lock.sweepActive ? Quickshell.screens : []" in screen
+    # Entry windows park the moment the lock goes up, and are destroyed once
+    # the compositor confirms every output is covered.
+    assert "updatesEnabled: !(entering && Lock.locked)" in screen
+    assert "function endEnterSweep()" in service
+    # The exit sweep holds a STILL of the hello pose, grabbed from the real
+    # lock surface (which the compositor is actively drawing); the fresh exit
+    # window buffers it as its first frame — the one render a hidden window
+    # can always complete — and reports the frame so the release follows it.
+    assert "grabToImage" in screen
+    assert "function onSweepSnapshotWanted()" in screen
+    assert "Lock.deliverSweepSnapshot(name, grab);" in screen
+    assert "function onFrameSwapped()" in screen
+    assert "Lock.sweepSurfacePainted();" in screen
+    # The unlock is timer-driven end to end: a lost grab or an unpainted
+    # cover degrades the sweep to a cut, it never gates the release.
+    assert "id: snapshotBail" in service
+    assert "id: unlockHandoff" in service
+    assert "var snapshotBailMs" in motion
+    assert "var exitHandoffMs" in motion
+    # Only the entry sweep may hold the keyboard, and only before the lock is
+    # taken; the exit sweep runs over a live desktop and is click-through.
+    assert "WlrLayershell.keyboardFocus: entering && !Lock.locked ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None" in screen
+    assert "mask: entering ? null : blockNothing" in screen
+    # The circle is anchored on where the avatar rests, from the one set of
+    # landmarks the scene also lays out with.
+    assert "var sweepOriginYCqh = authTopCqh + avatarCqh / 2;" in motion
+    assert "readonly property real avatarSize: LockMotion.avatarCqh * cqh" in scene
+    assert "readonly property real authTop: LockMotion.authTopCqh * cqh" in scene
+    assert screen.count("Qt.vector2d(0.5, LockMotion.sweepOriginYCqh / 100)") == 2
 
     # --- multi-monitor ----------------------------------------------------
     # Every output is covered; the focused one gets the prompt.
