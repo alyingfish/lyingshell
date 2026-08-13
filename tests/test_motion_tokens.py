@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
-"""M3 Expressive motion-token and spring-integrator contract.
+"""M3 motion-token and spring-integrator contract.
 
 Material/Motion.js carries the official AndroidX physics, its QML Bezier
 fallbacks track a from-rest response, and interactive callers can retain
 velocity through a target change with the analytic integrator.
+
+The expressive scheme in full, plus the standard scheme's fast spatial spring
+for surfaces that need quieter geometry than ζ 0.6 can give.
 """
 
 from __future__ import annotations
@@ -26,6 +29,13 @@ OFFICIAL = {
     "effectsSlow": (1.0, 800.0),
 }
 
+# androidx compose material3 tokens/StandardMotionTokens.kt. The two schemes
+# share their effects springs exactly, so only the spatial side can differ and
+# only the one this shell uses is carried.
+OFFICIAL.update({
+    "standardSpatialFast": (0.9, 1400.0),
+})
+
 TOL = 0.01  # settle envelope used by the generator
 FIT_TOL = 0.015  # max bezier-vs-analytic deviation
 
@@ -46,6 +56,7 @@ process.stdout.write(JSON.stringify({
     effectsFast: context.effectsFast,
     effectsDefault: context.effectsDefault,
     effectsSlow: context.effectsSlow,
+    standardSpatialFast: context.standardSpatialFast,
     integrated: context.stepSpring(0, 0, 1, context.spatialSlow, 0.137),
     interrupted: (() => {
         const outward = context.stepSpring(0, 0, 1, context.spatialSlow, 0.08);
@@ -154,6 +165,12 @@ def main() -> None:
         elif name == "spatialFast":
             # zeta 0.6 => exp(-pi*zeta/sqrt(1-zeta^2)) ~ 9.5% overshoot.
             assert 1.05 < peak < 1.12, f"{name}: expected ~9.5% overshoot, got {peak:.4f}"
+        elif name == "standardSpatialFast":
+            # zeta 0.9 overshoots 0.15%, and its first peak (~193ms) is past
+            # the 1% settle time the curve is fitted over — so the projection
+            # is monotone even though the spring itself is not. This is the
+            # token's whole point at this size: geometry that does not bounce.
+            assert peak <= 1.001, f"{name}: expected a flat landing, got {peak:.4f}"
 
     # The closed-form step must match the same official spring exactly.
     exact, _ = response(*OFFICIAL["spatialSlow"])

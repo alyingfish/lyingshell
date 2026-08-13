@@ -24,8 +24,9 @@
 //     }
 //
 // Values are generated + verified by tests/test_motion_tokens.py.
-// ponytail: expressive scheme only; add StandardMotionTokens when a
-// surface needs the calmer standard springs.
+// ponytail: the expressive scheme in full, plus the one standard spatial
+// spring a surface has actually asked for; add the rest of
+// StandardMotionTokens the same way when something needs them.
 
 var spatialFast = {
     "damping": 0.6,
@@ -46,6 +47,24 @@ var spatialSlow = {
     "stiffness": 200,
     "duration": 452,
     "curve": [0.0556, 0.0, 0.1111, 0.1681, 0.1667, 0.3188, 0.2222, 0.4694, 0.2778, 0.6126, 0.3333, 0.7157, 0.3889, 0.8187, 0.4444, 0.8862, 0.5, 0.9293, 0.5556, 0.9724, 0.6111, 0.9925, 0.6667, 1.0033, 0.7222, 1.0141, 0.7778, 1.0156, 0.8333, 1.0151, 0.8889, 1.0146, 0.9444, 1.0, 1.0, 1.0]
+};
+
+// StandardMotionTokens' fast spatial spring, not the expressive scheme's. The
+// standard scheme damps its spatial springs at ζ 0.9 where expressive damps at
+// ζ 0.6-0.8, which is the whole difference between the two: same categories,
+// quieter geometry. It is here for rows of small marks that travel as a group —
+// a caret and the dots it walks past read as sloppy when each one overshoots
+// 9.5% on its own, and the expressive spatial springs cannot be asked for less.
+//
+// The 1% settle envelope lands at 161ms, which is BEFORE this spring's first
+// overshoot (its peak is at 193ms), so the fitted curve is monotone and the
+// 0.15% overshoot never appears in it. That is a property of the projection,
+// not a smoothing of the token: stepSpring() on these numbers still overshoots.
+var standardSpatialFast = {
+    "damping": 0.9,
+    "stiffness": 1400,
+    "duration": 161,
+    "curve": [0.0556, 0.0, 0.1111, 0.1474, 0.1667, 0.2796, 0.2222, 0.4118, 0.2778, 0.5395, 0.3333, 0.6362, 0.3889, 0.7329, 0.4444, 0.8023, 0.5, 0.8515, 0.5556, 0.9006, 0.6111, 0.9305, 0.6667, 0.9507, 0.7222, 0.9709, 0.7778, 0.9815, 0.8333, 0.9882, 0.8889, 0.995, 0.9444, 1.0, 1.0, 1.0]
 };
 
 var effectsFast = {

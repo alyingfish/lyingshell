@@ -49,6 +49,12 @@ Item {
     readonly property bool busy: Lock.phase === Lock.phasePending
     readonly property bool masked: !Lock.reveal
 
+    // Spatial motion is the part that cannot be asked of a vestibular reader,
+    // so travel and the caret's blink stop and everything else carries on: a
+    // fade is not motion, and the discs' own arrival and exit have to keep
+    // running either way — the exit is what retires the dot.
+    readonly property bool reducedMotion: Settings.options.appearance.reducedMotion
+
     property real shakeOffset: 0
     property real scrollPx: 0
 
@@ -80,7 +86,7 @@ Item {
             // next keystroke replaces it.
             input.forceActiveFocus();
             input.selectAll();
-            if (!Settings.options.appearance.reducedMotion) {
+            if (!root.reducedMotion) {
                 shake.restart();
             }
         }
@@ -360,9 +366,19 @@ Item {
             visible: root.masked
             x: -root.scrollPx
 
+            // Everything in this track travels on the standard scheme's fast
+            // spatial spring, not the expressive one. Geometry belongs on a
+            // spatial spring — an effects spring is for colour and alpha — but
+            // expressive damps its spatial springs at ζ 0.6, and a caret and a
+            // row of 6dp discs each overshooting 9.5% of a cell on their own
+            // reads as slop rather than as expression at this size. ζ 0.9 is
+            // the same category, quieted: the two schemes differ in nothing
+            // else, and their effects springs are identical numbers.
             Behavior on x {
+                enabled: !root.reducedMotion
+
                 MotionAnimation {
-                    spring: Motion.effectsDefault
+                    spring: Motion.standardSpatialFast
                 }
             }
 
@@ -386,13 +402,17 @@ Item {
                 opacity: span > 0 && input.activeFocus ? 1 : 0
 
                 Behavior on x {
+                    enabled: !root.reducedMotion
+
                     MotionAnimation {
-                        spring: Motion.effectsDefault
+                        spring: Motion.standardSpatialFast
                     }
                 }
                 Behavior on width {
+                    enabled: !root.reducedMotion
+
                     MotionAnimation {
-                        spring: Motion.effectsDefault
+                        spring: Motion.standardSpatialFast
                     }
                 }
                 Behavior on opacity {
@@ -428,8 +448,10 @@ Item {
                     z: leaving ? 1 : 2
 
                     Behavior on x {
+                        enabled: !root.reducedMotion
+
                         MotionAnimation {
-                            spring: Motion.effectsDefault
+                            spring: Motion.standardSpatialFast
                         }
                     }
 
@@ -475,8 +497,14 @@ Item {
 
                         Component.onCompleted: settle(1)
 
+                        // The ink crosses on the same fast effects spring the
+                        // disc arrived on: a dot picked up by a selection is
+                        // one moment with the band that carries it, not a
+                        // slower wash trailing behind it.
                         Behavior on color {
-                            MotionColorAnimation {}
+                            MotionColorAnimation {
+                                spring: Motion.effectsFast
+                            }
                         }
                     }
 
@@ -502,6 +530,13 @@ Item {
             Rectangle {
                 id: caret
 
+                property bool blinkOn: true
+
+                // A caret blinking on its own is the one thing left on this
+                // row that moves without being asked to, so reduced motion
+                // stands it still rather than dimming it.
+                readonly property bool blinking: visible && !root.reducedMotion
+
                 x: input.cursorPosition * root.cell
                 anchors.verticalCenter: parent.verticalCenter
                 width: root.caretWidth
@@ -510,25 +545,37 @@ Item {
                 color: Lock.refused ? MD.Token.color.error : MD.Token.color.primary
                 z: 3
                 visible: input.activeFocus && input.selectionEnd === input.selectionStart && !root.busy
-                opacity: blinkOn ? 1 : 0
+                opacity: blinking && !blinkOn ? 0 : 1
 
-                property bool blinkOn: true
-
-                onXChanged: {
+                // The timer is driven from here rather than bound, and that is
+                // not a style choice: restart() ASSIGNS `running`, so a
+                // `running:` binding would be destroyed by the first keystroke
+                // that moved the caret — after which nothing could stop the
+                // blink again, neither this setting nor losing the caret.
+                function restartBlink() {
                     blinkOn = true;
-                    blink.restart();
+                    if (blinking) {
+                        blink.restart();
+                    } else {
+                        blink.stop();
+                    }
                 }
 
+                onXChanged: restartBlink()
+                onBlinkingChanged: restartBlink()
+                Component.onCompleted: restartBlink()
+
                 Behavior on x {
+                    enabled: !root.reducedMotion
+
                     MotionAnimation {
-                        spring: Motion.effectsDefault
+                        spring: Motion.standardSpatialFast
                     }
                 }
 
                 Timer {
                     id: blink
 
-                    running: caret.visible
                     repeat: true
                     interval: 530
                     onTriggered: caret.blinkOn = !caret.blinkOn

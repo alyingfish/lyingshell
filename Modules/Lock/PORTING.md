@@ -206,15 +206,33 @@ shape on a ζ0.6/k200 spring). The prototype re-implements that by hand in
 `auth.js` because CSS cannot do it; the brief allows the library one, and it
 matches.
 
-**9. Reduced motion is a new setting.**
+**9. The password row travels on a standard-scheme spring.**
+The prototype writes its own springs as `linear()` ramps rather than reading
+the token layer, and the one it travels on (`--pwd-travel`) is ζ0.9/k1400 —
+`StandardMotionTokens`, not the expressive scheme this shell otherwise carries.
+That is the right call at this size and the port keeps it: the dot row, the
+caret, the selection band and the long-password scroll are small marks moving
+as a group, and expressive's ζ0.6 spatial springs would have each of them
+overshoot ~9.5% of a cell independently. `Motion.standardSpatialFast` was added
+for it — the schemes share their effects springs exactly, so the spatial side
+is the only thing that can differ, and only the spring in use is carried.
+
+Note the projection is monotone: the 1% settle envelope lands at 161ms and this
+spring's first peak is at 193ms, so the fitted Bezier never shows the 0.15%
+overshoot. `Motion.stepSpring()` on the same numbers still does.
+
+**10. Reduced motion is a new setting.**
 The shell had none, so `appearance.reducedMotion` was added. It cuts the sweep
-to nothing and drops the refusal shake; the avatar's success step still plays,
-because it is a morph in place rather than travel and it is the only thing that
-says the password landed.
+to nothing, drops the refusal shake, cuts the password row's travel (dots,
+caret, band, scroll) and stands the caret still instead of blinking. The
+avatar's success step still plays, because it is a morph in place rather than
+travel and it is the only thing that says the password landed — and so do the
+row's fades and the discs' own arrival and exit, since a fade is not motion and
+the exit is what retires a dot.
 
 ## Input
 
-**10. `beforeinput` has no Qt equivalent.**
+**11. `beforeinput` has no Qt equivalent.**
 The prototype reconciles the drawn dot row against the range `beforeinput`
 names, which knows both ends of what was replaced. Qt's `TextInput` has no such
 event, so the port records the selection standing immediately before each edit
@@ -223,7 +241,7 @@ agree for everything a keyboard or a paste does; only an edit that changes the
 selection and the text in one indivisible step (an undo) falls through to the
 caret path, which is the prototype's own fallback.
 
-**11. Caps lock has no modifier state in QML.**
+**12. Caps lock has no modifier state in QML.**
 The DOM has `getModifierState('CapsLock')`; Qt exposes nothing equivalent. The
 lock key's own transition is authoritative, as in the prototype, and is
 combined with a letter-case check — any letter that arrives in the wrong case
@@ -232,35 +250,35 @@ already on learns it from the first letter typed.
 
 ## Content
 
-**12. Fonts.** The prototype ships RF Display / RF Text. The port uses the
+**13. Fonts.** The prototype ships RF Display / RF Text. The port uses the
 configured shell typeface (`appearance.font`, Noto Sans by default), and drops
 the clock's `font-stretch: 96%`, which needs a variable font.
 
-**13. The glance line reads the shell's own services** — `Services/Time` and
+**14. The glance line reads the shell's own services** — `Services/Time` and
 `Services/Weather` — instead of the prototype's mock. `Weather` is still a
 placeholder in this shell (a fixed 24° and `sunny`), so that line shows
 placeholder weather until the planned weather integration lands.
 
-**14. The account is `$USER`.** The prototype's roster is demo data. The name
+**15. The account is `$USER`.** The prototype's roster is demo data. The name
 comes from `lock.fullName`, falling back to `$USER`; the portrait comes from
 the current user's AccountsService `IconFile`, falling back to the tonal plate
 with the account's initial.
 
 ## Scope
 
-**15. Not ported, as instructed:** the login/greeter surface — the user picker
+**16. Not ported, as instructed:** the login/greeter surface — the user picker
 (`stage/users.js`), the session picker (`stage/sessions.js`), and the avatar's
 hover ring, chevrons and hover scale, all of which sit behind
 `data-mode="login"`. The avatar here answers to nothing. The dev bar
 (`src/lock/dev/`) is not ported either.
 
-**16. Multi-monitor.** Every output is covered — the protocol requires it, and
+**17. Multi-monitor.** Every output is covered — the protocol requires it, and
 it is what makes the lock secure. The focused output gets the whole thing
 (avatar, prompt, tray); the rest get the wallpaper and the clock and nothing to
 type into, so the prompt is where the user is already looking. Set
 `lock.focusedOutputOnly` to false to put the full scene on every output.
 
-**17. Restricted panel while locked.** Hidden: the tools button (screenshot,
+**18. Restricted panel while locked.** Hidden: the tools button (screenshot,
 colour pick, clipboard — all act on the desktop behind the lock) and the
 settings button (it launches an application, which is the oldest lock-screen
 bypass there is). The session menu drops **Lock Screen** (meaningless from

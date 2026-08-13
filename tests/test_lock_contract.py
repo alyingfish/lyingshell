@@ -423,6 +423,21 @@ def main() -> None:
     # BusyIndicator writes its own `visible`; binding it strands the spinner.
     assert "visible: root.busy" not in field
     assert 'name: "arrow_forward"' in field
+    # Everything that travels — the dot, the caret, the band's position and
+    # width, the track's scroll — rides one spatial spring, and it is the
+    # standard scheme's: geometry does not belong on an effects spring, and
+    # expressive's zeta 0.6 would have every 6dp disc overshoot a tenth of a
+    # cell on its own account.
+    assert field.count("spring: Motion.standardSpatialFast") == 5
+    assert "Motion.effectsDefault" not in field, "an effects spring may not drive geometry here"
+    # Reduced motion cuts the travel and stands the caret still. Fades and the
+    # discs' own arrival/exit keep running: neither is spatial, and the exit is
+    # what retires the dot.
+    assert field.count("enabled: !root.reducedMotion") == 5
+    assert "readonly property bool blinking: visible && !root.reducedMotion" in field
+    # restart() ASSIGNS running, so a bound Timer.running would be destroyed by
+    # the first caret move and the blink could never be stopped again.
+    assert "running: caret.visible" not in field
 
     # --- Escape unwinds one layer at a time -------------------------------
     assert "function unwind()" in tray
