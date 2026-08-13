@@ -27,12 +27,22 @@ Window {
     height: 760
     color: "#2b1660"
 
-    property string outDir: {
-        const args = Qt.application.arguments;
-        return args[args.length - 1].startsWith("/") ? args[args.length - 1] : "/tmp/qs-visual";
+    // The first argument after `--`, like the lock harnesses take it. Reading
+    // the LAST argument instead silently redirected the whole run to the
+    // fallback whenever anything trailed the path (a stray `light`, say), and
+    // saveToFile into a directory that does not exist fails per shot — a run
+    // that reports nothing but failures while the path it was given sits
+    // empty. The resolved directory is printed for the same reason.
+    readonly property var argv: {
+        const all = Qt.application.arguments;
+        const split = all.indexOf("--");
+        return split >= 0 ? all.slice(split + 1) : [];
     }
 
+    property string outDir: argv.length > 0 && argv[0].startsWith("/") ? argv[0] : "/tmp/qs-visual"
+
     Component.onCompleted: {
+        console.log("OUT: " + root.outDir);
         // Prototype baseline seed, tonal-spot palette (mirrors Theme.qml).
         MD.Token.color.useSysColorSM = false;
         MD.Token.color.useSysAccentColor = false;
@@ -182,8 +192,12 @@ Window {
         onTriggered: {
             const name = shotName;
             const started = card.grabToImage(result => {
-                const ok = result.saveToFile(root.outDir + "/" + name + ".png");
-                console.log((ok ? "SAVED " : "FAILED ") + name);
+                const path = root.outDir + "/" + name + ".png";
+                if (result.saveToFile(path)) {
+                    console.log("SAVED " + name);
+                } else {
+                    console.warn("FAILED " + name + " -> " + path + " (does the output directory exist?)");
+                }
                 root.advance();
             });
             if (!started) {

@@ -176,8 +176,14 @@ Window {
         onTriggered: {
             stage.grabToImage(function (result) {
                 var name = "sweep-" + String(root.step) + "-hole" + String(Math.round(root.hole * 100));
-                result.saveToFile(root.outDir + "/" + name + ".png");
-                console.log("SHOT: " + name);
+                // A save into a directory that does not exist fails silently
+                // unless it is checked; see visual_lock.qml.
+                var path = root.outDir + "/" + name + ".png";
+                if (result.saveToFile(path)) {
+                    console.log("SHOT: " + name);
+                } else {
+                    console.warn("SHOT-FAILED: " + name + " -> " + path + " (does the output directory exist?)");
+                }
                 root.step++;
                 steps.start();
             }, Qt.size(stage.width, stage.height));

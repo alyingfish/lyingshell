@@ -240,8 +240,14 @@ Window {
         var index = root.frame++;
         var at = elapsed();
         stage.grabToImage(function (result) {
-            result.saveToFile(root.outDir + "/f" + String(index).padStart(5, "0") + ".bmp");
-            console.log("FRAME " + index + " " + at);
+            // Checked for the same reason as visual_lock.qml: an unwritable
+            // directory would otherwise yield a full FRAME log and no frames.
+            var path = root.outDir + "/f" + String(index).padStart(5, "0") + ".bmp";
+            if (result.saveToFile(path)) {
+                console.log("FRAME " + index + " " + at);
+            } else {
+                console.warn("FRAME-FAILED " + index + " -> " + path + " (does the output directory exist?)");
+            }
             root.pump();
         }, Qt.size(root.grabWidth, root.grabHeight));
     }

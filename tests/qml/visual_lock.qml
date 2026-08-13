@@ -166,10 +166,18 @@ Window {
         }
     }
 
+    // saveToFile does not create the directory it is handed, and an ignored
+    // return leaves a full run of SHOT lines standing over an empty folder —
+    // a harness reporting success for pictures nobody took. Say which file,
+    // and say when it did not land.
     function grabWindow(name) {
         scene.grabToImage(function (result) {
-            result.saveToFile(root.outDir + "/" + name + ".png");
-            console.log("SHOT: " + name);
+            var path = root.outDir + "/" + name + ".png";
+            if (result.saveToFile(path)) {
+                console.log("SHOT: " + name);
+            } else {
+                console.warn("SHOT-FAILED: " + name + " -> " + path + " (does the output directory exist?)");
+            }
             root.step++;
             steps.start();
         }, Qt.size(scene.width, scene.height));
