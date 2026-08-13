@@ -334,8 +334,9 @@ def main() -> None:
     assert "spring: Motion.effectsSlow" in scene, "the full-screen blur/wash uses the slow effects role"
     # Spatial springs may overshoot; opacity is a bounded effects property.
     assert "Math.max(0, Math.min(1, glanceEffectsMotion.value))" in scene
-    # Avatar, name, and field enter on one shared beat. The delay applies only
-    # from hidden rest, while an interrupted departure retargets at once.
+    # The identity rises first and the prompt follows it in one beat later,
+    # the prototype's own .06s/.14s cascade. The delay applies only from
+    # hidden rest, while an interrupted departure retargets at once.
     rising = scene[scene.index("component Rising:"):scene.index("Rising {\n        id: avatarSlot")]
     assert rising.count("MotionSpring {") == 2
     assert "spring: Motion.spatialDefault" in rising
@@ -343,8 +344,8 @@ def main() -> None:
     assert "spatialMotion.atRest && effectsMotion.atRest" in rising
     assert "if (!shown || reducedMotion)" in rising
     assert "onReducedMotionChanged: retarget()" in rising
-    assert scene.count("enterDelay: 60") == 3
-    assert "enterDelay: 140" not in scene
+    assert scene.count("enterDelay: 60") == 2, "the avatar and the name share the first beat"
+    assert scene.count("enterDelay: 140") == 1, "the password field carries the second"
     assert "Behavior on opacity" not in scene
     assert "duration: 400" not in scene
 

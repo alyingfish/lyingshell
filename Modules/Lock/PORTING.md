@@ -192,6 +192,12 @@ mapping a 0×0 lock surface at its real pixel size therefore cannot replay an
 entrance accidentally. The shared spring driver also snaps these channels and
 removes their entrance delay when reduced motion is enabled.
 
+What the springs replace is the prototype's curves, not its choreography. The
+identity column still enters in the two beats `stage.css` gives it — avatar and
+name at 60ms, the password pill at 140ms — because a sequenced group entrance
+is the expressive scheme's own, and it is the one place the prototype was
+already reading the spec correctly.
+
 The lock quick-settings pill does not fade independently. It is treated as the
 floating bar's continuation and shares `BarMotion.hiddenOffset` plus the same
 default-spatial reveal spring as `BarSurface`: hidden clears the complete

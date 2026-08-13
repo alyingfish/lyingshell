@@ -227,10 +227,10 @@ FocusScope {
     }
 
     // ---- the identity column --------------------------------------------
-    // Rises together on the approach after one shared entrance beat. One
-    // normalized spatial spring drives travel and one effects spring drives
-    // alpha, so pixel geometry arriving on a new lock surface cannot trigger a
-    // false 0px -> resting-pose animation.
+    // Rises on the approach in two beats: who you are first, then what it
+    // wants from you. One normalized spatial spring drives travel and one
+    // effects spring drives alpha, so pixel geometry arriving on a new lock
+    // surface cannot trigger a false 0px -> resting-pose animation.
 
     component Rising: Item {
         id: rising
@@ -330,7 +330,14 @@ FocusScope {
     Rising {
         id: promptSlot
 
-        enterDelay: 60
+        // The prompt follows the identity in rather than rising alongside it:
+        // 80ms after the avatar and its name, which is the prototype's own
+        // .06s/.14s cascade. A group whose entrance is sequenced rather than
+        // moved as one block is the expressive scheme's own choreography, and
+        // the pill is the thing being handed over, so it lands last. The beat
+        // is a stagger only — what travels once released is still the same
+        // default-spatial spring every other riser carries.
+        enterDelay: 140
         x: (root.width - width) / 2
         y: root.authTop + root.avatarSize + 4.05 * root.cqh + root.labelLine
         width: prompt.implicitWidth
