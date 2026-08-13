@@ -138,9 +138,6 @@ Singleton {
                 // matugen palette, on the shared appearance.mode. "" falls back
                 // to the desktop wallpaper of the output it is shown on.
                 property string wallpaper: ""
-                // Portrait clipped by the scallop; "" draws the tonal plate with
-                // the account's initial instead.
-                property string avatar: ""
                 // Display name above the password pill; "" uses $USER.
                 property string fullName: ""
                 // The full scene (avatar, prompt, tray) on the focused output

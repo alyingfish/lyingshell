@@ -29,13 +29,7 @@ Item {
     required property real cqw
     property real shakeOffset: 0
 
-    readonly property string portrait: {
-        var configured = Settings.options.lock.avatar;
-        if (!configured || configured.length === 0) {
-            return "";
-        }
-        return configured.startsWith("~/") ? Settings.homeDir + configured.substring(1) : configured;
-    }
+    readonly property string portrait: Lock.accountAvatar
     readonly property bool hasPortrait: portrait.length > 0 && portraitImage.status === Image.Ready
 
     readonly property string initial: {

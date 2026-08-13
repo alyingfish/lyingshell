@@ -48,6 +48,7 @@ QtObject {
 
     readonly property string userName: "mira"
     property string displayName: "Mira Solis"
+    property string accountAvatar: ""
 
     property Timer authTimer: Timer {
         interval: 900

@@ -195,8 +195,9 @@ placeholder in this shell (a fixed 24° and `sunny`), so that line shows
 placeholder weather until the planned weather integration lands.
 
 **14. The account is `$USER`.** The prototype's roster is demo data. The name
-comes from `lock.fullName`, falling back to `$USER`; the portrait from
-`lock.avatar`, falling back to the tonal plate with the account's initial.
+comes from `lock.fullName`, falling back to `$USER`; the portrait comes from
+the current user's AccountsService `IconFile`, falling back to the tonal plate
+with the account's initial.
 
 ## Scope
 

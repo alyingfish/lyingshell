@@ -95,6 +95,16 @@ def main() -> None:
     assert PAM_CONFIG.exists()
     assert "pam_unix.so" in read(PAM_CONFIG)
 
+    # Match GNOME's user portrait by resolving the current account through
+    # AccountsService. Either lookup failure or image failure keeps the tonal
+    # initial; there is no competing shell-specific avatar setting.
+    assert '"org.freedesktop.Accounts", "FindUserByName"' in service
+    assert '"org.freedesktop.Accounts.User", "IconFile"' in service
+    assert "root.accountAvatar = root.busctlData(stdout.text);" in service
+    assert "readonly property string portrait: Lock.accountAvatar" in avatar
+    assert "Settings.options.lock.avatar" not in avatar
+    assert "portrait.length > 0 && portraitImage.status === Image.Ready" in avatar
+
     # --- the four states --------------------------------------------------
     for phase in ('"glance"', '"ask"', '"pending"', '"hello"'):
         assert phase in service, phase

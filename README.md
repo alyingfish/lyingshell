@@ -100,12 +100,15 @@ desktop's, and follows the one shared `appearance.mode`:
 ```jsonc
 "lock": {
   "wallpaper": "~/Pictures/lock.jpg",  // "" reuses the desktop wallpaper
-  "avatar": "~/.face",                 // "" draws the account's initial
   "fullName": "",                      // "" uses $USER
   "focusedOutputOnly": true,           // other monitors get wallpaper + clock
   "pamConfig": ""                      // "" uses the shipped assets/pam.d/lyingshell
 }
 ```
+
+Lying Shell reads the current user's `IconFile` from AccountsService, the same
+account portrait source GNOME uses. If no portrait is available, the lock
+screen draws the account's initial.
 
 Authentication runs through `PamContext`. The shipped service is
 `assets/pam.d/lyingshell` (`pam_unix`, which reads `/etc/shadow` through the

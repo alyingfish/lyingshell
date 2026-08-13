@@ -96,6 +96,55 @@ Singleton {
         var configured = Settings.options.lock.fullName;
         return configured && configured.length > 0 ? configured : root.userName;
     }
+    // GNOME stores the selected portrait in AccountsService. Keep the path in
+    // the session model so every lock surface shares one lookup and one value.
+    // An empty result is intentional: LockAvatar then keeps its tonal initial.
+    property string accountAvatar: ""
+
+    function busctlData(output) {
+        try {
+            var data = JSON.parse(output).data;
+            return Array.isArray(data) ? String(data[0] || "") : String(data || "");
+        } catch (error) {
+            return "";
+        }
+    }
+
+    Process {
+        id: accountLookup
+
+        running: root.userName.length > 0
+        command: ["busctl", "--system", "--no-pager", "--json=short", "call",
+            "org.freedesktop.Accounts", "/org/freedesktop/Accounts",
+            "org.freedesktop.Accounts", "FindUserByName", "s", root.userName]
+        stdout: StdioCollector {}
+
+        onExited: function (exitCode, exitStatus) {
+            if (exitCode !== 0) {
+                return;
+            }
+            var accountPath = root.busctlData(stdout.text);
+            if (!accountPath.startsWith("/org/freedesktop/Accounts/User")) {
+                return;
+            }
+            avatarLookup.command = ["busctl", "--system", "--no-pager", "--json=short", "get-property",
+                "org.freedesktop.Accounts", accountPath,
+                "org.freedesktop.Accounts.User", "IconFile"];
+            avatarLookup.running = true;
+        }
+    }
+
+    Process {
+        id: avatarLookup
+
+        stdout: StdioCollector {}
+
+        onExited: function (exitCode, exitStatus) {
+            if (exitCode === 0) {
+                root.accountAvatar = root.busctlData(stdout.text);
+            }
+        }
+    }
 
     property string password: ""
     property bool capsLock: false

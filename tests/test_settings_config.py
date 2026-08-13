@@ -47,6 +47,8 @@ def main() -> None:
     assert "property JsonObject appearance" in settings_qml
     assert "property JsonObject bar" in settings_qml
     assert "property JsonObject quickSettings" in settings_qml
+    lock_body = handler_body(settings_qml, "property JsonObject lock")
+    assert "property string avatar" not in lock_body
     assert "property JsonObject shape" in settings_qml
     assert "property JsonObject floating" in settings_qml
     assert "property JsonObject softAttach" in settings_qml
