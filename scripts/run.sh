@@ -20,6 +20,19 @@ export __GLX_VENDOR_LIBRARY_NAME=mesa
 # Quickshell runs ~38 threads; unbounded glibc arenas fragment the heap RSS.
 export MALLOC_ARENA_MAX=2
 
+# Qt's wl_surface.enter/leave handlers (qtwayland 6.11) crash INSIDE their own
+# qCWarning when the compositor delivers a duplicate/stale enter: the warning
+# text streams screen->name()/model() from a QWaylandScreen pointer that can
+# already be freed — the segfault at libQt6WaylandClient+0x63b88 that killed
+# the shell on lock-clicks (crash dirs 65r46xxojt, r0u4nzzojt, 8zy4o73pjt,
+# u115z64pjt; every stack identical, every log tail ending on the
+# quick-settings panel closing). qCWarning skips its argument list entirely
+# when the category is silenced, and the handler's non-warning path ignores
+# the duplicate event correctly, so silencing the category removes the
+# dereference itself — the actual crash — not just the message. Existing
+# user rules are appended after ours, so they still win on conflicts.
+export QT_LOGGING_RULES="qt.qpa.wayland.warning=false${QT_LOGGING_RULES:+;$QT_LOGGING_RULES}"
+
 # Vulkan (RADV/ACO) scenegraph: the GL path on this iGPU holds ~120MB more
 # anon RSS (glthread marshal buffers + per-window GL contexts). Measured
 # 478MB -> 330MB on 2026-07-06, identical rendering.

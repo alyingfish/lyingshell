@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import Qcm.Material as MD
 import qs.Material
+import qs.Services
 import "../../Material/Motion.js" as Motion
 
 // Quick-settings popup (GNOME's quick-settings panel): a floating MD3 card
@@ -118,6 +119,15 @@ Item {
                 },
                 Transition {
                     from: "open"
+
+                    // Disabled during the lock's entry gesture, so the close
+                    // is a cut: the pre-lock desktop capture waits for this
+                    // card's opacity to clear (Bar.qml holds LockStillCapture
+                    // on `expanded`), and spending the fade here is lock
+                    // latency the user feels. The lock screen's own panel
+                    // instance never sees "enter" (that stage is pre-lock),
+                    // so its close keeps the animation.
+                    enabled: Lock.sweepMode !== "enter"
 
                     NumberAnimation {
                         properties: "slideY,cardScale"

@@ -514,6 +514,12 @@ Item {
             readonly property real pad: 8
 
             Behavior on openProgress {
+                // Disabled during the lock's entry gesture so the close is a
+                // cut: the pre-lock desktop capture waits for `expanded` to
+                // clear (Bar.qml holds LockStillCapture on it), and the slide
+                // would be lock latency the user feels.
+                enabled: Lock.sweepMode !== "enter"
+
                 NumberAnimation {
                     duration: MD.Token.duration.medium2
                     easing: MD.Token.easing.emphasized

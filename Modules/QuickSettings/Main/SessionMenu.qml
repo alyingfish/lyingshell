@@ -113,9 +113,16 @@ Item {
                 iconName: "lock"
                 topRadius: 14
 
+                // Lock FIRST, unlike every other row: the entry gesture must
+                // already be running ("enter") when the panel closes, so the
+                // close resolves as a cut instead of a fade the pre-lock
+                // desktop capture would have to wait out. Session.lock()
+                // raising sweepActive closes the panel by itself
+                // (QuickSettingsButton.sessionLocking); the explicit close
+                // stays for the paths lock() refuses (already locked).
                 onActivated: {
-                    root.panelCloseRequested();
                     Session.lock();
+                    root.panelCloseRequested();
                 }
             }
 
