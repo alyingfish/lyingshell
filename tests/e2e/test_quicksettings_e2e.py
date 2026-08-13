@@ -197,13 +197,16 @@ def main() -> None:
             shell.ipc("toggleMuted")
             wait_for(lambda: wpctl_volume()[1] is muted0, 5, "mute restored")
 
-            # Hover-wheel on the volume row: one notch = a 5% step.
+            # Hover-wheel on the volume row: one notch = one 2% step, GNOME's
+            # SLIDER_SCROLL_STEP (js/ui/slider.js), which QuickSlider mirrors.
+            # The tolerance has to stay BELOW the step, or standing still would
+            # satisfy the assertion and the notch would go unproven.
             shell.ipc("setVolume", "0.50")
-            wait_for(lambda: abs(wpctl_volume()[0] - 0.50) < 0.02, 5, "volume 0.5")
-            shell.ipc("wheelVolume", "120")  # wheel up = +5%
-            wait_for(lambda: abs(wpctl_volume()[0] - 0.55) < 0.02, 5, "wheel volume +5%")
-            shell.ipc("wheelVolume", "-120")  # wheel down = -5%
-            wait_for(lambda: abs(wpctl_volume()[0] - 0.50) < 0.02, 5, "wheel volume -5%")
+            wait_for(lambda: abs(wpctl_volume()[0] - 0.50) < 0.005, 5, "volume 0.5")
+            shell.ipc("wheelVolume", "120")  # wheel up = +2%
+            wait_for(lambda: abs(wpctl_volume()[0] - 0.52) < 0.005, 5, "wheel volume +2%")
+            shell.ipc("wheelVolume", "-120")  # wheel down = -2%
+            wait_for(lambda: abs(wpctl_volume()[0] - 0.50) < 0.005, 5, "wheel volume -2%")
 
         # --- brightness (hardware round-trip) ---------------------------------
         if state["brightness"]["available"] and shutil.which("brightnessctl"):
